@@ -16,6 +16,19 @@ All notable changes to this project are recorded here.
   otherwise count twice in the season with no way to undo it. Two taps, and the
   consequence is stated before the second.
 
+### Fixed
+
+- **The Season screen no longer drifts off the right edge of a phone.** The season name,
+  team and Save button sat on one row; a grid child defaults to `min-width: auto`, so the
+  inputs refused to shrink below their own content and pushed Save off-screen entirely.
+  The button now sits beneath the two fields, and every grid that holds text was given the
+  `min-width: 0` it needed.
+- **Stacked buttons no longer touch.** "Enter a game by hand" and "Import a batch of games"
+  ran flush together and read as a single control. Eight points between them, and headings
+  that follow a paragraph now have room to read as a new section.
+- Checked at 393 px — an iPhone's logical width — across all seven screens: nothing extends
+  past the right edge and nothing scrolls sideways.
+
 ### Changed
 
 - Airplane-mode verification is no longer a release gate, at the stakeholder's decision: a

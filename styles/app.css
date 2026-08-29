@@ -656,8 +656,9 @@ button {
 .btn-remove:active { background: var(--surface-2); }
 
 .roster-count {
-  margin: 12px 0 4px;
+  margin: 8px 0 4px;
   font-size: 13px;
+  line-height: 1.45;
   color: var(--muted);
 }
 
