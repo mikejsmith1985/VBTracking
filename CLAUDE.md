@@ -49,7 +49,9 @@ from the repository root. `localStorage` for persistence. Vitest and Cypress are
 - Serve turns exceeding 5 serves are recorded in full and flagged. Nothing caps at 5.
 - The dock holds a status row over exactly ONE action block - outcome controls or the
   player picker, never both.
-- Offline and install claims are proven on the device in airplane mode, never by tests.
+- The app stays offline-capable and the precache test still gates every commit, but
+  airplane-mode verification is NOT a release gate: dropped by the stakeholder because a
+  native iOS app is expected before connectivity in a gym matters.
 
 **Migration fixtures**: `tests/fixtures/v1-log.json` and `v2-log.json` are logs captured
 from shipped builds. Never edit them - they are the format as shipped, not as remembered.

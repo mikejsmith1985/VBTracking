@@ -26,7 +26,7 @@ export function view(context) {
   }
 
   return {
-    screen: scopeSwitch(ui.scope) + bodyFor(ui.scope, game, state.roster) + dataTools(ui),
+    screen: scopeSwitch(ui.scope) + bodyFor(ui.scope, game, state.roster) + dataTools(ui, game.id),
     dock: '',
   }
 }
@@ -34,7 +34,9 @@ export function view(context) {
 // Backup and discarding live here rather than on the track screen: both are
 // administrative, one is destructive, and neither has any business sitting near the
 // controls tapped during a rally.
-function dataTools(ui) {
+function dataTools(ui, gameId) {
+  // The confirmation is armed per game, so arming one elsewhere must not light this up.
+  const isConfirming = ui.confirmingDiscardGame === gameId
   return `
     <div class="danger-zone">
       <div class="section-title">Backup</div>
@@ -49,11 +51,11 @@ function dataTools(ui) {
       </div>
 
       <div class="section-title">Danger</div>
-      <button class="btn btn-danger" data-action="discard-game" type="button">
-        ${ui.confirmingDiscardGame ? 'Discard this game?' : 'Discard this game'}
+      <button class="btn btn-danger" data-action="discard-game" data-id="${gameId}" type="button">
+        ${isConfirming ? 'Discard this game?' : 'Discard this game'}
       </button>
       <div class="roster-count">
-        ${ui.confirmingDiscardGame
+        ${isConfirming
           ? 'Tap again to discard. Every serve in all three matches is thrown away. The roster is kept.'
           : 'Removes this game and all of its recorded serves. The roster is not affected.'}
       </div>

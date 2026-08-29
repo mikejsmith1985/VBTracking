@@ -45,7 +45,28 @@ export function gameFormView(state, ui) {
       <div class="lineup-actions">
         <button class="btn btn-primary" type="submit">${isNew ? 'Add this game' : 'Save'}</button>
       </div>
-    </form>`
+    </form>
+    ${isNew ? '' : discardControl(game, ui)}`
+}
+
+/**
+ * Any game can be thrown away from here, not only the one in progress. A game entered
+ * twice -- the same match imported from paper and also tracked live -- would otherwise
+ * count twice in the season with no way to undo it.
+ */
+function discardControl(game, ui) {
+  const isConfirming = ui.confirmingDiscardGame === game.id
+  return `
+    <div class="danger-zone">
+      <button class="btn btn-danger" data-action="discard-game" data-id="${game.id}" type="button">
+        ${isConfirming ? 'Discard this game?' : 'Discard this game'}
+      </button>
+      <div class="roster-count">
+        ${isConfirming
+          ? 'Tap again to discard. Everything recorded in this game is thrown away. The roster and the rest of the season are untouched.'
+          : 'Removes this game and its figures from the season. Use it if the same game was entered twice.'}
+      </div>
+    </div>`
 }
 
 function resultChoice(game) {

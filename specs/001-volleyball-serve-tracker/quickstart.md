@@ -196,3 +196,17 @@ Per Article VIII no GitHub Actions workflow is authored for this; there is nothi
 | 7 | Over-5 turns recorded in full and flagged | V-4 |
 | 8 | Operable one-handed in portrait | V-8 on the device |
 | 9 | `CHANGELOG.md` updated | Article VI |
+
+---
+
+## Offline verification — dropped, deliberately
+
+Airplane-mode verification is **no longer a release gate**, at the stakeholder's decision:
+the app is expected to become a native iOS app before connectivity in a gymnasium
+genuinely matters, so paying for the verification now buys little.
+
+**The app is still offline-capable.** The service worker, the precache list and the
+zero-network-request design are all unchanged, and the precache completeness test still
+runs on every commit. What has gone is the requirement to *prove it on the device* before
+shipping. If offline behaviour ever regresses it will be found in use rather than in a
+checklist — an accepted trade, not an oversight.
