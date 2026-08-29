@@ -14,8 +14,16 @@ export const EVENT = Object.freeze({
   ADD_PLAYER: 'ADD_PLAYER',
   EDIT_PLAYER: 'EDIT_PLAYER',
   REMOVE_PLAYER: 'REMOVE_PLAYER',
+  REMOVE_FROM_SEASON: 'REMOVE_FROM_SEASON',
+  CREATE_SEASON: 'CREATE_SEASON',
+  RENAME_SEASON: 'RENAME_SEASON',
+  ACTIVATE_SEASON: 'ACTIVATE_SEASON',
   START_GAME: 'START_GAME',
   DISCARD_GAME: 'DISCARD_GAME',
+  SET_GAME_CONTEXT: 'SET_GAME_CONTEXT',
+  SET_GAME_NOTES: 'SET_GAME_NOTES',
+  ADD_HISTORICAL_GAME: 'ADD_HISTORICAL_GAME',
+  EDIT_HISTORICAL_GAME: 'EDIT_HISTORICAL_GAME',
   SET_LINEUP: 'SET_LINEUP',
   CLEAR_LINEUP: 'CLEAR_LINEUP',
   SUBSTITUTE: 'SUBSTITUTE',
@@ -33,24 +41,117 @@ export const MATCHES_PER_GAME = 3
 /** Players on court, and therefore positions in the serving order. */
 export const LINEUP_SIZE = 6
 
-/** Records that a player joined the roster. */
-export function addPlayer(id, name, number) {
-  return { t: EVENT.ADD_PLAYER, id, name, number }
+/** How a match ended. Silence is not a defeat, so an unmarked match is undecided. */
+export const MATCH_RESULT = Object.freeze({ WON: 'won', LOST: 'lost', UNDECIDED: 'undecided' })
+
+/** How a game was recorded: serve by serve, or as figures copied from paper. */
+export const GAME_KIND = Object.freeze({ TRACKED: 'tracked', HISTORICAL: 'historical' })
+
+/**
+ * The format a season is played under. Recorded with each season so a later release can
+ * vary it without changing stored data. Not editable in this release.
+ */
+export const DEFAULT_FORMAT = Object.freeze({
+  matchesPerGame: MATCHES_PER_GAME,
+  targetScore: 21,
+  playersOnCourt: LINEUP_SIZE,
+})
+
+/**
+ * Records a player joining a season's roster: the person is created if new, and given the
+ * number they wear THIS season. A number belongs to the membership, never to the person --
+ * next season the same child may wear a different one for a different team.
+ */
+export function addPlayer(id, name, number, seasonId) {
+  return { t: EVENT.ADD_PLAYER, id, name, number, seasonId }
 }
 
-/** Records a correction to a player's name or jersey number. The id never changes. */
-export function editPlayer(id, name, number) {
-  return { t: EVENT.EDIT_PLAYER, id, name, number }
+/** Corrects a player's name (career-wide) and their number (this season only). */
+export function editPlayer(id, name, number, seasonId) {
+  return { t: EVENT.EDIT_PLAYER, id, name, number, seasonId }
 }
 
-/** Records that a player left the roster, discarding their recorded turns. */
-export function removePlayer(id) {
-  return { t: EVENT.REMOVE_PLAYER, id }
+/**
+ * The destructive removal kept from releases 001 and 002: it discards the player's
+ * recorded turns, as its confirmation warned. Retained only so replaying an older log
+ * reproduces the figures it produced then; release 003 uses removeFromSeason instead.
+ */
+export function removePlayer(id, seasonId) {
+  return { t: EVENT.REMOVE_PLAYER, id, seasonId }
 }
 
-/** Records the start of a new game, which opens its first match. */
-export function startGame(id) {
-  return { t: EVENT.START_GAME, id }
+/**
+ * Records a player leaving a season's roster. The person continues to exist, and every
+ * serve they recorded stays theirs -- leaving a team is not the same as never playing.
+ */
+export function removeFromSeason(playerId, seasonId) {
+  return { t: EVENT.REMOVE_FROM_SEASON, playerId, seasonId }
+}
+
+/** Records a new season, for a named team, played under a given format. */
+export function createSeason(id, name, team, format = DEFAULT_FORMAT) {
+  return { t: EVENT.CREATE_SEASON, id, name, team, format: { ...format } }
+}
+
+/** Corrects a season's name or the team it is played for. */
+export function renameSeason(id, name, team) {
+  return { t: EVENT.RENAME_SEASON, id, name, team }
+}
+
+/** Records which season new games now belong to. */
+export function activateSeason(id) {
+  return { t: EVENT.ACTIVATE_SEASON, id }
+}
+
+/** Records the start of a new game within a season, which opens its first match. */
+export function startGame(id, seasonId) {
+  return { t: EVENT.START_GAME, id, seasonId }
+}
+
+/** Records who was played, where, on which court, and when. */
+export function setGameContext(gameId, context) {
+  return { t: EVENT.SET_GAME_CONTEXT, gameId, ...normaliseContext(context) }
+}
+
+/** Records what went well and what to work on. */
+export function setGameNotes(gameId, notes) {
+  return { t: EVENT.SET_GAME_NOTES, gameId, notes }
+}
+
+/**
+ * Records a game that was never tracked serve by serve -- figures copied from paper.
+ * Entries are per player, game level: serves in and serves out, and nothing else, because
+ * nothing else was written down.
+ */
+export function addHistoricalGame(id, seasonId, context, entries, notes = '') {
+  return {
+    t: EVENT.ADD_HISTORICAL_GAME,
+    id,
+    seasonId,
+    ...normaliseContext(context),
+    entries: entries.map((entry) => ({ playerId: entry.playerId, in: entry.in, out: entry.out })),
+    notes,
+  }
+}
+
+/** Corrects a historical game's context, figures, or notes. */
+export function editHistoricalGame(id, context, entries, notes) {
+  return {
+    t: EVENT.EDIT_HISTORICAL_GAME,
+    id,
+    ...normaliseContext(context),
+    entries: entries.map((entry) => ({ playerId: entry.playerId, in: entry.in, out: entry.out })),
+    notes,
+  }
+}
+
+function normaliseContext(context = {}) {
+  return {
+    date: context.date ?? null,
+    opponent: context.opponent ?? '',
+    location: context.location ?? '',
+    court: context.court ?? '',
+  }
 }
 
 /** Records that a game and everything recorded in it was deliberately thrown away. */
@@ -83,9 +184,17 @@ export function recordServe(outcome) {
   return { t: EVENT.RECORD_SERVE, outcome }
 }
 
-/** Records the operator declaring the current match finished. */
-export function endMatch() {
-  return { t: EVENT.END_MATCH }
+/**
+ * Records that the operator declared the current match finished, and how it went.
+ * The opponent's score is still not tracked, so the app cannot know -- one tap does.
+ */
+export function endMatch(result = MATCH_RESULT.UNDECIDED) {
+  return { t: EVENT.END_MATCH, result }
+}
+
+/** True when the value is a result the app recognises. */
+export function isValidResult(result) {
+  return Object.values(MATCH_RESULT).includes(result)
 }
 
 /** True when the outcome is one the app recognises. */

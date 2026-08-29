@@ -3,22 +3,27 @@
 import { createStore } from '../state/store.js'
 import { createLocalStoragePersistence } from '../state/persistence.js'
 import { buildExport, exportFilename, parseImport } from '../state/backup.js'
+import { parseHistoricalGames } from '../state/historical-import.js'
 import * as E from '../domain/events.js'
-import { currentGame, currentMatch, currentLineup, lineupPositionOf } from '../domain/reducer.js'
+import {
+  currentGame, currentMatch, currentLineup, lineupPositionOf,
+  activeSeason, seasonMembers, gameById,
+} from '../domain/reducer.js'
 import { activeServerId } from '../domain/stats.js'
 import * as track from './screens/track.js'
 import * as stats from './screens/stats.js'
 import * as roster from './screens/roster.js'
+import * as season from './screens/season.js'
+import { gameFormView, readGameForm } from './screens/gameform.js'
 
-const SCREENS = { track, stats, roster }
+const SCREENS = { track, stats, roster, season }
 
 // Two serves cannot physically occur this close together, so a tap inside this window is
-// a stray repeat -- a double-tap on the same control -- and is ignored (FR-023 of v1).
+// a stray repeat -- a double-tap on the same control -- and is ignored.
 const REPEAT_TAP_GUARD_MS = 300
 
 // Two taps on the same player chip inside this window are a substitution gesture rather
-// than two separate selections. `dblclick` is unreliable on touch and fights the
-// double-tap-zoom suppression, so taps are counted here instead.
+// than two separate selections.
 const DOUBLE_TAP_MS = 400
 
 const STORAGE_PROBLEMS = {
@@ -36,10 +41,13 @@ const ui = {
   showLineup: false,
   lineupDraft: null,
   lineupDismissedFor: null,
+  careerPlayerId: null,
+  editingGameId: null,
   confirmingRemoveId: null,
   confirmingEndMatch: false,
   confirmingDiscardGame: false,
   confirmingImport: false,
+  confirmingHistoricalImport: false,
   message: null,
 }
 
@@ -47,9 +55,9 @@ const ui = {
 // anything else disarms them, so a confirmation is never left hanging.
 const CONFIRMATIONS = {
   'remove-player': 'confirmingRemoveId',
-  'end-match': 'confirmingEndMatch',
   'discard-game': 'confirmingDiscardGame',
   'import-data': 'confirmingImport',
+  'import-historical': 'confirmingHistoricalImport',
 }
 
 const screenElement = document.getElementById('screen')
@@ -63,7 +71,13 @@ let pendingSelect = null
 
 function render() {
   const focus = captureFocus()
-  const view = SCREENS[ui.tab].view({ state: store.getState(), store, ui })
+  const state = store.getState()
+
+  // Editing a game's record takes over the screen. It is done between matches, with care,
+  // and none of it belongs beside the controls tapped during a rally.
+  const view = ui.editingGameId
+    ? { screen: gameFormView(state, ui), dock: '' }
+    : SCREENS[ui.tab].view({ state, store, ui })
 
   screenElement.innerHTML = view.screen
   dockElement.innerHTML = view.dock ?? ''
@@ -109,17 +123,34 @@ function restoreFocus(focus) {
 // --- Actions ------------------------------------------------------------------
 
 const ACTIONS = {
-  tab: (element) => { ui.tab = element.dataset.tab; ui.pickerOpen = false; ui.showLineup = false },
+  tab: (element) => {
+    ui.tab = element.dataset.tab
+    ui.pickerOpen = false
+    ui.showLineup = false
+    ui.careerPlayerId = null
+    ui.editingGameId = null
+  },
   scope: (element) => { ui.scope = element.dataset.scope },
   'toggle-picker': () => { ui.pickerOpen = !ui.pickerOpen; store.clearSubstitution() },
-  'start-game': () => dispatch(E.startGame(newId())),
+  'start-game': () => dispatch(E.startGame(newId(), store.getState().activeSeasonId)),
   'select-server': (element) => selectOrSubstitute(element.dataset.id),
   serve: (element) => recordServe(element.dataset.outcome),
   undo: () => { store.undo() },
-  'end-match': () => confirmThen('confirmingEndMatch', true, () => dispatch(E.endMatch())),
+
+  'end-match': (element) => {
+    const result = element.dataset.result
+    if (!result) { ui.confirmingEndMatch = true; return }
+    ui.confirmingEndMatch = false
+    dispatch(E.endMatch(result))
+  },
+  'cancel-end-match': () => { ui.confirmingEndMatch = false },
+
   'remove-player': (element) => {
     const playerId = element.dataset.id
-    confirmThen('confirmingRemoveId', playerId, () => dispatch(E.removePlayer(playerId)))
+    // Non-destructive since release 003: they leave this season's roster, and every serve
+    // they recorded stays theirs.
+    confirmThen('confirmingRemoveId', playerId, () =>
+      dispatch(E.removeFromSeason(playerId, store.getState().activeSeasonId)))
   },
   'discard-game': () => {
     const game = currentGame(store.getState())
@@ -130,9 +161,7 @@ const ACTIONS = {
   'choose-lineup': (element) => { ui.lineupDraft = [...draft(), element.dataset.id] },
   'unchoose-lineup': (element) => { ui.lineupDraft = draft().filter((id) => id !== element.dataset.id) },
   'confirm-lineup': () => {
-    const result = store.dispatch(E.setLineup(draft()))
-    ui.message = result.accepted ? null : result.reason
-    if (result.accepted) { ui.lineupDraft = null; ui.pickerOpen = false }
+    if (dispatch(E.setLineup(draft()))) { ui.lineupDraft = null; ui.pickerOpen = false }
   },
   'skip-lineup': () => {
     const state = store.getState()
@@ -146,7 +175,15 @@ const ACTIONS = {
   'close-lineup': () => { ui.showLineup = false },
 
   'export-data': () => { void exportData() },
-  'import-data': () => confirmThen('confirmingImport', true, () => chooseImportFile()),
+  'import-data': () => confirmThen('confirmingImport', true, () => chooseFile(readBackup)),
+  'import-historical': () => confirmThen('confirmingHistoricalImport', true, () => chooseFile(readHistorical)),
+
+  'open-career': (element) => { ui.careerPlayerId = element.dataset.id },
+  'close-career': () => { ui.careerPlayerId = null },
+  'open-game': (element) => { ui.editingGameId = element.dataset.id },
+  'close-game': () => { ui.editingGameId = null },
+  'add-historical': () => { ui.editingGameId = 'new-historical' },
+  'activate-season': (element) => dispatch(E.activateSeason(element.dataset.id)),
 }
 
 function draft() {
@@ -164,12 +201,9 @@ function recordServe(outcome) {
  * A tap on a player chip is either "this player serves now" or the first half of a
  * substitution, and the app cannot know which until it sees whether a second tap follows.
  *
- * Committing the first tap immediately and undoing it on the second would leave a stray
- * selection in the log and close the picker before the second tap could land. So when a
- * substitution is possible, the selection waits out the double-tap window instead. That
- * delay costs nothing on the path that matters: with a lineup set the rotation chooses the
- * server, so tapping a chip is a deliberate override or a substitution, never the
- * one-tap side-out. Without a lineup there is nothing to disambiguate and a tap acts at once.
+ * When a substitution is possible the selection waits out the double-tap window. That delay
+ * costs nothing on the path that matters: with a lineup set the rotation chooses the server,
+ * so tapping a chip is a deliberate override or a substitution, never the one-tap side-out.
  */
 function selectOrSubstitute(playerId) {
   const armed = store.pendingSubstitution()
@@ -207,9 +241,7 @@ function completeSubstitution(outPlayerId, inPlayerId) {
     store.clearSubstitution()
     return
   }
-  const result = store.dispatch(E.substitute(outPlayerId, inPlayerId))
-  ui.message = result.accepted ? null : result.reason
-  if (result.accepted) ui.pickerOpen = false
+  if (dispatch(E.substitute(outPlayerId, inPlayerId))) ui.pickerOpen = false
 }
 
 function commitSelect(playerId) {
@@ -238,12 +270,14 @@ function disarmed(armedValue) {
   return typeof armedValue === 'boolean' ? false : null
 }
 
+/** Dispatches and surfaces any refusal. Returns whether it was accepted. */
 function dispatch(event) {
   const result = store.dispatch(event)
   ui.message = result.accepted ? null : result.reason
+  return result.accepted
 }
 
-// --- Backup -------------------------------------------------------------------
+// --- Files --------------------------------------------------------------------
 
 /**
  * Offers the backup through the native share sheet when the device can share files --
@@ -279,18 +313,18 @@ function downloadFallback(text, filename) {
   URL.revokeObjectURL(url)
 }
 
-function chooseImportFile() {
+function chooseFile(handler) {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'application/json,.json'
   input.addEventListener('change', () => {
     const file = input.files?.[0]
-    if (file) void readImport(file)
+    if (file) void withFileText(file, handler)
   })
   input.click()
 }
 
-async function readImport(file) {
+async function withFileText(file, handler) {
   let text
   try {
     text = await file.text()
@@ -299,19 +333,107 @@ async function readImport(file) {
     render()
     return
   }
+  handler(text)
+  render()
+}
 
+/** A backup REPLACES everything. Confirmed before the picker ever opened. */
+function readBackup(text) {
   const parsed = parseImport(text)
   if (!parsed.ok) {
     // Nothing has been written at this point, so existing data is untouched by definition.
     ui.message = parsed.reason
-    render()
     return
   }
-
   store.replaceAll(parsed.events)
   ui.message = null
   ui.tab = 'track'
+}
+
+/**
+ * A batch of games from paper ADDS to the season. All or nothing: a partial import would
+ * leave the operator unable to tell what landed.
+ */
+function readHistorical(text) {
+  const state = store.getState()
+  const current = activeSeason(state)
+  const withMembers = current && { ...current, members: seasonMembers(state, current.id) }
+
+  const parsed = parseHistoricalGames(text, withMembers, newId)
+  if (!parsed.ok) {
+    ui.message = parsed.reason
+    return
+  }
+
+  for (const event of parsed.events) dispatch(event)
+  ui.message = `Added ${parsed.events.length} game${parsed.events.length === 1 ? '' : 's'}.`
+  ui.tab = 'season'
+}
+
+// --- Forms --------------------------------------------------------------------
+
+const FORMS = {
+  'add-player-form': submitAddPlayer,
+  'create-season-form': submitCreateSeason,
+  'rename-season-form': submitRenameSeason,
+  'game-form': submitGameForm,
+}
+
+function submitAddPlayer(form) {
+  const name = form.querySelector('[name="name"]').value
+  const number = form.querySelector('[name="number"]').value
+
+  if (dispatch(E.addPlayer(newId(), name, number, store.getState().activeSeasonId))) form.reset()
+
   render()
+  document.querySelector('[data-focus="add-number"]')?.focus()
+}
+
+function submitCreateSeason(form) {
+  const id = newId()
+  const name = form.querySelector('[name="name"]').value
+  const team = form.querySelector('[name="team"]').value
+
+  if (!dispatch(E.createSeason(id, name, team))) return
+  dispatch(E.activateSeason(id))
+  form.reset()
+}
+
+function submitRenameSeason(form) {
+  dispatch(E.renameSeason(
+    store.getState().activeSeasonId,
+    form.querySelector('[name="name"]').value,
+    form.querySelector('[name="team"]').value,
+  ))
+}
+
+/** Saves a game's context, notes, and -- for a game from paper -- its serve figures. */
+function submitGameForm(form) {
+  const state = store.getState()
+  const current = activeSeason(state)
+  const read = readGameForm(form, seasonMembers(state, current?.id))
+
+  if (ui.editingGameId === 'new-historical') {
+    if (!dispatch(historicalEvent(E.addHistoricalGame(newId(), current.id, read.context, read.entries, read.notes), read))) return
+    ui.editingGameId = null
+    ui.tab = 'season'
+    return
+  }
+
+  const game = gameById(state, ui.editingGameId)
+  if (!game) { ui.editingGameId = null; return }
+
+  if (game.kind === E.GAME_KIND.HISTORICAL) {
+    if (!dispatch(historicalEvent(E.editHistoricalGame(game.id, read.context, read.entries, read.notes), read))) return
+  } else {
+    if (!dispatch(E.setGameContext(game.id, read.context))) return
+    if (!dispatch(E.setGameNotes(game.id, read.notes))) return
+  }
+  ui.editingGameId = null
+}
+
+function historicalEvent(event, read) {
+  return { ...event, result: read.result }
 }
 
 // --- Wiring -------------------------------------------------------------------
@@ -336,19 +458,11 @@ document.addEventListener('click', (event) => {
 })
 
 document.addEventListener('submit', (event) => {
-  if (event.target.id !== 'add-player-form') return
+  const handler = FORMS[event.target.id]
+  if (!handler) return
   event.preventDefault()
-
-  const form = event.target
-  const name = form.querySelector('[name="name"]').value
-  const number = form.querySelector('[name="number"]').value
-
-  const result = store.dispatch(E.addPlayer(newId(), name, number))
-  ui.message = result.accepted ? null : result.reason
-  if (result.accepted) form.reset()
-
+  handler(event.target)
   render()
-  document.querySelector('[data-focus="add-number"]')?.focus()
 })
 
 document.addEventListener('change', (event) => {
@@ -359,7 +473,7 @@ document.addEventListener('change', (event) => {
   if (!player) return
 
   const edited = { ...player, [field.dataset.field]: field.value }
-  dispatch(E.editPlayer(player.id, edited.name, edited.number))
+  dispatch(E.editPlayer(player.id, edited.name, edited.number, store.getState().activeSeasonId))
   render()
 })
 
@@ -368,6 +482,7 @@ function clearPendingConfirmations(action) {
   for (const [owner, flag] of Object.entries(CONFIRMATIONS)) {
     if (owner !== action) ui[flag] = disarmed(ui[flag])
   }
+  if (action !== 'end-match') ui.confirmingEndMatch = false
   ui.message = null
 }
 

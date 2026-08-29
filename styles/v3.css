@@ -1,0 +1,250 @@
+/* Season, career, and the game form. Loaded after app.css. */
+
+/* --- Season header and record ------------------------------------------- */
+
+.season-head { margin-bottom: 14px; }
+.season-name { font-size: 24px; font-weight: 800; line-height: 1.1; }
+.season-team { margin-top: 2px; font-size: 13px; color: var(--muted); }
+
+.roster-season {
+  margin-bottom: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.record-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.record-line b { font-size: 28px; line-height: 1; font-variant-numeric: tabular-nums; }
+.record-line span { font-size: 12px; color: var(--muted); }
+
+.opponent-row {
+  display: flex;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.opponent-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opponent-record { font-variant-numeric: tabular-nums; color: var(--muted); }
+
+/* --- Game list ----------------------------------------------------------- */
+
+.game-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 4px 10px;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 10px;
+  margin-bottom: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.game-row:active { background: var(--surface-2); }
+.game-when { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.game-who { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.game-figures { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+
+.result-pill {
+  align-self: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.result-won { background: var(--point); color: #16200a; }
+.result-lost { background: var(--danger); color: #2a0d13; }
+.result-undecided { background: var(--surface-3); color: var(--muted); }
+
+.kind-pill {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- Season admin -------------------------------------------------------- */
+
+.season-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.season-form input {
+  min-height: var(--tap-min);
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.season-form button {
+  min-height: var(--tap-min);
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #04222a;
+  font-weight: 800;
+}
+
+/* --- Career -------------------------------------------------------------- */
+
+.linked-player {
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  text-align: left;
+}
+
+.figure-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.figure {
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.figure-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.figure-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 19px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* A figure that was never recorded. Muted, so it never reads as a poor result. */
+.figure-absent { color: var(--muted); font-weight: 400; }
+
+/* --- Match result -------------------------------------------------------- */
+
+.end-match-choice {
+  padding: 12px;
+  margin-bottom: 14px;
+  border: 1px solid var(--warn);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.result-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+.btn-won { background: var(--point); color: #16200a; font-weight: 800; }
+.btn-lost { background: var(--danger); color: #2a0d13; font-weight: 800; }
+
+/* --- Game form ----------------------------------------------------------- */
+
+.context-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.context-grid .wide { grid-column: 1 / -1; }
+
+.context-grid label {
+  display: grid;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.context-grid input,
+#game-form textarea {
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+}
+
+#game-form textarea { min-height: 160px; line-height: 1.5; resize: vertical; }
+
+.result-choice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
+
+.result-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--tap-min);
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.result-option:has(input:checked) { border-color: var(--accent); background: #0d2f38; }
+
+.serve-entry-head {
+  display: grid;
+  grid-template-columns: 34px 1fr 62px 62px;
+  gap: 8px;
+  padding: 0 0 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.serve-entry-row {
+  display: grid;
+  grid-template-columns: 34px 1fr 62px 62px;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 0;
+}
+
+.serve-entry-name { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+
+.serve-entry-row input {
+  min-height: var(--tap-min);
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}

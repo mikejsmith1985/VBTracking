@@ -2,14 +2,14 @@
 // recorded season. It is pure -- it transforms an event array and knows nothing about
 // storage -- so every branch is testable without a browser.
 import { describe, it, expect } from 'vitest'
-import { SCHEMA_VERSION, MIGRATIONS, migrate } from '../../src/domain/migrations.js'
+import { SCHEMA_VERSION, MIGRATIONS, migrate, MIGRATED_SEASON_ID } from '../../src/domain/migrations.js'
 import * as E from '../../src/domain/events.js'
 
 const sample = [E.addPlayer('p1', 'Rivera', '7'), E.startGame('g1'), E.selectServer('p1')]
 
 describe('the chain', () => {
-  it('declares a version at or above 2', () => {
-    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(2)
+  it('declares a version at or above 3', () => {
+    expect(SCHEMA_VERSION).toBeGreaterThanOrEqual(3)
   })
 
   it('has a step for every version below the current one', () => {
@@ -30,10 +30,12 @@ describe('migrate', () => {
     expect(result.events).toEqual(sample)
   })
 
-  it('carries a release-1 log forward', () => {
+  it('carries a release-1 log forward through every step', () => {
     const result = migrate(sample, 1)
     expect(result.ok).toBe(true)
-    expect(result.events).toEqual(sample)
+    // Gathered into a season, with every original event still present and in order.
+    expect(result.events[0].t).toBe('CREATE_SEASON')
+    expect(result.events.slice(1).map((event) => event.t)).toEqual(sample.map((event) => event.t))
   })
 
   it('never mutates the array it is given', () => {
@@ -81,5 +83,76 @@ describe('migrate', () => {
     const result = migrate([], 1, { migrations: chain, targetVersion: 3 })
     expect(result.ok).toBe(false)
     expect(result.events).toEqual([])
+  })
+})
+
+
+describe('the 2 -> 3 step', () => {
+  const legacy = [
+    { t: 'ADD_PLAYER', id: 'p1', name: 'Rivera', number: '7' },
+    { t: 'ADD_PLAYER', id: 'p2', name: 'Okafor', number: '3' },
+    { t: 'EDIT_PLAYER', id: 'p1', name: 'Rivera-Smith', number: '17' },
+    { t: 'START_GAME', id: 'g1' },
+    { t: 'SET_LINEUP', playerIds: ['p1', 'p2'] },
+    { t: 'SELECT_SERVER', playerId: 'p1' },
+    { t: 'RECORD_SERVE', outcome: 'IN_POINT' },
+    { t: 'END_MATCH' },
+    { t: 'REMOVE_PLAYER', id: 'p2' },
+  ]
+  const carried = migrate(legacy, 2).events
+
+  it('prepends exactly one season', () => {
+    expect(carried[0].t).toBe('CREATE_SEASON')
+    expect(carried.filter((event) => event.t === 'CREATE_SEASON')).toHaveLength(1)
+    expect(carried).toHaveLength(legacy.length + 1)
+  })
+
+  it('gives the season a name, a team, and the format that was played', () => {
+    expect(carried[0].id).toBe(MIGRATED_SEASON_ID)
+    expect(carried[0].name).toBeTruthy()
+    expect(carried[0].team).toBeTruthy()
+    expect(carried[0].format).toEqual({ matchesPerGame: 3, targetScore: 21, playersOnCourt: 6 })
+  })
+
+  it('stamps a season onto membership and game events (FR-002, FR-004)', () => {
+    for (const type of ['ADD_PLAYER', 'EDIT_PLAYER', 'REMOVE_PLAYER', 'START_GAME']) {
+      for (const event of carried.filter((each) => each.t === type)) {
+        expect(event.seasonId, type).toBe(MIGRATED_SEASON_ID)
+      }
+    }
+  })
+
+  it('makes every past match undecided, never lost', () => {
+    for (const event of carried.filter((each) => each.t === 'END_MATCH')) {
+      expect(event.result).toBe('undecided')
+    }
+  })
+
+  it('leaves serve events completely untouched', () => {
+    const before = legacy.filter((e) => ['SET_LINEUP', 'SELECT_SERVER', 'RECORD_SERVE'].includes(e.t))
+    const after = carried.filter((e) => ['SET_LINEUP', 'SELECT_SERVER', 'RECORD_SERVE'].includes(e.t))
+    expect(after).toEqual(before)
+  })
+
+  it('renames nothing and removes nothing -- order is preserved after the prepend', () => {
+    expect(carried.slice(1).map((event) => event.t)).toEqual(legacy.map((event) => event.t))
+  })
+
+  it("preserves each player's jersey number, to become that season's number", () => {
+    const added = carried.filter((event) => event.t === 'ADD_PLAYER')
+    expect(added.map((event) => event.number)).toEqual(['7', '3'])
+  })
+
+  it('does not mutate the log it was given', () => {
+    const original = JSON.parse(JSON.stringify(legacy))
+    migrate(legacy, 2)
+    expect(legacy).toEqual(original)
+  })
+
+  it('carries a release-1 log all the way through both steps', () => {
+    const result = migrate(legacy, 1)
+    expect(result.ok).toBe(true)
+    expect(result.events[0].t).toBe('CREATE_SEASON')
+    expect(result.events.filter((event) => event.t === 'ADD_PLAYER')[0].seasonId).toBe(MIGRATED_SEASON_ID)
   })
 })

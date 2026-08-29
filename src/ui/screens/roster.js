@@ -1,6 +1,7 @@
 // Roster setup. Shows exactly as many rows as there are players -- never a placeholder
 // row (FR-003) -- and confirms before a deletion that would discard recorded serves.
 import { MAX_ROSTER } from '../../domain/events.js'
+import { activeSeason } from '../../domain/reducer.js'
 import { esc } from '../html.js'
 
 /** The roster screen. It has no dock: nothing here is used mid-rally. */
@@ -8,7 +9,14 @@ export function view(context) {
   const { state, ui } = context
   const isFull = state.roster.length >= MAX_ROSTER
 
-  return { screen: addForm(isFull) + list(state, ui) + count(state, isFull), dock: '' }
+  return { screen: seasonLine(state) + addForm(isFull) + list(state, ui) + count(state, isFull), dock: '' }
+}
+
+/** The roster belongs to a season now, so the screen says which one. */
+function seasonLine(state) {
+  const season = activeSeason(state)
+  if (!season) return ''
+  return `<div class="roster-season">${esc(season.name)} — ${esc(season.team)}</div>`
 }
 
 function addForm(isFull) {
@@ -47,7 +55,7 @@ function row(player, ui) {
 }
 
 function confirmNote() {
-  return `<div class="roster-count">Tap again to remove. Their recorded serves will be discarded.</div>`
+  return `<div class="roster-count">Tap again to take them off this season's roster. They stay in the app, and every serve they recorded stays theirs.</div>`
 }
 
 function count(state, isFull) {

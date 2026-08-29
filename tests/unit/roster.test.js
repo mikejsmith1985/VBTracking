@@ -63,7 +63,7 @@ describe('a full roster', () => {
 })
 
 describe('removing a player', () => {
-  it('takes two taps and states what will be lost (FR-006)', () => {
+  it('takes two taps, and says the person and their serves survive (FR-023)', () => {
     const state = build(roster(2))
     const playerId = state.roster[0].id
 
@@ -73,7 +73,8 @@ describe('removing a player', () => {
 
     const armed = render(state, { confirmingRemoveId: playerId }).screen
     expect(armed).toContain('Delete?')
-    expect(armed).toContain('recorded serves will be discarded')
+    expect(armed).toContain('off this season')
+    expect(armed).toContain('stays theirs')
   })
 
   it('arms only the row that was tapped', () => {

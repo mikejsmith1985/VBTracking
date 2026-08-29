@@ -77,15 +77,15 @@ button {
 .tabbar {
   flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   border-top: 1px solid var(--line);
   background: var(--surface);
 }
 
 .tab {
   min-height: var(--tap-min);
-  padding: 10px 4px;
-  font-size: 13px;
+  padding: 10px 2px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;

@@ -1,12 +1,18 @@
 // The rulebook. Every rule in the specification lives here and nowhere else.
 // Pure: no DOM, no storage, no clock, no randomness. State is never mutated in place,
 // because undo works by replaying the event log from empty.
-import { EVENT, OUTCOME, MAX_ROSTER, MATCHES_PER_GAME, LINEUP_SIZE, isValidOutcome } from './events.js'
+import {
+  EVENT, OUTCOME, MAX_ROSTER, MATCHES_PER_GAME, LINEUP_SIZE,
+  MATCH_RESULT, GAME_KIND, DEFAULT_FORMAT, isValidOutcome, isValidResult,
+} from './events.js'
 import { colorIndexForTurn } from './palette.js'
+
+/** The season created for an operator who has not made one. Renameable afterwards. */
+const IMPLICIT_SEASON = { id: 'season-1', name: 'Season 1', team: 'My Team' }
 
 /** The state of an application that has recorded nothing. */
 export function emptyState() {
-  return { roster: [], games: [], currentGameId: null }
+  return { players: [], seasons: [], activeSeasonId: null, games: [], currentGameId: null, roster: [] }
 }
 
 /** Rebuilds derived state from an event log. Deterministic for a given log. */
@@ -20,19 +26,31 @@ export function replay(events) {
  */
 export function applyEvent(state, event) {
   if (rejectionReason(state, event)) return state
+  const next = transition(state, event)
+  return next === state ? state : withActiveRoster(next)
+}
 
+function transition(state, event) {
   switch (event.t) {
+    case EVENT.CREATE_SEASON: return withSeasonCreated(state, event)
+    case EVENT.RENAME_SEASON: return withSeasonRenamed(state, event)
+    case EVENT.ACTIVATE_SEASON: return { ...state, activeSeasonId: event.id }
     case EVENT.ADD_PLAYER: return withPlayerAdded(state, event)
     case EVENT.EDIT_PLAYER: return withPlayerEdited(state, event)
     case EVENT.REMOVE_PLAYER: return withPlayerRemoved(state, event)
+    case EVENT.REMOVE_FROM_SEASON: return withMembershipRemoved(state, event)
     case EVENT.START_GAME: return withGameStarted(state, event)
     case EVENT.DISCARD_GAME: return withGameDiscarded(state, event)
+    case EVENT.SET_GAME_CONTEXT: return withGameContext(state, event)
+    case EVENT.SET_GAME_NOTES: return withGameNotes(state, event)
+    case EVENT.ADD_HISTORICAL_GAME: return withHistoricalGameAdded(state, event)
+    case EVENT.EDIT_HISTORICAL_GAME: return withHistoricalGameEdited(state, event)
     case EVENT.SET_LINEUP: return withLineupSet(state, event)
     case EVENT.CLEAR_LINEUP: return withLineupCleared(state)
     case EVENT.SUBSTITUTE: return withSubstitution(state, event)
     case EVENT.SELECT_SERVER: return withServerSelected(state, event)
     case EVENT.RECORD_SERVE: return withServeRecorded(state, event)
-    case EVENT.END_MATCH: return withMatchEnded(state)
+    case EVENT.END_MATCH: return withMatchEnded(state, event)
     default: return state
   }
 }
@@ -47,34 +65,96 @@ export function rejectionReason(state, event) {
   if (!event || typeof event.t !== 'string') return 'Unrecognised event.'
 
   switch (event.t) {
+    case EVENT.CREATE_SEASON: return createSeasonRejection(state, event)
+    case EVENT.RENAME_SEASON:
+      return seasonById(state, event.id) ? namePresence(event.name, 'season') : 'That season does not exist.'
+    case EVENT.ACTIVATE_SEASON: return activateSeasonRejection(state, event)
     case EVENT.ADD_PLAYER: return addPlayerRejection(state, event)
     case EVENT.EDIT_PLAYER: return editPlayerRejection(state, event)
     case EVENT.REMOVE_PLAYER: return findPlayer(state, event.id) ? null : 'That player is not on the roster.'
+    case EVENT.REMOVE_FROM_SEASON: return removeFromSeasonRejection(state, event)
     case EVENT.START_GAME: return startGameRejection(state, event)
     case EVENT.DISCARD_GAME:
       return state.games.some((game) => game.id === event.id) ? null : 'That game no longer exists.'
+    case EVENT.SET_GAME_CONTEXT:
+    case EVENT.SET_GAME_NOTES:
+      return gameById(state, event.gameId) ? null : 'That game no longer exists.'
+    case EVENT.ADD_HISTORICAL_GAME: return historicalGameRejection(state, event, true)
+    case EVENT.EDIT_HISTORICAL_GAME: return historicalGameRejection(state, event, false)
     case EVENT.SET_LINEUP: return setLineupRejection(state, event)
     case EVENT.CLEAR_LINEUP: return currentMatch(state) ? null : 'No match is in progress.'
     case EVENT.SUBSTITUTE: return substituteRejection(state, event)
     case EVENT.SELECT_SERVER: return selectServerRejection(state, event)
     case EVENT.RECORD_SERVE: return recordServeRejection(state, event)
-    case EVENT.END_MATCH: return currentMatch(state) ? null : 'No match is in progress.'
+    case EVENT.END_MATCH: return endMatchRejection(state, event)
     default: return 'Unrecognised event.'
   }
 }
 
 // --- Readers -----------------------------------------------------------------
 
-/** The game currently being played, or null. */
-export function currentGame(state) {
-  if (!state.currentGameId) return null
-  return state.games.find((game) => game.id === state.currentGameId) ?? null
+/** The season new games belong to, or null. */
+export function activeSeason(state) {
+  return seasonById(state, state.activeSeasonId)
 }
 
-/** The match currently in progress within the current game, or null. */
+/** A season by id, or null. */
+export function seasonById(state, seasonId) {
+  return state.seasons.find((season) => season.id === seasonId) ?? null
+}
+
+/** A season's roster: player id, name, and the number worn THAT season. */
+export function seasonMembers(state, seasonId) {
+  const season = seasonById(state, seasonId)
+  if (!season) return []
+  return season.members
+    .map((member) => {
+      const player = playerById(state, member.playerId)
+      return player ? { id: player.id, name: player.name, number: member.number } : null
+    })
+    .filter(Boolean)
+}
+
+/** The number a player wore in a given season, or null. A number never lives on a person. */
+export function numberFor(state, seasonId, playerId) {
+  const season = seasonById(state, seasonId)
+  return season?.members.find((member) => member.playerId === playerId)?.number ?? null
+}
+
+/** A career player by id, or null. */
+export function playerById(state, playerId) {
+  return state.players.find((player) => player.id === playerId) ?? null
+}
+
+/** Every game recorded in a season. */
+export function gamesInSeason(state, seasonId) {
+  return state.games.filter((game) => game.seasonId === seasonId)
+}
+
+/** Every game a player appears in, across every season. */
+export function gamesForPlayer(state, playerId) {
+  return state.games.filter((game) => gameInvolves(game, playerId))
+}
+
+/** Every season a player has been a member of. */
+export function seasonsForPlayer(state, playerId) {
+  return state.seasons.filter((season) => season.members.some((member) => member.playerId === playerId))
+}
+
+/** A game by id, or null. */
+export function gameById(state, gameId) {
+  return state.games.find((game) => game.id === gameId) ?? null
+}
+
+/** The game currently being played, or null. */
+export function currentGame(state) {
+  return gameById(state, state.currentGameId)
+}
+
+/** The match in progress within the current game, or null. Historical games have none. */
 export function currentMatch(state) {
   const game = currentGame(state)
-  if (!game) return null
+  if (!game || game.kind !== GAME_KIND.TRACKED) return null
   return game.matches.find((match) => match.status === 'in_progress') ?? null
 }
 
@@ -84,7 +164,7 @@ export function openTurn(match) {
   return match.turns.find((turn) => turn.isOpen) ?? null
 }
 
-/** The player with the given id, or null. */
+/** A player on the ACTIVE season's roster, or null. Carries that season's number. */
 export function findPlayer(state, playerId) {
   return state.roster.find((player) => player.id === playerId) ?? null
 }
@@ -92,7 +172,7 @@ export function findPlayer(state, playerId) {
 /** True when the current game has played all three of its matches. */
 export function isGameComplete(state) {
   const game = currentGame(state)
-  if (!game) return false
+  if (!game || game.kind !== GAME_KIND.TRACKED) return false
   return game.matches.length === MATCHES_PER_GAME && game.matches.every((match) => match.status === 'ended')
 }
 
@@ -130,22 +210,64 @@ export function nextRotationPlayerId(match) {
 
 // --- Validation --------------------------------------------------------------
 
-function addPlayerRejection(state, event) {
-  if (state.roster.length >= MAX_ROSTER) return `The roster is full — ${MAX_ROSTER} players maximum.`
-  if (!isPresent(event.name)) return 'A player name is required.'
-  if (findPlayer(state, event.id)) return 'That player is already on the roster.'
+function createSeasonRejection(state, event) {
+  if (seasonById(state, event.id)) return 'That season already exists.'
+  return namePresence(event.name, 'season')
+}
+
+function activateSeasonRejection(state, event) {
+  if (!seasonById(state, event.id)) return 'That season does not exist.'
+  // Ending one match of three opens the next, so "end the match" would be misleading
+  // advice: the game is what has to finish.
+  if (currentMatch(state)) return 'Finish or discard the game in progress before switching seasons.'
   return null
 }
 
+function addPlayerRejection(state, event) {
+  const seasonId = seasonIdFor(state, event)
+  const season = seasonById(state, seasonId)
+  if (season) {
+    if (season.members.length >= MAX_ROSTER) return `The roster is full — ${MAX_ROSTER} players maximum.`
+    if (season.members.some((member) => member.playerId === event.id)) {
+      return 'That player is already on this season’s roster.'
+    }
+  }
+  return namePresence(event.name, 'player')
+}
+
 function editPlayerRejection(state, event) {
-  if (!findPlayer(state, event.id)) return 'That player is not on the roster.'
-  if (!isPresent(event.name)) return 'A player name is required.'
+  if (!playerById(state, event.id)) return 'That player does not exist.'
+  return namePresence(event.name, 'player')
+}
+
+function removeFromSeasonRejection(state, event) {
+  const seasonId = seasonIdFor(state, event)
+  if (!seasonById(state, seasonId)) return 'That season does not exist.'
+  if (numberFor(state, seasonId, event.playerId) === null) return 'That player is not on this roster.'
   return null
 }
 
 function startGameRejection(state, event) {
   if (state.games.some((game) => game.id === event.id)) return 'That game already exists.'
   if (currentMatch(state)) return 'Finish the current game before starting another.'
+  return null
+}
+
+function historicalGameRejection(state, event, isNew) {
+  const existing = gameById(state, event.id)
+  if (isNew && existing) return 'That game already exists.'
+  if (!isNew && !existing) return 'That game no longer exists.'
+  if (!Array.isArray(event.entries)) return 'A recorded game needs serve figures.'
+
+  const seasonId = isNew ? seasonIdFor(state, event) : existing.seasonId
+  for (const entry of event.entries) {
+    if (!Number.isInteger(entry.in) || !Number.isInteger(entry.out) || entry.in < 0 || entry.out < 0) {
+      return 'Serve counts must be whole numbers, and cannot be negative.'
+    }
+    if (numberFor(state, seasonId, entry.playerId) === null) {
+      return 'Every player in a recorded game must be on that season’s roster.'
+    }
+  }
   return null
 }
 
@@ -188,6 +310,16 @@ function recordServeRejection(state, event) {
   return null
 }
 
+function endMatchRejection(state, event) {
+  if (!currentMatch(state)) return 'No match is in progress.'
+  if (event.result !== undefined && !isValidResult(event.result)) return 'Unrecognised match result.'
+  return null
+}
+
+function namePresence(value, what) {
+  return isPresent(value) ? null : `A ${what} name is required.`
+}
+
 function isPresent(value) {
   return typeof value === 'string' && value.trim().length > 0
 }
@@ -196,63 +328,221 @@ function hasRecordedServe(match) {
   return match.turns.some((turn) => turn.serves.length > 0)
 }
 
+// --- Season transitions ------------------------------------------------------
+
+function withSeasonCreated(state, event) {
+  const season = {
+    id: event.id,
+    name: event.name.trim(),
+    team: String(event.team ?? '').trim(),
+    format: { ...DEFAULT_FORMAT, ...(event.format ?? {}) },
+    members: [],
+  }
+  return {
+    ...state,
+    seasons: [...state.seasons, season],
+    activeSeasonId: state.activeSeasonId ?? season.id,
+  }
+}
+
+function withSeasonRenamed(state, event) {
+  const seasons = state.seasons.map((season) =>
+    season.id === event.id
+      ? { ...season, name: event.name.trim(), team: String(event.team ?? season.team).trim() }
+      : season,
+  )
+  return { ...state, seasons }
+}
+
+/**
+ * A season always exists. Requiring the operator to create one before adding a player
+ * would be ceremony; the first is made for them and can be renamed.
+ */
+function ensureSeason(state) {
+  if (state.seasons.length > 0 && state.activeSeasonId) return state
+  return withSeasonCreated(state, { ...IMPLICIT_SEASON, format: DEFAULT_FORMAT })
+}
+
+function seasonIdFor(state, event) {
+  return event.seasonId ?? state.activeSeasonId ?? IMPLICIT_SEASON.id
+}
+
 // --- Roster transitions ------------------------------------------------------
 
+/**
+ * Adds a player to a season: the person is created when new, and given the number they
+ * wear THIS season. The number goes on the membership, never on the person -- next season
+ * the same child may wear a different one for a different team.
+ */
 function withPlayerAdded(state, event) {
-  const player = { id: event.id, name: event.name.trim(), number: String(event.number ?? '').trim() }
-  return { ...state, roster: [...state.roster, player] }
+  const seeded = ensureSeason(state)
+  const seasonId = seasonIdFor(seeded, event)
+  const name = event.name.trim()
+  const number = String(event.number ?? '').trim()
+
+  const players = playerById(seeded, event.id)
+    ? seeded.players
+    : [...seeded.players, { id: event.id, name }]
+
+  return {
+    ...seeded,
+    players,
+    seasons: mapSeason(seeded, seasonId, (season) => ({
+      ...season,
+      members: [...season.members, { playerId: event.id, number }],
+    })),
+  }
 }
 
+/** Corrects the name career-wide, and the number for this season only. */
 function withPlayerEdited(state, event) {
-  const roster = state.roster.map((player) =>
-    player.id === event.id
-      ? { ...player, name: event.name.trim(), number: String(event.number ?? '').trim() }
-      : player,
+  const seasonId = seasonIdFor(state, event)
+  const players = state.players.map((player) =>
+    player.id === event.id ? { ...player, name: event.name.trim() } : player,
   )
-  return { ...state, roster }
+  const seasons = mapSeason({ ...state, players }, seasonId, (season) => ({
+    ...season,
+    members: season.members.map((member) =>
+      member.playerId === event.id ? { ...member, number: String(event.number ?? '').trim() } : member,
+    ),
+  }))
+  return { ...state, players, seasons }
 }
 
-// Removing a player discards their recorded turns, as the deletion confirmation warns.
-// Remaining turns are renumbered so ordinals -- and therefore colours -- stay contiguous.
-// A lineup slot they held is emptied rather than silently refilled with someone else.
+/**
+ * The destructive removal kept from releases 001 and 002: it discards the player's
+ * recorded turns, as its confirmation warned.
+ *
+ * It is retained with its original meaning so that replaying an older log reproduces the
+ * figures it produced then. Redefining it would have changed statistics for games already
+ * played, which is the one thing a migration must never do. Release 003's roster screen
+ * uses the non-destructive path instead.
+ */
 function withPlayerRemoved(state, event) {
-  const games = state.games.map((game) => ({
+  const seasonId = seasonIdFor(state, event)
+  const games = state.games.map((game) => (game.kind === GAME_KIND.HISTORICAL ? game : {
     ...game,
     matches: game.matches.map((match) => ({
       ...match,
-      lineup: match.lineup
-        ? match.lineup.map((playerId) => (playerId === event.id ? null : playerId))
-        : null,
+      lineup: match.lineup ? match.lineup.map((id) => (id === event.id ? null : id)) : null,
       turns: renumber(match.turns.filter((turn) => turn.playerId !== event.id)),
     })),
   }))
-  return { ...state, roster: state.roster.filter((player) => player.id !== event.id), games }
+
+  return {
+    ...state,
+    players: state.players.filter((player) => player.id !== event.id),
+    seasons: mapSeason(state, seasonId, (season) => ({
+      ...season,
+      members: season.members.filter((member) => member.playerId !== event.id),
+    })),
+    games,
+  }
 }
 
-// --- Game and match transitions ----------------------------------------------
+/**
+ * Leaves the person, and everything they recorded, exactly where it is. Removing someone
+ * from this year's squad says nothing about the serves they took last year.
+ */
+function withMembershipRemoved(state, event) {
+  const seasonId = seasonIdFor(state, event)
+  return {
+    ...state,
+    seasons: mapSeason(state, seasonId, (season) => ({
+      ...season,
+      members: season.members.filter((member) => member.playerId !== event.playerId),
+    })),
+  }
+}
+
+// --- Game transitions --------------------------------------------------------
 
 function withGameStarted(state, event) {
-  const game = { id: event.id, matches: [newMatch(0)] }
-  return { ...state, games: [...state.games, game], currentGameId: event.id }
+  const seeded = ensureSeason(state)
+  const game = {
+    id: event.id,
+    seasonId: seasonIdFor(seeded, event),
+    kind: GAME_KIND.TRACKED,
+    ...emptyContext(),
+    notes: '',
+    matches: [newMatch(0)],
+  }
+  return { ...seeded, games: [...seeded.games, game], currentGameId: event.id }
 }
 
 function withGameDiscarded(state, event) {
-  const games = state.games.filter((game) => game.id !== event.id)
-  const currentGameId = state.currentGameId === event.id ? null : state.currentGameId
-  return { ...state, games, currentGameId }
+  return {
+    ...state,
+    games: state.games.filter((game) => game.id !== event.id),
+    currentGameId: state.currentGameId === event.id ? null : state.currentGameId,
+  }
 }
 
-function withMatchEnded(state) {
+function withGameContext(state, event) {
+  return mapGame(state, event.gameId, (game) => ({
+    ...game,
+    date: event.date,
+    opponent: event.opponent,
+    location: event.location,
+    court: event.court,
+  }))
+}
+
+function withGameNotes(state, event) {
+  return mapGame(state, event.gameId, (game) => ({ ...game, notes: event.notes ?? '' }))
+}
+
+/**
+ * A game copied from paper: per player, serves in and serves out, at game level.
+ * It holds no matches and no turns, because that detail was never written down.
+ * Synthesising them would report turn counts that never happened.
+ */
+function withHistoricalGameAdded(state, event) {
+  const seeded = ensureSeason(state)
+  const game = {
+    id: event.id,
+    seasonId: seasonIdFor(seeded, event),
+    kind: GAME_KIND.HISTORICAL,
+    date: event.date,
+    opponent: event.opponent,
+    location: event.location,
+    court: event.court,
+    notes: event.notes ?? '',
+    result: event.result ?? MATCH_RESULT.UNDECIDED,
+    entries: event.entries.map((entry) => ({ ...entry })),
+  }
+  return { ...seeded, games: [...seeded.games, game] }
+}
+
+function withHistoricalGameEdited(state, event) {
+  return mapGame(state, event.id, (game) => ({
+    ...game,
+    date: event.date,
+    opponent: event.opponent,
+    location: event.location,
+    court: event.court,
+    notes: event.notes ?? game.notes,
+    result: event.result ?? game.result,
+    entries: event.entries.map((entry) => ({ ...entry })),
+  }))
+}
+
+function withMatchEnded(state, event) {
   const game = currentGame(state)
   const ending = currentMatch(state)
-  const ended = { ...ending, status: 'ended', turns: closeOpenTurn(ending.turns) }
+  const ended = {
+    ...ending,
+    status: 'ended',
+    result: event.result ?? MATCH_RESULT.UNDECIDED,
+    turns: closeOpenTurn(ending.turns),
+  }
 
   const matches = game.matches.map((match) => (match.index === ended.index ? ended : match))
   // The next match starts from this one's lineup: with nine on a roster the six on court
   // are usually close, and editing beats rebuilding.
   if (ended.index < MATCHES_PER_GAME - 1) matches.push(newMatch(ended.index + 1, ended.lineup))
 
-  return { ...state, games: state.games.map((each) => (each.id === game.id ? { ...game, matches } : each)) }
+  return mapGame(state, game.id, (each) => ({ ...each, matches }))
 }
 
 // --- Lineup transitions ------------------------------------------------------
@@ -315,8 +605,7 @@ function withServeRecorded(state, event) {
  *
  * This happens inside the RECORD_SERVE transition rather than as an event of its own, and
  * that is the whole trick: popping the serve removes the advance along with it, so one
- * undo reverses one operator action. An event would make undo take two taps to reverse
- * one tap, and a UI-triggered dispatch would not survive a replay.
+ * undo reverses one operator action.
  */
 function advanceRotation(match) {
   if (!match.lineup) return match
@@ -331,28 +620,33 @@ function advanceRotation(match) {
   return { ...match, turns: [...match.turns, newTurn(playerId, match.turns.length, match.lineup)] }
 }
 
-// --- Turn helpers ------------------------------------------------------------
+// --- Helpers -----------------------------------------------------------------
+
+function emptyContext() {
+  return { date: null, opponent: '', location: '', court: '' }
+}
 
 function newMatch(index, lineup = null) {
-  return { index, status: 'in_progress', lineup: lineup ? [...lineup] : null, substitutions: [], turns: [] }
+  return {
+    index,
+    status: 'in_progress',
+    result: MATCH_RESULT.UNDECIDED,
+    lineup: lineup ? [...lineup] : null,
+    substitutions: [],
+    turns: [],
+  }
 }
 
 /**
  * A turn records the position it was served from and who was on court at the time.
- * The position drives the rotation -- positions are stable, occupants are not -- while the
- * snapshot answers who was on court then, which is what turns-on-court counts.
- *
- * A server who is not in the lineup still occupies the position that was due. Tapping
- * someone off-lineup nearly always means a substitution happened on court and has not been
- * entered yet, so that player is standing in the slot the rotation just reached: the turn
- * consumes the position, and `isOffLineup` marks it for the operator to reconcile. Leaving
- * the position unconsumed would make the whole order lag by one for the rest of the match.
+ * A server who is not in the lineup still occupies the position that was due: tapping
+ * someone off-lineup nearly always means a substitution has not been entered yet, and
+ * leaving the position unconsumed would make the order lag by one for the rest of the match.
  */
 function newTurn(playerId, ordinal, lineup, pendingPosition = null) {
   if (!lineup) {
     return baseTurn(playerId, ordinal, { lineupPosition: null, isOffLineup: false, lineupSnapshot: null })
   }
-
   const inLineup = lineup.indexOf(playerId)
   return baseTurn(playerId, ordinal, {
     lineupPosition: inLineup === -1 ? pendingPosition : inLineup,
@@ -405,13 +699,35 @@ function playedTurnCount(match) {
   return match.turns.filter((turn) => turn.serves.length > 0).length
 }
 
-function updateCurrentMatch(state, transform) {
-  return {
-    ...state,
-    games: state.games.map((game) =>
-      game.id !== state.currentGameId
-        ? game
-        : { ...game, matches: game.matches.map((match) => (match.status === 'in_progress' ? transform(match) : match)) },
-    ),
+function gameInvolves(game, playerId) {
+  if (game.kind === GAME_KIND.HISTORICAL) {
+    return game.entries.some((entry) => entry.playerId === playerId)
   }
+  return game.matches.some((match) => match.turns.some((turn) => turn.playerId === playerId))
+}
+
+function mapSeason(state, seasonId, transform) {
+  return state.seasons.map((season) => (season.id === seasonId ? transform(season) : season))
+}
+
+function mapGame(state, gameId, transform) {
+  return { ...state, games: state.games.map((game) => (game.id === gameId ? transform(game) : game)) }
+}
+
+function updateCurrentMatch(state, transform) {
+  const game = currentGame(state)
+  if (!game) return state
+  return mapGame(state, game.id, (each) => ({
+    ...each,
+    matches: each.matches.map((match) => (match.status === 'in_progress' ? transform(match) : match)),
+  }))
+}
+
+/**
+ * `roster` is the ACTIVE season's members with their names and that season's numbers.
+ * It is recomputed on every change and never stored -- a number resolved through a season
+ * is the whole point of this release, and a cached copy is how it would drift.
+ */
+function withActiveRoster(state) {
+  return { ...state, roster: seasonMembers(state, state.activeSeasonId) }
 }

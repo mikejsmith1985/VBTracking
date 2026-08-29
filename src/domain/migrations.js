@@ -1,22 +1,69 @@
 // The stored-data version chain. Pure: it transforms an event array and knows nothing
 // about storage, so every branch is testable without a browser.
-//
-// Release 002 only ADDS event types, so a release-001 log is already a valid release-002
-// log and the 1 -> 2 step does nothing. Building the chain anyway is the point: the
-// mechanism has to exist before a release needs it to do real work, and today's identity
-// step is the test case proving it runs.
 
 /** The data format this build writes and understands. */
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
+
+/** The season a migrated log is gathered into. Renameable by the operator afterwards. */
+export const MIGRATED_SEASON_ID = 'season-1'
+const MIGRATED_SEASON_NAME = 'Season 1'
+const MIGRATED_TEAM_NAME = 'My Team'
+
+// The format releases 1 and 2 were played under. Recorded so a later release can vary it
+// without touching stored data.
+const LEGACY_FORMAT = { matchesPerGame: 3, targetScore: 21, playersOnCourt: 6 }
+
+/** Events that describe roster membership or game ownership, and so need a season. */
+const NEEDS_SEASON = new Set(['ADD_PLAYER', 'EDIT_PLAYER', 'REMOVE_PLAYER', 'START_GAME'])
+
+/**
+ * 1 -> 2: release 002 only added event types, so a release-001 log is already valid.
+ * Kept as the proof that the chain runs.
+ */
+function migrateOneToTwo(events) {
+  return events.slice()
+}
+
+/**
+ * 2 -> 3: the first migration that does real work.
+ *
+ * Deliberately ADDITIVE. It prepends one season and stamps a field onto the events that
+ * now need one. It renames nothing, splits nothing, and moves no event other than by the
+ * single prepend.
+ *
+ * The tidier migration would decompose each ADD_PLAYER into a career player plus a season
+ * membership -- two events where there was one. It matches the new model exactly and it is
+ * far riskier: every index shifts, so a bug becomes silent corruption of the only real
+ * season anyone has recorded, rather than a visibly wrong number.
+ *
+ * An ended match becomes `undecided`, never `lost`. Silence is not a defeat, and a record
+ * that assumed otherwise would be wrong about games already played.
+ */
+function migrateTwoToThree(events) {
+  const season = {
+    t: 'CREATE_SEASON',
+    id: MIGRATED_SEASON_ID,
+    name: MIGRATED_SEASON_NAME,
+    team: MIGRATED_TEAM_NAME,
+    format: { ...LEGACY_FORMAT },
+  }
+
+  const stamped = events.map((event) => {
+    if (NEEDS_SEASON.has(event.t)) return { ...event, seasonId: MIGRATED_SEASON_ID }
+    if (event.t === 'END_MATCH') return { ...event, result: 'undecided' }
+    return event
+  })
+
+  return [season, ...stamped]
+}
 
 /**
  * Ordered steps. MIGRATIONS[n] upgrades a log at version n to version n+1.
  * Every step is pure and must return a new array.
  */
 export const MIGRATIONS = Object.freeze({
-  // 1 -> 2: release 002 adds SET_LINEUP, SUBSTITUTE and CLEAR_LINEUP. Every release-001
-  // event keeps its exact shape and meaning, so nothing needs rewriting.
-  1: (events) => events.slice(),
+  1: migrateOneToTwo,
+  2: migrateTwoToThree,
 })
 
 /**

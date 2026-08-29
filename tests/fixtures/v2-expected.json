@@ -1,0 +1,158 @@
+{
+  "roster": [
+    {
+      "id": "p1",
+      "name": "Layna Blankenship",
+      "number": "1"
+    },
+    {
+      "id": "p2",
+      "name": "Tegan Jodrey",
+      "number": "4"
+    },
+    {
+      "id": "p3",
+      "name": "Aria Smith",
+      "number": "5"
+    },
+    {
+      "id": "p4",
+      "name": "Ella Cate Hatch",
+      "number": "7"
+    },
+    {
+      "id": "p5",
+      "name": "Marilyn Kirschner",
+      "number": "11"
+    },
+    {
+      "id": "p6",
+      "name": "Charlee Cole",
+      "number": "13"
+    },
+    {
+      "id": "p7",
+      "name": "Marley Bulow",
+      "number": "15"
+    },
+    {
+      "id": "p8",
+      "name": "Kyla Freeman",
+      "number": "25"
+    },
+    {
+      "id": "p9",
+      "name": "Aubree Willhoff",
+      "number": "55"
+    }
+  ],
+  "matches": [
+    {
+      "index": 0,
+      "status": "ended",
+      "turns": 6,
+      "score": 11,
+      "lineup": [
+        "p1",
+        "p2",
+        "p3",
+        "p8",
+        "p5",
+        "p6"
+      ],
+      "subs": 1
+    },
+    {
+      "index": 1,
+      "status": "ended",
+      "turns": 3,
+      "score": 7,
+      "lineup": [
+        "p2",
+        "p3",
+        "p8",
+        "p6",
+        "p9",
+        "p1"
+      ],
+      "subs": 0
+    },
+    {
+      "index": 2,
+      "status": "in_progress",
+      "turns": 1,
+      "score": 3,
+      "lineup": [
+        "p2",
+        "p3",
+        "p8",
+        "p6",
+        "p9",
+        "p1"
+      ],
+      "subs": 0
+    }
+  ],
+  "game": {
+    "p1": {
+      "serves": 3,
+      "servesIn": 2,
+      "points": 2,
+      "turnsTaken": 1,
+      "inPercentage": 0.6666666666666666
+    },
+    "p2": {
+      "serves": 8,
+      "servesIn": 6,
+      "points": 6,
+      "turnsTaken": 2,
+      "inPercentage": 0.75
+    },
+    "p3": {
+      "serves": 5,
+      "servesIn": 3,
+      "points": 3,
+      "turnsTaken": 2,
+      "inPercentage": 0.6
+    },
+    "p8": {
+      "serves": 4,
+      "servesIn": 2,
+      "points": 2,
+      "turnsTaken": 2,
+      "inPercentage": 0.5
+    },
+    "p5": {
+      "serves": 5,
+      "servesIn": 5,
+      "points": 4,
+      "turnsTaken": 1,
+      "inPercentage": 1
+    },
+    "p6": {
+      "serves": 2,
+      "servesIn": 1,
+      "points": 1,
+      "turnsTaken": 1,
+      "inPercentage": 0.5
+    },
+    "p7": {
+      "serves": 4,
+      "servesIn": 3,
+      "points": 3,
+      "turnsTaken": 1,
+      "inPercentage": 0.75
+    }
+  },
+  "onCourt": {
+    "p1": 10,
+    "p2": 10,
+    "p3": 10,
+    "p4": 3,
+    "p5": 6,
+    "p6": 10,
+    "p7": 0,
+    "p8": 7,
+    "p9": 4
+  }
+}

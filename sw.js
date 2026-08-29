@@ -4,17 +4,21 @@
 // by a human, which is the whole reason this project ships no bundler.
 
 // Bump on every release. A new version fully replaces the old rather than serving a mix.
-const CACHE = 'vbtracking-v4'
+const CACHE = 'vbtracking-v5'
 
 const PRECACHE = [
   './',
   './index.html',
   './manifest.webmanifest',
   './styles/app.css',
+  './styles/v3.css',
   './src/ui/app.js',
   './src/ui/html.js',
   './src/ui/screens/track.js',
   './src/ui/screens/lineup.js',
+  './src/ui/screens/season.js',
+  './src/ui/screens/career.js',
+  './src/ui/screens/gameform.js',
   './src/ui/screens/roster.js',
   './src/ui/screens/stats.js',
   './src/ui/components/tally.js',
@@ -23,11 +27,13 @@ const PRECACHE = [
   './src/state/store.js',
   './src/state/persistence.js',
   './src/state/backup.js',
+  './src/state/historical-import.js',
   './src/domain/events.js',
   './src/domain/reducer.js',
   './src/domain/stats.js',
   './src/domain/palette.js',
   './src/domain/migrations.js',
+  './src/domain/aggregate.js',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
