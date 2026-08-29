@@ -15,6 +15,10 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
+    # Xcode synthesises Info.plist from the INFOPLIST_KEY_* settings below. Without this
+    # the keys are read and then thrown away, and the watch app is assembled with no
+    # Info.plist at all -- which fails at the very last step, after everything compiled.
+    GENERATE_INFOPLIST_FILE: YES
     DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
@@ -72,8 +76,11 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mikejsmith.vbtracker.watchapp
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # A single-target watch app, the modern shape: one bundle, no extension beside it.
+        INFOPLIST_KEY_WKApplication: YES
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.mikejsmith.vbtracker
         INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
+        INFOPLIST_KEY_CFBundleDisplayName: Serve Tracker
     entitlements:
       path: VBTrackerWatch/VBTrackerWatch.entitlements
       properties:
