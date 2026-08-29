@@ -69,6 +69,8 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        # The numeric App Store Connect identifier for Volleyball Serve Tracker.
+        app_id: 6806672687
 
     triggering:
       events: [tag]

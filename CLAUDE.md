@@ -32,7 +32,8 @@ in the repository root.
 | App bundle id | `com.mikejsmith.vbtracker` |
 | Watch app | `com.mikejsmith.vbtracker.watchapp` |
 | App Group | `group.com.mikejsmith.vbtracker` |
-| App Store Connect `APP_ID` | not yet created |
+| App Store Connect `APP_ID` | `6806672687` |
+| App Store name | Volleyball Serve Tracker |
 
 **Devices and the build loop** - both are load-bearing:
 - The release supports **every iPhone and Apple Watch Apple still supports**: minimum iOS 18

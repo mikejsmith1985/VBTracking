@@ -4,11 +4,10 @@
 // tested there, on the workstation. What is left to prove here is that the two payloads
 // survive the trip through `WCSession`'s dictionaries — which is the part that needs the
 // platform, and so runs on the build machine.
+import Foundation
 import Testing
 import VBCore
 import VBPresentation
-
-@testable import VBTracker
 
 /// A session that goes nowhere, and remembers everything it was asked to send.
 final class FakeSession: ConnectivitySession, @unchecked Sendable {

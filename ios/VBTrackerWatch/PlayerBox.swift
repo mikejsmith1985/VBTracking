@@ -60,9 +60,9 @@ struct PlayerBox: View {
     /// they still read in the always-on display and to a colour-blind eye.
     @ViewBuilder private var marker: some View {
         if slot.isServing {
-            Label("serving")
+            CornerLabel("serving")
         } else if slot.isOnDeck, hasOrder {
-            Label("next")
+            CornerLabel("next")
         }
     }
 
@@ -80,13 +80,16 @@ struct PlayerBox: View {
     }
 
     /// A small word in the corner of a box.
-    private struct Label: View {
+    ///
+    /// Named apart from SwiftUI's own `Label`, which is a different thing and would shadow
+    /// confusingly in a file that draws one box six times.
+    private struct CornerLabel: View {
         let text: String
 
         init(_ text: String) { self.text = text }
 
         var body: some View {
-            SwiftUI.Text(text)
+            Text(text)
                 .font(.system(size: 8, weight: .heavy))
                 .textCase(.uppercase)
                 .padding(.horizontal, 3)
