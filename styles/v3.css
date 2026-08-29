@@ -211,7 +211,19 @@
   font: inherit;
 }
 
-#game-form textarea { min-height: 160px; line-height: 1.5; resize: vertical; }
+#game-form textarea { min-height: 92px; line-height: 1.5; resize: vertical; }
+
+.notes-field { display: block; margin-bottom: 12px; }
+
+.notes-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 
 .result-choice { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
 
@@ -317,5 +329,17 @@
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- Per-match results ---------------------------------------------------- */
+
+.match-result-row { margin-bottom: 10px; }
+
+.match-result-label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 700;
   color: var(--muted);
 }

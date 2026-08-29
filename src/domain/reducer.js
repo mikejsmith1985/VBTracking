@@ -43,6 +43,7 @@ function transition(state, event) {
     case EVENT.DISCARD_GAME: return withGameDiscarded(state, event)
     case EVENT.SET_GAME_CONTEXT: return withGameContext(state, event)
     case EVENT.SET_GAME_NOTES: return withGameNotes(state, event)
+    case EVENT.SET_MATCH_RESULT: return withMatchResultSet(state, event)
     case EVENT.ADD_HISTORICAL_GAME: return withHistoricalGameAdded(state, event)
     case EVENT.EDIT_HISTORICAL_GAME: return withHistoricalGameEdited(state, event)
     case EVENT.SET_LINEUP: return withLineupSet(state, event)
@@ -79,6 +80,7 @@ export function rejectionReason(state, event) {
     case EVENT.SET_GAME_CONTEXT:
     case EVENT.SET_GAME_NOTES:
       return gameById(state, event.gameId) ? null : 'That game no longer exists.'
+    case EVENT.SET_MATCH_RESULT: return setMatchResultRejection(state, event)
     case EVENT.ADD_HISTORICAL_GAME: return historicalGameRejection(state, event, true)
     case EVENT.EDIT_HISTORICAL_GAME: return historicalGameRejection(state, event, false)
     case EVENT.SET_LINEUP: return setLineupRejection(state, event)
@@ -268,6 +270,15 @@ function historicalGameRejection(state, event, isNew) {
       return 'Every player in a recorded game must be on that season’s roster.'
     }
   }
+  return null
+}
+
+function setMatchResultRejection(state, event) {
+  const game = gameById(state, event.gameId)
+  if (!game) return 'That game no longer exists.'
+  if (game.kind !== GAME_KIND.TRACKED) return 'That game was recorded from paper; set its result instead.'
+  if (!game.matches.some((match) => match.index === event.matchIndex)) return 'That match is not part of this game.'
+  if (!isValidResult(event.result)) return 'Unrecognised match result.'
   return null
 }
 
@@ -464,7 +475,7 @@ function withGameStarted(state, event) {
     seasonId: seasonIdFor(seeded, event),
     kind: GAME_KIND.TRACKED,
     ...emptyContext(),
-    notes: '',
+    ...emptyNotes(),
     matches: [newMatch(0)],
   }
   return { ...seeded, games: [...seeded.games, game], currentGameId: event.id }
@@ -489,7 +500,12 @@ function withGameContext(state, event) {
 }
 
 function withGameNotes(state, event) {
-  return mapGame(state, event.gameId, (game) => ({ ...game, notes: event.notes ?? '' }))
+  return mapGame(state, event.gameId, (game) => ({
+    ...game,
+    wentWell: event.wentWell ?? '',
+    needsWork: event.needsWork ?? '',
+    notes: event.notes ?? '',
+  }))
 }
 
 /**
@@ -497,6 +513,19 @@ function withGameNotes(state, event) {
  * It holds no matches and no turns, because that detail was never written down.
  * Synthesising them would report turn counts that never happened.
  */
+/**
+ * A result records what happened rather than what was played, so it stays correctable long
+ * after the match has ended -- the same reasoning that lets the opponent and the notes be
+ * fixed. Nothing about the serves is touched.
+ */
+function withMatchResultSet(state, event) {
+  return mapGame(state, event.gameId, (game) => ({
+    ...game,
+    matches: game.matches.map((match) =>
+      match.index === event.matchIndex ? { ...match, result: event.result } : match),
+  }))
+}
+
 function withHistoricalGameAdded(state, event) {
   const seeded = ensureSeason(state)
   const game = {
@@ -507,6 +536,8 @@ function withHistoricalGameAdded(state, event) {
     opponent: event.opponent,
     location: event.location,
     court: event.court,
+    wentWell: event.wentWell ?? '',
+    needsWork: event.needsWork ?? '',
     notes: event.notes ?? '',
     result: event.result ?? MATCH_RESULT.UNDECIDED,
     entries: event.entries.map((entry) => ({ ...entry })),
@@ -521,6 +552,8 @@ function withHistoricalGameEdited(state, event) {
     opponent: event.opponent,
     location: event.location,
     court: event.court,
+    wentWell: event.wentWell ?? game.wentWell,
+    needsWork: event.needsWork ?? game.needsWork,
     notes: event.notes ?? game.notes,
     result: event.result ?? game.result,
     entries: event.entries.map((entry) => ({ ...entry })),
@@ -624,6 +657,10 @@ function advanceRotation(match) {
 
 function emptyContext() {
   return { date: null, opponent: '', location: '', court: '' }
+}
+
+function emptyNotes() {
+  return { wentWell: '', needsWork: '', notes: '' }
 }
 
 function newMatch(index, lineup = null) {

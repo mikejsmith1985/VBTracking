@@ -53,12 +53,18 @@ describe.each(FILES)('%s', (label, path, expectedGames) => {
     }
   })
 
-  it('carries the context and the notes from the sheet', () => {
+  it('carries the context from the sheet', () => {
     for (const event of result.events) {
       expect(event.date, event.opponent).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(event.opponent).toBeTruthy()
       expect(event.location).toBeTruthy()
-      expect(event.notes.length).toBeGreaterThan(10)
+    }
+  })
+
+  it('keeps the two lists the sheets write separately, rather than as one blob', () => {
+    for (const event of result.events) {
+      expect(event.wentWell.length, `${event.opponent} went well`).toBeGreaterThan(10)
+      expect(event.needsWork.length, `${event.opponent} needs work`).toBeGreaterThan(10)
     }
   })
 })

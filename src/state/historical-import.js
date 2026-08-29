@@ -141,7 +141,13 @@ function buildGame(game, index, resolve, season, makeId) {
     location: game.location ?? '',
     court: game.court ?? '',
   }
-  const event = addHistoricalGame(makeId(), season.id, context, entries, game.notes ?? '')
+  // A file may carry the two lists separately, as the sheets keep them, or one blob.
+  const notes = {
+    wentWell: game.wentWell ?? '',
+    needsWork: game.needsWork ?? '',
+    notes: game.notes ?? '',
+  }
+  const event = addHistoricalGame(makeId(), season.id, context, entries, notes)
   event.result = game.result ?? MATCH_RESULT.UNDECIDED
 
   return { event, ok: true, reason: null }
