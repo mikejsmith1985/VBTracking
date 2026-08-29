@@ -28,8 +28,6 @@ workflows:
       app_store_connect: Codemagic CI
     environment:
       xcode: latest
-      groups:
-        - appstore_credentials
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.mikejsmith.vbtracker
@@ -66,11 +64,11 @@ workflows:
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
 
     publishing:
+      # Which app to publish to is read from the bundle id in the built IPA -- there is no
+      # app_id field here, and the number lives in CLAUDE.md where identifiers belong.
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        # The numeric App Store Connect identifier for Volleyball Serve Tracker.
-        app_id: 6806672687
 
     triggering:
       events: [tag]
