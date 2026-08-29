@@ -107,7 +107,7 @@ fact rather than a hope.
 
 | Field | Notes |
 |---|---|
-| `id` | Assigned at creation, on whichever device created it. Never reused, never regenerated |
+| `eventId` | Assigned at creation, on whichever device created it. Never reused, never regenerated. Named apart from `id`, which several event types already use for the thing the event is about |
 
 **Events imported from the web app have no identifier.** They are assigned one at import,
 derived deterministically from the log's position and content, so importing the same file

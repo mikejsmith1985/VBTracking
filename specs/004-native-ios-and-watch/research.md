@@ -32,6 +32,15 @@ cannot be seen until CI has built it. That is slow, and it will stay slow.
 SwiftUI does not, and never will. Splitting on that line is not a preference; it is the only
 line that exists.
 
+**What it took, in practice** (recorded because it is not obvious and cost an hour):
+Swift on Windows links with MSVC, so the toolchain alone is not enough — without Visual
+Studio Build Tools it reports itself invalid for want of `link.exe`. Three things must be
+in the shell: the VS developer environment, the user PATH, and `SDKROOT`. None of them are
+present in a shell opened before the install, which is why `scripts/swift-env.ps1` exists
+rather than a line in someone's notes.
+
+**Measured**: the whole domain suite runs in **0.02 seconds**. The fast loop is real.
+
 **Settled**: there is no Mac and none is being bought. The build runs on the cloud service.
 So the slow loop is not a risk to be managed away — it is the working condition, and the plan
 has to be built for it rather than around it.

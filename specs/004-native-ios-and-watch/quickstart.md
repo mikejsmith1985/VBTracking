@@ -11,7 +11,8 @@ is the evidence Article X asks for, and each names what would count as a failure
 
 | Need | For | Notes |
 |---|---|---|
-| Swift toolchain for Windows | `VBCore` | swift.org. This is the whole local loop |
+| **Swift 6.3.3** for Windows | `VBCore` | `winget install Swift.Toolchain`. This is the whole local loop |
+| **Visual Studio Build Tools 2022**, C++ workload | `VBCore` | Swift on Windows links with MSVC: without `link.exe` the toolchain reports itself invalid. `winget install Microsoft.VisualStudio.2022.BuildTools --override "--add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"` |
 | Codemagic, connected to this repository | Every build with a UI | Key already in the vault as `APPLE_ASC_KEY_ID`, `APPLE_ASC_ISSUER_ID`, `APPLE_ASC_PRIVATE_KEY`, `APPLE_TEAM_ID` |
 | iPhone 14 Pro, and the paired Apple Watch Series 11 (42 mm) | The court on the wrist | The 42 mm screen is the design target; it is the size that has to work |
 | A backup file from the shipped web app | Parity, and the migration | *Game tab → Save a backup file* |
@@ -25,15 +26,20 @@ with a screen in it is built on the cloud service and verified on the two device
 
 Nothing else starts until this is green.
 
-```bash
-cd packages/VBCore
-swift test
+```powershell
+.\scriptsbcore-test.ps1
 ```
+
+That wrapper exists because three things have to be in the session before `swift build`
+works, and none of them are in a shell that was open before the toolchain was installed:
+the Visual Studio developer environment, the user PATH, and `SDKROOT`. `scripts/swift-env.ps1`
+sets all three; source it directly if you want a shell to work in.
 
 **Passes when**
 
-- The reducer, statistics and migration suites pass — the ported counterparts of the web
-  app's 677 tests.
+- The reducer, statistics, rotation, correction, court and migration suites pass — the
+  ported counterparts of the web app's 677 tests. **117 of them exist today, and run in
+  0.02 seconds.**
 - `ParityTests` replays `tests/fixtures/v1-log.json` and `v2-log.json` and matches
   `v1-expected.json` and `v2-expected.json` exactly.
 - `ParityTests` replays the operator's real season export and produces figures identical to

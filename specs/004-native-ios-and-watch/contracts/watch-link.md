@@ -62,7 +62,7 @@ running, and it survives the watch going out of range and coming back.
 ```json
 {
   "events": [
-    { "id": "c41a…", "t": "RECORD_SERVE", "outcome": "OUT", "recordedAt": "2026-08-29T18:04:19Z" }
+    { "eventId": "c41a…", "t": "RECORD_SERVE", "outcome": "OUT", "recordedAt": "2026-08-29T18:04:19Z" }
   ]
 }
 ```
@@ -71,8 +71,8 @@ running, and it survives the watch going out of range and coming back.
 
 | Rule | Why |
 |---|---|
-| The `id` is made on the watch, when the coach taps | It is the identity of that tap, not of its delivery |
-| The phone ignores an `id` it already holds | Delivery may retry; the record may not double (FR-020) |
+| The `eventId` is made on the watch, when the coach taps | It is the identity of that tap, not of its delivery |
+| The phone ignores an `eventId` it already holds | Delivery may retry; the record may not double (FR-020) |
 | Events are appended to the phone's log unchanged | A watch-recorded serve is indistinguishable from a phone-recorded one (FR-019) |
 | The phone applies its own rules to them | A serve the reducer rejects is rejected the same way whichever device sent it |
 | The watch keeps an event until the phone confirms it | `pendingCount` is what the wrist shows, so a serve recorded out of range is never assumed safe (FR-022) |

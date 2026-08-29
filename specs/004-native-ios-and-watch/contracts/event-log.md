@@ -14,9 +14,9 @@ how a log moves between the web app and the native app. They carry the same even
 **Format**: JSON Lines. One event per line, appended in order, never rewritten.
 
 ```jsonl
-{"id":"9f2c…","t":"CREATE_SEASON","seasonId":"s1","name":"2026 Fall","team":"Eastern"}
-{"id":"a10d…","t":"ADD_PLAYER","id2":"p1","name":"Ella","number":"7","seasonId":"s1"}
-{"id":"b73e…","t":"RECORD_SERVE","outcome":"IN_POINT"}
+{"eventId":"9f2c…","t":"CREATE_SEASON","id":"s1","name":"2026 Fall","team":"Eastern"}
+{"eventId":"a10d…","t":"ADD_PLAYER","id":"p1","name":"Ella","number":"7","seasonId":"s1"}
+{"eventId":"b73e…","t":"RECORD_SERVE","outcome":"IN_POINT"}
 ```
 
 **Rules**
@@ -36,12 +36,17 @@ the same operation the web app performs on its array.
 
 ## Events
 
-Every event has `t` (its type) and, from this release, `id`.
+Every event has `t` (its type) and, from this release, `eventId`.
 
 | Field | Type | Notes |
 |---|---|---|
-| `id` | string | Assigned once, at creation, on the device that created it. Never regenerated |
+| `eventId` | string | Assigned once, at creation, on the device that created it. Never regenerated |
 | `t` | string | One of the types below |
+
+**Why `eventId` and not `id`**: several event types already use `id` for the thing they are
+about — the player added, the season created, the game started. Reusing that key would
+silently rewrite a season the web app recorded. The identifier of the event is a different
+thing from the identifier of what the event is about, and is named accordingly.
 
 The types are unchanged from release 003 and are not restated here field by field — they are
 defined by `src/domain/events.js` in the shipped web app, which is the format of record:
@@ -56,7 +61,7 @@ SELECT_SERVER · RECORD_SERVE · END_MATCH · END_GAME
 SET_TURN_SERVES · REASSIGN_TURN · DELETE_TURN · INSERT_TURN
 ```
 
-**Adding `id` is additive.** The web app ignores fields it does not know, so a log written by
+**Adding `eventId` is additive.** The web app ignores fields it does not know, so a log written by
 the native app still loads in the browser. That is what keeps both apps able to read the same
 season while parity is being built (FR-038).
 
@@ -85,8 +90,8 @@ The format the shipped web app already writes. The native app both reads and wri
 
 1. Refuse anything that is not this shape, with a plain reason. Nothing on the device changes.
 2. Run the migration chain to the current version.
-3. Assign an `id` to every event that lacks one, derived deterministically from its index and
-   content so the same file always produces the same identifiers.
+3. Assign an `eventId` to every event that lacks one, derived deterministically from its
+   index and content so the same file always produces the same identifiers.
 4. Compute a hash of the resulting log. If a previous import recorded that hash, refuse:
    this file is already in (FR-029).
 5. Replace or merge — **the operator is told which before it happens** — and either complete

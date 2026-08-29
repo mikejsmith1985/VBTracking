@@ -34,16 +34,16 @@ US1, US2 and US3 are all P1. They are phased below in build order rather than in
 
 **Purpose**: The two build environments — the local Swift loop, and the cloud one.
 
-- [ ] T001 Install the Swift toolchain for Windows and record the exact version in `specs/004-native-ios-and-watch/quickstart.md`
-- [ ] T002 Create the package manifest with a `VBCore` library target and a `VBCoreTests` test target in `packages/VBCore/Package.swift`, using swift-testing and Swift 6 strict concurrency
-- [ ] T003 Wire `tests/fixtures/` into the test target as a resource bundle in `packages/VBCore/Package.swift`, so the golden files are readable from a test without a path relative to the working directory
-- [ ] T004 [P] Declare the three targets — iOS app, watchOS app, shared link — with the App Group `group.com.mikejsmith.vbtracker` and bundle ids `com.mikejsmith.vbtracker` and `com.mikejsmith.vbtracker.watchapp` in `ios/project.yml`
-- [ ] T005 [P] Add the Codemagic workflow — XcodeGen generate, `swift test` for `VBCore`, build both targets, run the interface suite, publish to TestFlight — in `codemagic.yaml`, taking the App Store Connect key from the vault names `APPLE_ASC_KEY_ID`, `APPLE_ASC_ISSUER_ID`, `APPLE_ASC_PRIVATE_KEY`, `APPLE_TEAM_ID`
-- [ ] T006 [P] Add Swift build artefacts, generated Xcode projects and `DerivedData` to `.gitignore`
-- [ ] T007 [P] Add a swift-format configuration matching the web app's conventions — self-documenting names, no abbreviations — in `.swift-format`
+- [X] T001 Install the Swift toolchain for Windows and record the exact version in `specs/004-native-ios-and-watch/quickstart.md` — **Swift 6.3.3**, plus Visual Studio Build Tools for the MSVC linker, wrapped by `scripts/swift-env.ps1`
+- [X] T002 Create the package manifest with a `VBCore` library target and a `VBCoreTests` test target in `packages/VBCore/Package.swift`, using swift-testing and Swift 6 strict concurrency
+- [X] T003 Make `tests/fixtures/` readable from a test without depending on the working directory — **done by reading them where they live**, from a path derived from the test's own source location, rather than as a resource bundle. A copy inside the target would be a second copy of files that must never drift
+- [X] T004 [P] Declare the three targets — iOS app, watchOS app, shared link — with the App Group `group.com.mikejsmith.vbtracker` and bundle ids `com.mikejsmith.vbtracker` and `com.mikejsmith.vbtracker.watchapp` in `ios/project.yml`
+- [X] T005 [P] Add the Codemagic workflow — XcodeGen generate, `swift test` for `VBCore`, build both targets, run the interface suite, publish to TestFlight — in `codemagic.yaml`, taking the App Store Connect key from the vault names `APPLE_ASC_KEY_ID`, `APPLE_ASC_ISSUER_ID`, `APPLE_ASC_PRIVATE_KEY`, `APPLE_TEAM_ID`
+- [X] T006 [P] Add Swift build artefacts, generated Xcode projects and `DerivedData` to `.gitignore`
+- [X] T007 [P] Add a swift-format configuration matching the web app's conventions — self-documenting names, no abbreviations — in `.swift-format`
 - [ ] T008 **Operator task**: create the App ID and the App Store Connect record, upload the `.p8` once through the Codemagic web UI (the vault cannot do this step), and record the numeric `APP_ID` in `CLAUDE.md`
 
-**Checkpoint**: `swift test` runs locally against an empty suite, and a Codemagic build reaches the signing step.
+**Checkpoint**: `swift test` runs locally — **done, 117 tests in 0.02s**. A Codemagic build reaching the signing step waits on T008.
 
 ---
 
@@ -55,43 +55,43 @@ US1, US2 and US3 are all P1. They are phased below in build order rather than in
 
 ### The event model
 
-- [ ] T009 Write failing tests for event encoding and decoding against the shapes in `specs/004-native-ios-and-watch/contracts/event-log.md`, including the additive `id` field and unknown-field tolerance, in `packages/VBCore/Tests/VBCoreTests/EventCodecTests.swift`
-- [ ] T010 Implement the event type, its cases, and its JSON codec in `packages/VBCore/Sources/VBCore/Events.swift`
-- [ ] T011 [P] Implement the constants — `OUTCOME`, `MATCH_RESULT`, `GAME_KIND`, `MAX_ROSTER`, `MATCHES_PER_GAME`, `LINEUP_SIZE`, `SERVE_LIMIT`, `DEFAULT_FORMAT` — in `packages/VBCore/Sources/VBCore/Events.swift`
-- [ ] T012 [P] Implement event identity — assigned once at creation, never regenerated — in `packages/VBCore/Sources/VBCore/Events.swift`
+- [X] T009 Write failing tests for event encoding and decoding against the shapes in `specs/004-native-ios-and-watch/contracts/event-log.md`, including the additive `id` field and unknown-field tolerance, in `packages/VBCore/Tests/VBCoreTests/EventCodecTests.swift`
+- [X] T010 Implement the event type, its cases, and its JSON codec in `packages/VBCore/Sources/VBCore/Events.swift`
+- [X] T011 [P] Implement the constants — `OUTCOME`, `MATCH_RESULT`, `GAME_KIND`, `MAX_ROSTER`, `MATCHES_PER_GAME`, `LINEUP_SIZE`, `SERVE_LIMIT`, `DEFAULT_FORMAT` — in `packages/VBCore/Sources/VBCore/Events.swift`
+- [X] T012 [P] Implement event identity — assigned once at creation, never regenerated — in `packages/VBCore/Sources/VBCore/Events.swift`
 
 ### The reducer
 
-- [ ] T013 Write failing tests for roster rules, the game and match lifecycle, and serve-turn boundaries — ported from `tests/unit/reducer.test.js` — in `packages/VBCore/Tests/VBCoreTests/ReducerTests.swift`
-- [ ] T014 Implement `replay(events)` and the state shape in `packages/VBCore/Sources/VBCore/Reducer.swift`
-- [ ] T015 Implement the rejection rules, returning a reason rather than throwing, in `packages/VBCore/Sources/VBCore/Reducer.swift`
-- [ ] T016 [P] Write failing tests for the lineup, auto-advancing rotation and substitution — ported from `tests/unit/rotation.test.js` and `substitution.test.js` — in `packages/VBCore/Tests/VBCoreTests/RotationTests.swift`
-- [ ] T017 Implement the lineup, the rotation advance **inside** the serve transition, and substitution taking the outgoing player's exact slot in `packages/VBCore/Sources/VBCore/Reducer.swift`
-- [ ] T018 [P] Write failing tests for the corrections — set serves, reassign, delete, insert — ported from `tests/unit/corrections.test.js`, including that an inserted turn takes no rotation position, in `packages/VBCore/Tests/VBCoreTests/CorrectionTests.swift`
-- [ ] T019 Implement the four correction transitions and contiguous renumbering in `packages/VBCore/Sources/VBCore/Reducer.swift`
+- [X] T013 Write failing tests for roster rules, the game and match lifecycle, and serve-turn boundaries — ported from `tests/unit/reducer.test.js` — in `packages/VBCore/Tests/VBCoreTests/ReducerTests.swift`
+- [X] T014 Implement `replay(events)` and the state shape in `packages/VBCore/Sources/VBCore/Reducer.swift`
+- [X] T015 Implement the rejection rules, returning a reason rather than throwing, in `packages/VBCore/Sources/VBCore/Reducer.swift`
+- [X] T016 [P] Write failing tests for the lineup, auto-advancing rotation and substitution — ported from `tests/unit/rotation.test.js` and `substitution.test.js` — in `packages/VBCore/Tests/VBCoreTests/RotationTests.swift`
+- [X] T017 Implement the lineup, the rotation advance **inside** the serve transition, and substitution taking the outgoing player's exact slot in `packages/VBCore/Sources/VBCore/Reducer.swift`
+- [X] T018 [P] Write failing tests for the corrections — set serves, reassign, delete, insert — ported from `tests/unit/corrections.test.js`, including that an inserted turn takes no rotation position, in `packages/VBCore/Tests/VBCoreTests/CorrectionTests.swift`
+- [X] T019 Implement the four correction transitions and contiguous renumbering in `packages/VBCore/Sources/VBCore/Reducer.swift`
 
 ### Statistics, derived on read
 
-- [ ] T020 [P] Write failing tests asserting that a figure never recorded is null and never zero — ported from `tests/unit/stats.test.js` and `aggregate.test.js` — in `packages/VBCore/Tests/VBCoreTests/StatisticsTests.swift`
-- [ ] T021 Implement turn, match and game statistics in `packages/VBCore/Sources/VBCore/Statistics.swift`
-- [ ] T022 Implement season, career and game-summary aggregation, with coverage labelling for games copied from paper, in `packages/VBCore/Sources/VBCore/Aggregate.swift`
+- [X] T020 [P] Write failing tests asserting that a figure never recorded is null and never zero — ported from `tests/unit/stats.test.js` and `aggregate.test.js` — in `packages/VBCore/Tests/VBCoreTests/StatisticsTests.swift`
+- [X] T021 Implement turn, match and game statistics in `packages/VBCore/Sources/VBCore/Statistics.swift`
+- [X] T022 Implement season, career and game-summary aggregation, with coverage labelling for games copied from paper, in `packages/VBCore/Sources/VBCore/Aggregate.swift`
 
 ### Migrations
 
-- [ ] T023 [P] Write failing tests for the ordered migration chain — ported from `tests/unit/migrations.test.js` — in `packages/VBCore/Tests/VBCoreTests/MigrationTests.swift`
-- [ ] T024 Implement the additive migration chain (v1→v2→v3) and the schema version in `packages/VBCore/Sources/VBCore/Migrations.swift`
+- [X] T023 [P] Write failing tests for the ordered migration chain — ported from `tests/unit/migrations.test.js` — in `packages/VBCore/Tests/VBCoreTests/MigrationTests.swift`
+- [X] T024 Implement the additive migration chain (v1→v2→v3) and the schema version in `packages/VBCore/Sources/VBCore/Migrations.swift`
 
 ### Court geometry
 
-- [ ] T025 [P] Write failing tests for the court — bottom-right serves, clockwise rotation, on-deck at top-right, wrap-around, empty positions — ported from `tests/unit/court.test.js` — in `packages/VBCore/Tests/VBCoreTests/CourtTests.swift`
-- [ ] T026 Implement the court view model — positions, serving position, on-deck position, per-position figures with nulls intact — in `packages/VBCore/Sources/VBCore/Court.swift`
+- [X] T025 [P] Write failing tests for the court — bottom-right serves, clockwise rotation, on-deck at top-right, wrap-around, empty positions — ported from `tests/unit/court.test.js` — in `packages/VBCore/Tests/VBCoreTests/CourtTests.swift`
+- [X] T026 Implement the court view model — positions, serving position, on-deck position, per-position figures with nulls intact — in `packages/VBCore/Sources/VBCore/Court.swift`
 
 ### The proof
 
-- [ ] T027 Write the parity suite: replay `tests/fixtures/v1-log.json` and `v2-log.json` through the Swift reducer and assert every figure equals `v1-expected.json` and `v2-expected.json`, in `packages/VBCore/Tests/VBCoreTests/ParityTests.swift`
+- [X] T027 Write the parity suite: replay `tests/fixtures/v1-log.json` and `v2-log.json` through the Swift reducer and assert every figure equals `v1-expected.json` and `v2-expected.json`, in `packages/VBCore/Tests/VBCoreTests/ParityTests.swift`
 - [ ] T028 Export the operator's real season from the shipped web app, commit it as `tests/fixtures/season-2026.json`, and assert in `ParityTests` that every per-player, per-match, per-game and per-season figure matches the web app's — **including which figures are dashes**
 
-**Checkpoint**: `swift test` is green, runs in seconds, and a one-serve difference in any fixture fails it. `VBCore` has no I/O, no clock and no randomness.
+**Checkpoint**: **done except T028.** `swift test` is green — 117 tests, 0.02 seconds — and both shipped fixtures replay to identical figures. `VBCore` has no I/O, no clock and no randomness. T028 waits on a fresh export of the real season.
 
 ---
 

@@ -1,0 +1,76 @@
+# The build machine. There is no Mac on the workstation, so this is the only place the
+# iOS and watchOS targets are ever compiled -- and the only place a screen can be run.
+#
+# The domain package is tested first and alone. It is the part with real rules in it, it
+# needs no simulator, and a failure there should stop the build before a minute is spent
+# on anything with a screen.
+workflows:
+  vbcore:
+    name: VBCore — the rulebook
+    max_build_duration: 20
+    environment:
+      xcode: latest
+    scripts:
+      - name: Test the domain, including parity with the shipped web app
+        script: |
+          cd packages/VBCore
+          swift test
+    triggering:
+      events: [push, pull_request]
+
+  ios-watch:
+    name: iPhone and Watch
+    max_build_duration: 60
+    integrations:
+      # Built once from the App Store Connect key, and reused by every future app.
+      # The .p8 itself is uploaded to Codemagic by hand; the vault holds the copy every
+      # other consumer uses.
+      app_store_connect: Codemagic CI
+    environment:
+      xcode: latest
+      groups:
+        - appstore_credentials
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.mikejsmith.vbtracker
+    scripts:
+      - name: Generate the Xcode project
+        script: |
+          brew install xcodegen
+          cd ios && xcodegen generate
+
+      - name: Test the domain first
+        script: |
+          cd packages/VBCore
+          swift test
+
+      - name: Build and test the phone
+        script: |
+          xcode-project build-ipa \
+            --project ios/VBTracker.xcodeproj \
+            --scheme VBTracker
+
+      - name: The interface suite, on both platforms
+        script: |
+          xcode-project run-tests \
+            --project ios/VBTracker.xcodeproj \
+            --scheme VBTracker \
+            --device "iPhone 15 Pro"
+          xcode-project run-tests \
+            --project ios/VBTracker.xcodeproj \
+            --scheme VBTrackerWatch \
+            --device "Apple Watch Series 10 (42mm)"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+    triggering:
+      events: [tag]
+      tag_patterns:
+        - pattern: "v*"

@@ -6,6 +6,28 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **The rulebook now exists in Swift, and it counts the same.** `packages/VBCore` is a pure
+  domain package — events, reducer, statistics, aggregation, migrations, and the court
+  geometry — with no storage, no clock and no randomness. It builds and tests on the Windows
+  workstation, which is the entire local development loop for the native release: only the
+  screens need a Mac. **117 tests run in 0.02 seconds.**
+- **The port is proved rather than trusted.** Both logs captured from shipped builds replay
+  through the Swift reducer and produce figures identical to the JavaScript — roster,
+  matches, turns, scores, per-player serves, serves in, points, turns taken, time on court,
+  and which figures are dashes rather than zeroes. A one-serve difference fails the build.
+  The rotation rule still does not reach backwards into a game recorded before it existed.
+- **The build environment is a script, not a memory.** Swift on Windows links with MSVC, so
+  `scripts/swift-env.ps1` puts the Visual Studio developer environment, the user PATH and
+  `SDKROOT` into the shell; `scripts/vbcore-test.ps1` runs the suite. Without them the
+  toolchain reports itself invalid for want of a linker, which is a confusing hour that
+  nobody needs to spend twice.
+- **The Xcode project is generated from a file a person can read.** `ios/project.yml`
+  declares both apps, the App Group derived from the bundle id, and the test targets;
+  `codemagic.yaml` builds them. Nothing hand-edits a `.pbxproj` on a machine that cannot
+  open one.
+
+### Added
+
 - **A serve turn missed at the time can be added.** Every point in a match where a turn
   could have been missed now offers one: after each turn, and at the end of every match.
   Pick who served it and the turn appears in that exact place, holding one serve, open for
