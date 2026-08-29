@@ -68,17 +68,20 @@ has never been run and cannot be measured is not a UI that has been built).
 
 **Decision**: Swift 6, SwiftUI on both platforms, minimum iOS 18 and watchOS 11.
 
-**The devices this release is actually for**:
+**The devices in the operator's hands**: an iPhone 17 Pro and an Apple Watch Ultra 2. Both
+are far above any floor, so neither constrains anything.
 
-| Device | Screen | Notes |
-|---|---|---|
-| Apple Watch Series 11, 42 mm | 374 × 446 pt | **The smaller of the two sizes — this is the design target.** If the court works here it works on the 46 mm |
-| iPhone 14 Pro | 393 × 852 pt | Comfortably above the floor |
+**The devices the release is for**: every iPhone and Apple Watch Apple still supports. iOS
+18 and watchOS 11 are the floors that achieve it — watchOS 11 reaches back to a Series 6,
+which is exactly the oldest watch still receiving updates, and iOS 18 reaches back past the
+oldest iPhone still receiving them. Raising either floor would exclude someone for nothing;
+lowering it would mean supporting devices Apple itself no longer does.
 
-**Rationale**: both devices are current, so the floor is not being dragged down by them. iOS
-18 / watchOS 11 is chosen for a later public release rather than for these two: it reaches
-back to an Apple Watch Series 6 and an iPhone XS, which is a reasonable audience to keep,
-while still allowing modern layout APIs.
+**The design target is therefore not the operator's own watch.** It is the *smallest* watch
+that can install the app — a 40 mm Series 6 or SE, at 324 × 394 pt. A court that reads there
+reads on every larger one, and the Ultra's 49 mm is simply the same layout with more room.
+The seven sizes in the field are listed in `CourtLayout.supportedWatchSizes`, and the layout
+is asserted against all of them rather than against one.
 
 SwiftUI is the only framework with one language across phone and watch, and the watch view is
 six boxes and three numbers — precisely what a declarative layout is good at.
@@ -178,18 +181,19 @@ coach is making is about them (FR-005).
 neighbours, and the arrangement *is* the information. Uneven tracks keep every box in its
 true position and still leave one box unmistakably the biggest.
 
-**The numbers, on the 42 mm watch** — the smaller size is the design target, so the layout is
-sized against 374 × 446 pt rather than against the roomier 46 mm:
+**The numbers, on the smallest supported watch** — 40 mm, 324 × 394 pt, because that is the
+size that has to work:
 
 | | Width | Height |
 |---|---|---|
-| Columns (1 : 1 : 1.35) | ~100 pt · ~100 pt · ~135 pt | |
-| Rows (1.25 : 1) | | ~205 pt · ~165 pt |
-| **On-deck box** (top right) | **~135 pt** | **~205 pt** |
-| Smallest box (bottom left/middle) | ~100 pt | ~165 pt |
+| Columns (1 : 1 : 1.35) | ~89 pt · ~89 pt · ~120 pt | |
+| Rows (1.25 : 1) | | ~208 pt · ~166 pt |
+| **On-deck box** (top right) | **~120 pt** | **~208 pt** |
+| Smallest box (bottom left/middle) | ~89 pt | ~166 pt |
 
-The on-deck box is roughly **1.7× the area** of the smallest — a margin an interface test can
-assert rather than an eye can judge (R-001).
+The on-deck box is roughly **1.7× the area** of the smallest, and the ratio holds at every
+size from 40 mm to the Ultra's 49 mm — a margin an interface test can assert rather than an
+eye can judge (R-001).
 
 **Within a box**: the jersey number is primary and set large — around 46 pt in the on-deck
 box, around 32 pt elsewhere; the serve-in percentage is second at ~15 pt; points third at

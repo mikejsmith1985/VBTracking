@@ -55,11 +55,11 @@ workflows:
           xcode-project run-tests \
             --project ios/VBTracker.xcodeproj \
             --scheme VBTracker \
-            --device "iPhone 15 Pro"
+            --device "iPhone 17 Pro"
           xcode-project run-tests \
             --project ios/VBTracker.xcodeproj \
             --scheme VBTrackerWatch \
-            --device "Apple Watch Series 10 (42mm)"
+            --device "Apple Watch Ultra 2 (49mm)"
 
     artifacts:
       - build/ios/ipa/*.ipa

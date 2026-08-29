@@ -39,7 +39,8 @@ final class CourtLayoutUITests: XCTestCase {
         XCTAssertTrue(onDeck.waitForExistence(timeout: 5))
 
         let smallest = boxes().map(area(of:)).min() ?? 0
-        // SC-014: at least one and a half times the smallest box, on the 42 mm screen.
+        // SC-014: at least one and a half times the smallest box. `CourtLayout` holds this
+        // at every supported size; this checks the app the layout was actually built into.
         XCTAssertGreaterThanOrEqual(area(of: onDeck), smallest * 1.5)
     }
 

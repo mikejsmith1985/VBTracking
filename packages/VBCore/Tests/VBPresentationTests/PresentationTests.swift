@@ -107,6 +107,37 @@ struct CourtLayoutTests {
         #expect(onDeck.area >= smallest * 1.5)
     }
 
+    @Test("The on-deck box is biggest on every watch the app can be installed on")
+    func biggestOnEverySupportedWatch() throws {
+        // The operator's own watch is an Ultra 2, but the app has to be readable on the
+        // smallest one Apple still supports -- and the layout has to hold at both ends.
+        for watch in CourtLayout.supportedWatchSizes {
+            let boxes = CourtLayout.boxes(in: (width: watch.width, height: watch.height))
+            let onDeck = try #require(boxes.first { $0.position == .rightFront })
+            let smallest = try #require(boxes.map(\.area).min())
+
+            #expect(onDeck.area >= smallest * 1.5, "on \(watch.name)")
+        }
+    }
+
+    @Test("No box is too small to read a number in, on any supported watch")
+    func readableOnEverySupportedWatch() {
+        for watch in CourtLayout.supportedWatchSizes {
+            for box in CourtLayout.boxes(in: (width: watch.width, height: watch.height)) {
+                #expect(box.width > 60, "\(box.position) is too narrow on \(watch.name)")
+                #expect(box.height > 50, "\(box.position) is too short on \(watch.name)")
+            }
+        }
+    }
+
+    @Test("The design target is the smallest watch, not the operator's own")
+    func designsForTheSmallest() throws {
+        let smallest = try #require(CourtLayout.supportedWatchSizes.first)
+
+        #expect(CourtLayout.designSize.width == smallest.width)
+        #expect(CourtLayout.designSize.height == smallest.height)
+    }
+
     @Test("Every box still fits on the smaller watch")
     func fitsTheSmallerWatch() {
         let width = boxes.filter { $0.position == .leftFront || $0.position == .middleFront || $0.position == .rightFront }

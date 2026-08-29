@@ -39,10 +39,10 @@ build-time tool only, run on CI.
 persistence and the watch link against a faked session; XCUITest for the interface layer on
 both platforms. The cross-language parity suite gates every build.
 
-**Target Platform**: iOS 18+, watchOS 11+. iPhone portrait only. The devices this release is
-for are an **Apple Watch Series 11 at 42 mm** (374 × 446 pt — the smaller size, and therefore
-the design target) and an **iPhone 14 Pro**. The floor sits below both, for a later public
-release rather than for these two.
+**Target Platform**: iOS 18+, watchOS 11+ — the floors that reach **every iPhone and Apple
+Watch Apple still supports**, and no further. iPhone portrait only. The operator's own
+devices are an iPhone 17 Pro and an Apple Watch Ultra 2, but the design target is the
+*smallest* supported watch: 40 mm, 324 × 394 pt. A court that reads there reads everywhere.
 
 **Project Type**: Native mobile app with a watch companion, over a shared pure-domain
 package. The existing web app stays in the repository root, untouched and still shipping.

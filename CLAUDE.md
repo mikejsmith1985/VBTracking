@@ -35,9 +35,12 @@ in the repository root.
 | App Store Connect `APP_ID` | not yet created |
 
 **Devices and the build loop** - both are load-bearing:
-- Target devices are an **Apple Watch Series 11 at 42 mm** (374 x 446 pt) and an **iPhone 14
-  Pro**. The 42 mm screen is the design target; nothing may depend on the roomier 46 mm.
-- Minimum iOS 18 / watchOS 11 - chosen for a later public release, not for these two devices.
+- The release supports **every iPhone and Apple Watch Apple still supports**: minimum iOS 18
+  and watchOS 11, which is exactly that reach and no further.
+- The operator's own devices are an **iPhone 17 Pro** and an **Apple Watch Ultra 2**, but the
+  design target is the **smallest** supported watch - 40 mm, 324 x 394 pt. A court that reads
+  there reads everywhere. `CourtLayout.supportedWatchSizes` lists all seven sizes, and the
+  layout is asserted against every one.
 - **There is no Mac.** Every build with a screen in it runs on the cloud build service, so
   screens hold no rules, and a visual requirement is written as a measured one (an interface
   test asserts the on-deck box is at least 1.5x the smallest box by area). Batch UI changes;

@@ -4,6 +4,15 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The wrist court is designed for the smallest watch Apple still supports, not the
+  operator's own.** The design target moves from a 42 mm screen to a 40 mm one (324 × 394
+  pt), and the layout is now asserted against all seven sizes in the field — from a Series 6
+  at 40 mm to an Ultra at 49 mm. The on-deck box clears its stated margin on every one of
+  them. Supporting a device means the court has to be readable there, and the smallest
+  screen is the only one that proves it.
+
 ### Added
 
 - **The native app, written end to end.** Both apps now exist: the phone's tracking loop
