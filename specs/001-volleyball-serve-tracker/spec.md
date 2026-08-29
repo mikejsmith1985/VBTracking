@@ -60,7 +60,7 @@ Every recorded action can be undone. Mis-taps are inevitable at the speed of liv
 5. **Given** an active server mid-turn, **When** the operator taps a different player, **Then** the current server's turn is ended without recording a serve, and a new turn begins for the newly tapped player.
 6. **Given** any recorded serve, **When** the operator triggers undo, **Then** the most recent action is reversed, every derived statistic updates accordingly, and turn boundaries are restored to their prior state.
 7. **Given** an undo that reverses the first serve of a turn, **When** the undo completes, **Then** that empty turn is removed rather than left as a zero-serve turn.
-8. **Given** the app is awaiting the next server, **When** the operator views the screen, **Then** it is unambiguous that a side-out occurred and no serve can be recorded until a server is selected.
+8. **Given** the app is awaiting the next server, **When** the operator views the screen, **Then** the player picker occupies the place the outcome controls normally hold, and no control capable of recording a serve is present.
 
 ---
 
@@ -177,7 +177,7 @@ A game is three matches. The operator reviews serving performance for a single s
 - **FR-019**: System MUST count a serve toward points earned only when its outcome is in with a point.
 - **FR-020**: System MUST keep the same player as the active server after a serve that earns a point.
 - **FR-021**: System MUST end the active serve turn after any serve that does not earn a point, and return to awaiting selection of the next server.
-- **FR-022**: System MUST make the awaiting-next-server state visually unmistakable and MUST NOT accept a serve outcome while in that state.
+- **FR-022**: System MUST make the awaiting-next-server state visually unmistakable, and MUST NOT present any control capable of recording a serve while in that state. Presenting a disabled control is not sufficient; the controls are replaced by the player picker, so the state is legible from across a court and recording against the wrong player is structurally impossible rather than merely discouraged.
 - **FR-023**: System MUST prevent a single tap from recording more than one serve.
 
 #### Serve turns

@@ -318,24 +318,24 @@ button {
 
 /* --- Track: picker ------------------------------------------------------ */
 
-/* Status and picker live in one panel. Two separately padded bars read as a single heavy
-   block and cost the tally board screen it needs more than they do. */
+/* A thin status row over exactly one action block. The picker and the outcome controls
+   occupy the same place and are never shown together, so the dock stays one height. */
 .dock-panel {
-  padding: 0 12px 8px;
+  padding: 0 12px;
   border-top: 1px solid var(--line);
   background: var(--surface);
 }
 
-.dock-panel.side-out {
-  background: #3a1f07;
-  box-shadow: inset 0 2px 0 var(--warn);
+.picker {
+  padding: 0 12px 12px;
+  background: var(--surface);
 }
 
 .picker-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
   gap: 8px;
-  max-height: 30vh;
+  max-height: 42vh;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -395,10 +395,9 @@ button {
   white-space: nowrap;
 }
 
-/* Side-out is the most important state on this screen: recording a serve against the
-   wrong player is the failure the whole design exists to prevent. */
-.dock-panel.side-out .server-label { color: var(--warn); }
-.dock-panel.side-out .server-name { color: var(--warn); font-size: 15px; }
+/* Between servers the label is the only colour cue needed -- the picker standing where the
+   outcome controls normally are already says it, from across a court. */
+.status-row.awaiting .server-label { color: var(--warn); }
 
 .btn-undo {
   flex: 0 0 auto;
@@ -453,11 +452,6 @@ button {
 }
 
 .outcome:active { filter: brightness(0.86); }
-
-.outcomes[data-enabled="false"] .outcome {
-  opacity: 0.28;
-  pointer-events: none;
-}
 
 /* --- Roster ------------------------------------------------------------- */
 

@@ -71,14 +71,16 @@ describe('a match, driven through the real UI', () => {
     expect(screenText()).toContain('Match 1 of 3')
   })
 
-  it('begins in side-out state with the outcome controls disabled', () => {
-    expect(dockHtml()).toContain('data-enabled="false"')
-    expect(dockHtml()).toContain('Select the next server')
+  it('begins with the picker in place of the outcome controls', () => {
+    expect(dockHtml()).not.toContain('data-outcome=')
+    expect(dockHtml()).toContain('picker-grid')
+    expect(dockHtml()).toContain('Next server')
   })
 
-  it('enables the outcome controls once a server is chosen', () => {
+  it('swaps in the outcome controls once a server is chosen', () => {
     click('.chip')
-    expect(dockHtml()).toContain('data-enabled="true"')
+    expect(dockHtml()).toContain('data-outcome=')
+    expect(dockHtml()).not.toContain('picker-grid')
     expect(dockHtml()).toContain('Now serving')
   })
 
@@ -97,12 +99,13 @@ describe('a match, driven through the real UI', () => {
     expect(storedEvents().length - before).toBe(1)
   })
 
-  it('closes the turn and returns to side-out on a serve that wins no point', async () => {
+  it('closes the turn and brings the picker back on a serve that wins no point', async () => {
     await sleep(PAST_TAP_GUARD)
     click('[data-outcome="OUT"]')
 
-    expect(dockHtml()).toContain('data-enabled="false"')
-    expect(dockHtml()).toContain('Select the next server')
+    expect(dockHtml()).not.toContain('data-outcome=')
+    expect(dockHtml()).toContain('picker-grid')
+    expect(dockHtml()).toContain('Next server')
   })
 
   it('shows the tally with one mark per serve', () => {

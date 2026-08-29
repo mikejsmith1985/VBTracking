@@ -77,10 +77,26 @@ outcomes courtside on a phone.
 
 ### Changed
 
-- The server status and the player picker now share one panel instead of stacking two
-  separately padded bars. The status line is one row rather than two, and its height is
-  fixed across both states so the outcome buttons never shift under a thumb that has
-  learned where they are.
+- **The side-out announcement is gone.** A turn can only end two ways — a serve that wins
+  no point, or a different player being chosen — so the state needs no banner. The dock is
+  now a thin status row over exactly one action block: the outcome controls, or the player
+  picker. Never both, and never a dimmed copy of either.
+- Between servers, the picker stands where the outcome controls normally are. That swap is
+  the signal, readable across a court without reading a word, and it makes recording a
+  serve against the wrong player structurally impossible rather than merely discouraged —
+  no control capable of recording one exists.
+- **168 px returned to the tally board** between servers: the dock fell from 381 px to
+  213 px on a 430 px viewport with a 9-player roster. The two states now differ by 12 px,
+  so the outcome controls land in the same place every time they appear.
+- Tapping **Change** while serving swaps the outcome controls for the picker and becomes
+  **Cancel**, keeping the one-action-block rule intact.
+- Outcome control captions now read "turn ends" rather than "side out".
+
+### Fixed
+
+- A player selected as server no longer appears on the tally board with an empty turn box
+  and a `0 served` line before they have served. A just-opened turn holds no serves yet;
+  drawing it read as a mistake, and the status row already names the current server.
 
 ### Known limitations
 

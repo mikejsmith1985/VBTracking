@@ -52,7 +52,7 @@ describe('during a match', () => {
 
     expect(screen).toContain('21 reached — win by 2')
     expect(screen).toContain('data-action="end-match"')
-    expect(dock).toContain('data-enabled="true"') // recording continues
+    expect(dock).toContain('data-outcome=') // recording continues
   })
 
   it('asks for confirmation before ending a match', () => {
@@ -62,30 +62,41 @@ describe('during a match', () => {
   })
 })
 
-describe('side-out state', () => {
-  const sideOut = build(roster(3), E.startGame('g1'), E.selectServer('p1'), E.recordServe(OUT))
+describe('between servers', () => {
+  const awaiting = build(roster(3), E.startGame('g1'), E.selectServer('p1'), E.recordServe(OUT))
 
-  it('disables the outcome controls rather than ignoring taps (FR-022)', () => {
-    expect(render(sideOut).dock).toContain('data-enabled="false"')
+  it('removes the outcome controls entirely rather than dimming them (FR-022)', () => {
+    const { dock } = render(awaiting)
+    expect(dock).not.toContain('data-outcome=')
+    expect(dock).not.toContain('data-action="serve"')
   })
 
-  it('says plainly that a server must be chosen', () => {
-    const { dock } = render(sideOut)
-    expect(dock).toContain('side-out')
-    expect(dock).toContain('Side out')
-    expect(dock).toContain('Select the next server')
+  it('puts the picker where the outcome controls normally are -- that is the signal', () => {
+    const { dock } = render(awaiting)
+    expect(dock).toContain('picker-grid')
+    expect(dock).toContain('data-action="select-server"')
   })
 
-  it('shows the picker without the operator having to open it', () => {
-    expect(render(sideOut).dock).toContain('data-action="select-server"')
+  it('marks the status row so the label carries a colour cue', () => {
+    const { dock } = render(awaiting)
+    expect(dock).toContain('awaiting')
+    expect(dock).toContain('Next server')
+  })
+
+  it('does not offer a change-server control, since no one is serving', () => {
+    expect(render(awaiting).dock).not.toContain('data-action="toggle-picker"')
+  })
+
+  it('still offers undo', () => {
+    expect(render(awaiting).dock).toContain('data-action="undo"')
   })
 })
 
 describe('while a player is serving', () => {
   const serving = build(roster(3), E.startGame('g1'), E.selectServer('p1'), E.recordServe(IN_POINT))
 
-  it('enables the outcome controls', () => {
-    expect(render(serving).dock).toContain('data-enabled="true"')
+  it('shows the outcome controls', () => {
+    expect(render(serving).dock).toContain('data-outcome=')
   })
 
   it('names the server', () => {
@@ -100,8 +111,11 @@ describe('while a player is serving', () => {
     expect(dock).not.toContain('picker-grid')
   })
 
-  it('reopens the picker on request', () => {
-    expect(render(serving, { pickerOpen: true }).dock).toContain('picker-grid')
+  it('swaps the outcome controls for the picker when changing server, never both', () => {
+    const { dock } = render(serving, { pickerOpen: true })
+    expect(dock).toContain('picker-grid')
+    expect(dock).not.toContain('data-outcome=')
+    expect(dock).toContain('Cancel')
   })
 
   it('offers all three outcomes', () => {

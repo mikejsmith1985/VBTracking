@@ -104,6 +104,21 @@ describe('tallyBoard', () => {
     expect(html).toContain('&lt;img')
   })
 
+  it('draws nothing for a server whose turn has just opened', () => {
+    const state = build(roster(3), E.startGame('g1'), E.selectServer('p1'))
+    expect(tallyBoard(currentMatch(state), state.roster)).toContain('No serves yet')
+  })
+
+  it('leaves a just-opened turn off the board without hiding the rest', () => {
+    const state = build(roster(3), E.startGame('g1'), turn('p1', 1), E.selectServer('p2'))
+    const html = tallyBoard(currentMatch(state), state.roster)
+
+    expect(count(html, 'class="tally-row"')).toBe(1)
+    expect(count(html, 'style="--turn-color:')).toBe(1)
+    expect(html).not.toContain('0 · 0 in')
+    expect(html).not.toContain('0 served')
+  })
+
   it('includes a legend so the mark shapes are readable without instruction', () => {
     const state = build(roster(1), E.startGame('g1'), turn('p1', 1))
     const html = tallyBoard(currentMatch(state), state.roster)
