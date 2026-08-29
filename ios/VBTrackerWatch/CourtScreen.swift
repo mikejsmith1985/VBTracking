@@ -8,6 +8,7 @@
 //
 // The sizes are worked out in `CourtLayout` and asserted by a test that measures them,
 // because no simulator can be opened on the machine this was written on.
+import Combine
 import SwiftUI
 import VBCore
 import VBPresentation

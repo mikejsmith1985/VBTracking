@@ -13,7 +13,16 @@ struct PaperGameScreen: View {
     @State private var context = GameContext(date: nil, opponent: "", location: "", court: "")
     @State private var notes = GameNotes()
     @State private var result = MatchResult.undecided
-    @State private var figures: [String: (servesIn: String, servesOut: String)] = [:]
+    @State private var figures: [String: Counted] = [:]
+
+    /// What has been typed into one player's two boxes.
+    ///
+    /// A struct rather than a tuple because the fields are reached by key path, and Swift
+    /// has no key paths into tuples.
+    struct Counted: Equatable {
+        var servesIn = ""
+        var servesOut = ""
+    }
     @State private var date = Date()
 
     private var members: [RosterEntry] {
@@ -77,11 +86,11 @@ struct PaperGameScreen: View {
 
     private func binding(
         for playerId: String,
-        _ field: WritableKeyPath<(servesIn: String, servesOut: String), String>
+        _ field: WritableKeyPath<Counted, String>
     ) -> Binding<String> {
         Binding(
-            get: { figures[playerId, default: ("", "")][keyPath: field] },
-            set: { figures[playerId, default: ("", "")][keyPath: field] = $0 }
+            get: { figures[playerId, default: Counted()][keyPath: field] },
+            set: { figures[playerId, default: Counted()][keyPath: field] = $0 }
         )
     }
 
@@ -92,7 +101,7 @@ struct PaperGameScreen: View {
         // A blank box is nought serves, not a refusal: a player who did not serve is on the
         // sheet with nothing beside their name.
         let entries = members.map { member -> RawHistoricalEntry in
-            let recorded = figures[member.id] ?? ("", "")
+            let recorded = figures[member.id] ?? Counted()
             return RawHistoricalEntry(
                 playerId: member.id,
                 servesIn: Int(recorded.servesIn) ?? 0,

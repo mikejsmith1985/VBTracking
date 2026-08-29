@@ -84,7 +84,9 @@ targets:
   SharedTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [SharedTests]
+    # `Shared` is compiled into each app rather than into a framework of its own, so the
+    # test bundle compiles it too. A framework would be a third thing to sign for no gain.
+    sources: [SharedTests, Shared]
     dependencies:
       - target: VBTracker
       - package: VBCore
