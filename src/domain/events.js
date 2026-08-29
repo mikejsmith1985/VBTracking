@@ -26,6 +26,7 @@ export const EVENT = Object.freeze({
   SET_TURN_SERVES: 'SET_TURN_SERVES',
   REASSIGN_TURN: 'REASSIGN_TURN',
   DELETE_TURN: 'DELETE_TURN',
+  INSERT_TURN: 'INSERT_TURN',
   ADD_HISTORICAL_GAME: 'ADD_HISTORICAL_GAME',
   EDIT_HISTORICAL_GAME: 'EDIT_HISTORICAL_GAME',
   SET_LINEUP: 'SET_LINEUP',
@@ -173,6 +174,18 @@ export function setTurnServes(gameId, matchIndex, ordinal, outcomes) {
 /** Corrects which player a recorded turn belongs to. */
 export function reassignTurn(gameId, matchIndex, ordinal, playerId) {
   return { t: EVENT.REASSIGN_TURN, gameId, matchIndex, ordinal, playerId }
+}
+
+/**
+ * Records a serve turn that was missed at the time.
+ *
+ * `afterOrdinal` is the turn it follows, or -1 for the start of the match, so a turn
+ * missed in the middle lands in the right place in the order rather than at the end. It
+ * starts with a single serve because a turn with none is a turn that did not happen; the
+ * serves are then corrected like any others.
+ */
+export function insertTurn(gameId, matchIndex, afterOrdinal, playerId) {
+  return { t: EVENT.INSERT_TURN, gameId, matchIndex, afterOrdinal, playerId }
 }
 
 /** Removes a turn that should never have been recorded at all. */

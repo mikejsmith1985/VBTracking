@@ -41,6 +41,11 @@ export function turnKey(matchIndex, ordinal) {
   return `${matchIndex}:${ordinal}`
 }
 
+/** Identifies the gap a missed turn would be added into: after this ordinal in this match. */
+export function insertKey(matchIndex, afterOrdinal) {
+  return `${matchIndex}@${afterOrdinal}`
+}
+
 /** The whole record: every match of the game, every turn within it. */
 export function gameRecordView(state, ui) {
   const game = gameById(state, ui.recordGameId)
@@ -76,7 +81,8 @@ function matchSection(state, ui, match) {
     </div>
     ${played.length === 0
       ? '<div class="empty">No serves were recorded in this match.</div>'
-      : played.map((turn) => turnBlock(state, ui, match, turn)).join('')}`
+      : played.map((turn) => turnBlock(state, ui, match, turn)).join('')}
+    ${addTurnControl(state, ui, match, match.turns.length - 1)}`
 }
 
 function turnBlock(state, ui, match, turn) {
@@ -152,6 +158,8 @@ function turnEditor(state, ui, match, turn) {
 
       ${ui.reassigningTurn === key ? reassignChoices(state, at, turn) : ''}
 
+      ${addTurnControl(state, ui, match, turn.ordinal)}
+
       <button class="btn btn-danger" data-action="delete-turn" ${at} type="button">
         ${ui.confirmingDeleteTurn === key ? 'Delete this whole turn?' : 'Delete this turn'}
       </button>
@@ -159,6 +167,38 @@ function turnEditor(state, ui, match, turn) {
         ? '<div class="roster-count">Tap again to delete. Every serve in it goes too, and the turns after it renumber.</div>'
         : ''}
     </div>`
+}
+
+/**
+ * Adds a turn nobody recorded at the time.
+ *
+ * Offered in two places, because a turn is missed in two ways: noticed later, where it
+ * belongs after the turn being looked at, and noticed at the end, where it belongs after
+ * everything. Picking the player is the whole gesture -- the turn arrives holding one
+ * serve, which is then corrected like any other.
+ */
+function addTurnControl(state, ui, match, afterOrdinal) {
+  const key = insertKey(match.index, afterOrdinal)
+  const isChoosing = ui.insertingTurn === key
+  const at = `data-match="${match.index}" data-after="${afterOrdinal}"`
+
+  return `
+    <button class="btn add-turn" data-action="add-turn" ${at} type="button">
+      ${isChoosing ? 'Cancel' : `+ Add a missed turn${afterOrdinal < 0 ? '' : ' after this one'}`}
+    </button>
+    ${isChoosing ? insertChoices(state, at) : ''}`
+}
+
+/** Who served the missed turn. Anyone on the roster, because anyone there could have. */
+function insertChoices(state, at) {
+  const buttons = state.roster
+    .map((player) => `
+      <button class="btn reassign-choice" data-action="insert-for" ${at} data-id="${player.id}" type="button">
+        <b>${esc(player.number) || '–'}</b> ${esc(player.name)}
+      </button>`)
+    .join('')
+
+  return `<div class="reassign-list">${buttons || '<div class="empty">Nobody on the roster yet.</div>'}</div>`
 }
 
 /** Every player on the roster, because a turn can be credited to anyone who was there. */

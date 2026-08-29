@@ -165,6 +165,19 @@ describe('correcting a game that is no longer the one being tracked', () => {
     expect(document.querySelectorAll('.record-turn').length).toBe(0)
   })
 
+  it('adds a turn that was missed at the time, and opens it for its serves', () => {
+    click('[data-action="add-turn"]')
+    click('[data-action="insert-for"]')
+
+    expect(events().at(-1).t).toBe('INSERT_TURN')
+    expect(document.querySelectorAll('.record-turn, .turn-editor').length).toBe(1)
+    // It arrives holding one serve, open for correction.
+    expect(document.querySelectorAll('[data-action="cycle-serve"]').length).toBe(1)
+
+    click('[data-action="add-serve"]')
+    expect(events().at(-1).outcomes).toHaveLength(2)
+  })
+
   it('undoes the correction like any other action', () => {
     click('[data-action="close-record"]')
     click('[data-action="close-game"]')

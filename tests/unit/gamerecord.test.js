@@ -2,7 +2,7 @@
 // tracking any more. These are pure string checks: no DOM, no store.
 import { describe, it, expect } from 'vitest'
 import * as E from '../../src/domain/events.js'
-import { gameRecordView, nextOutcome, turnKey } from '../../src/ui/screens/gamerecord.js'
+import { gameRecordView, nextOutcome, turnKey, insertKey } from '../../src/ui/screens/gamerecord.js'
 import { build, roster } from '../helpers.js'
 
 const { OUT, IN_POINT, IN_NO_POINT } = E.OUTCOME
@@ -122,5 +122,41 @@ describe('cycling a serve', () => {
 describe('naming a turn', () => {
   it('distinguishes the same ordinal in different matches', () => {
     expect(turnKey(0, 3)).not.toBe(turnKey(1, 3))
+  })
+})
+
+describe('adding a turn that was missed', () => {
+  it('is offered at the end of every match, so a missed last turn has somewhere to go', () => {
+    const html = gameRecordView(played, { recordGameId: 'g1' })
+    expect(html).toContain('data-action="add-turn"')
+    expect(html).toContain('Add a missed turn')
+  })
+
+  it('is offered inside an open turn too, for one missed in the middle', () => {
+    const html = gameRecordView(played, at(0, 0))
+    expect(html).toMatch(/data-action="add-turn"[^>]*data-after="0"/)
+    expect(html).toContain('after this one')
+  })
+
+  it('names the place it would go, not just the match', () => {
+    const html = gameRecordView(played, { recordGameId: 'g1' })
+    expect(html).toMatch(/data-action="add-turn"[^>]*data-match="0"[^>]*data-after="1"/)
+  })
+
+  it('asks who served it only once asked for', () => {
+    const html = gameRecordView(played, { recordGameId: 'g1' })
+    expect(html).not.toContain('data-action="insert-for"')
+
+    const choosing = gameRecordView(played, { recordGameId: 'g1', insertingTurn: insertKey(0, 1) })
+    expect([...choosing.matchAll(/data-action="insert-for"/g)]).toHaveLength(3)
+  })
+
+  it('offers everyone, including whoever served the turn beside it', () => {
+    const choosing = gameRecordView(played, { recordGameId: 'g1', insertingTurn: insertKey(0, 1) })
+    expect(choosing).toMatch(/data-action="insert-for"[^>]*data-id="p1"/)
+  })
+
+  it('names a gap by its match as well as its place', () => {
+    expect(insertKey(0, 2)).not.toBe(insertKey(1, 2))
   })
 })

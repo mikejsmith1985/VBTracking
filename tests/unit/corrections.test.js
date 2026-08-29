@@ -117,3 +117,77 @@ describe('a correction is an event like any other', () => {
     expect(events.filter((event) => event.t === 'RECORD_SERVE').length).toBeGreaterThan(0)
   })
 })
+
+describe('adding a turn that was missed at the time', () => {
+  it('lands after the turn it is added against, not at the end', () => {
+    const state = build(played, E.insertTurn('g1', 0, 0, 'p3'))
+    expect(turnsOf(state).map((turn) => turn.playerId)).toEqual(['p1', 'p3', 'p2'])
+  })
+
+  it('can be added before the first turn of the match', () => {
+    const state = build(played, E.insertTurn('g1', 0, -1, 'p3'))
+    expect(turnsOf(state)[0].playerId).toBe('p3')
+  })
+
+  it('can be added after the last', () => {
+    const state = build(played, E.insertTurn('g1', 0, 1, 'p3'))
+    expect(turnsOf(state).at(-1).playerId).toBe('p3')
+  })
+
+  it('arrives holding one serve, because a turn with none did not happen', () => {
+    const state = build(played, E.insertTurn('g1', 0, 0, 'p3'))
+    expect(turnsOf(state)[1].serves).toEqual([{ outcome: OUT }])
+  })
+
+  it('renumbers the turns after it rather than leaving two with the same number', () => {
+    const state = build(played, E.insertTurn('g1', 0, 0, 'p3'))
+    expect(turnsOf(state).map((turn) => turn.ordinal)).toEqual([0, 1, 2])
+  })
+
+  it('is corrected from there like any other turn', () => {
+    const state = build(
+      played,
+      E.insertTurn('g1', 0, 0, 'p3'),
+      E.setTurnServes('g1', 0, 1, [IN_POINT, IN_POINT, OUT]),
+    )
+    expect(matchStats(gameById(state, 'g1').matches[0]).get('p3')).toMatchObject({ serves: 3, points: 2 })
+  })
+
+  it('takes no rotation position, so it cannot move who serves next', () => {
+    const state = build(played, E.insertTurn('g1', 0, 0, 'p3'))
+    expect(turnsOf(state)[1].lineupPosition).toBeNull()
+    expect(turnsOf(state)[1].isOffLineup).toBe(false)
+  })
+
+  it('keeps the count of who was on court around it', () => {
+    const withLineup = [
+      roster(7), E.startGame('g1', 'season-1'),
+      E.setLineup(['p1', 'p2', 'p3', 'p4', 'p5', 'p6']),
+      E.selectServer('p1'), E.recordServe(IN_POINT), E.recordServe(OUT),
+    ]
+    const state = build(withLineup, E.insertTurn('g1', 0, 0, 'p7'))
+    expect(turnsOf(state)[1].lineupSnapshot).toEqual(['p1', 'p2', 'p3', 'p4', 'p5', 'p6'])
+  })
+
+  it('refuses a place that is not in the match', () => {
+    expect(rejectionReason(finished(), E.insertTurn('g1', 0, 9, 'p1'))).toMatch(/no such place/)
+    expect(rejectionReason(finished(), E.insertTurn('g1', 0, -2, 'p1'))).toMatch(/no such place/)
+  })
+
+  it('refuses a player who is not on the roster', () => {
+    expect(rejectionReason(finished(), E.insertTurn('g1', 0, 0, 'ghost'))).toBeTruthy()
+  })
+
+  it('refuses a game recorded from paper', () => {
+    const paper = build(roster(2), E.addHistoricalGame('h1', 'season-1',
+      { date: null, opponent: 'X', location: '', court: '' }, [{ playerId: 'p1', in: 1, out: 0 }]))
+    expect(rejectionReason(paper, E.insertTurn('h1', 0, -1, 'p1'))).toMatch(/from paper/)
+  })
+
+  it('is undone by dropping it', () => {
+    const before = JSON.stringify(finished())
+    const after = [...played.flat(Infinity), E.insertTurn('g1', 0, 0, 'p3')]
+    expect(JSON.stringify(replay(after))).not.toBe(before)
+    expect(JSON.stringify(replay(after.slice(0, -1)))).toBe(before)
+  })
+})
