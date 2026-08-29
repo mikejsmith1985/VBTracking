@@ -227,7 +227,7 @@ public struct Game: Equatable, Sendable {
 }
 
 /// Everything the log replays into.
-public struct State: Equatable, Sendable {
+public struct AppState: Equatable, Sendable {
     public var players: [Player]
     public var seasons: [Season]
     public var activeSeasonId: String?

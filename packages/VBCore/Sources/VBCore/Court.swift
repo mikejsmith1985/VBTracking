@@ -110,7 +110,7 @@ public func lineupIndex(servingPosition: Int, offset: Int) -> Int {
     return ((servingPosition + offset) % size + size) % size
 }
 
-extension State {
+extension AppState {
     /// The court as it stands in the match in progress, with figures for that match.
     ///
     /// Returns nil when there is no match to draw — the watch then says so rather than

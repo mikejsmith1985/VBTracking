@@ -53,7 +53,7 @@ struct EventCodecTests {
     func refusesUnknownOutcome() {
         let event = try? #require(Event(raw: raw(EventType.recordServe, ["outcome": "ACE"])))
         #expect(event?.kind == .recordServe(outcome: nil))
-        #expect(rejectionReason(State(), event ?? Event(id: "", kind: .clearLineup)) != nil)
+        #expect(rejectionReason(AppState(), event ?? Event(id: "", kind: .clearLineup)) != nil)
     }
 
     @Test("A count that is not a whole number is refused rather than read as zero")

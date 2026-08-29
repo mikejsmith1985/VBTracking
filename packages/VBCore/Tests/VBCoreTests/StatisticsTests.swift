@@ -55,7 +55,7 @@ struct FigureTests {
 struct AggregateTests {
     /// A season holding one tracked game and one copied from paper — the mix that the
     /// null-not-zero rule exists for.
-    private var mixedSeason: State {
+    private var mixedSeason: AppState {
         build(
             roster(3),
             [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: false))],

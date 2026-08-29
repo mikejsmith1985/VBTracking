@@ -6,6 +6,7 @@
 // is the only place the three-second figure in SC-002 means anything.
 import Foundation
 import VBCore
+import VBPresentation
 
 /// What either device needs from the connection, and nothing more.
 public protocol ConnectivitySession: AnyObject, Sendable {

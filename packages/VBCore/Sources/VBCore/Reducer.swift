@@ -1,6 +1,6 @@
 // The rulebook. Every rule in the specification lives here and nowhere else.
 //
-// Pure: no storage, no clock, no randomness, no interface. State is never mutated in
+// Pure: no storage, no clock, no randomness, no interface. AppState is never mutated in
 // place, because undo works by replaying the log from empty — so a state that could be
 // changed after the fact would make undo a lie.
 //
@@ -13,12 +13,12 @@ import Foundation
 private let implicitSeason = (id: "season-1", name: "Season 1", team: "My Team")
 
 /// Rebuilds derived state from an event log. Deterministic for a given log.
-public func replay(_ events: [Event]) -> State {
-    events.reduce(State()) { applyEvent($0, $1) }
+public func replay(_ events: [Event]) -> AppState {
+    events.reduce(AppState()) { applyEvent($0, $1) }
 }
 
 /// Rebuilds derived state from a log as it sits on disk.
-public func replay(raw events: [RawEvent]) -> State {
+public func replay(raw events: [RawEvent]) -> AppState {
     replay(events.compactMap(Event.init(raw:)))
 }
 
@@ -26,7 +26,7 @@ public func replay(raw events: [RawEvent]) -> State {
 ///
 /// A rejected event returns the state it was given, unchanged, so that a corrupt stored log
 /// can never stop the app from starting.
-public func applyEvent(_ state: State, _ event: Event) -> State {
+public func applyEvent(_ state: AppState, _ event: Event) -> AppState {
     if rejectionReason(state, event) != nil { return state }
     let next = transition(state, event)
     if next == state { return state }
@@ -34,13 +34,13 @@ public func applyEvent(_ state: State, _ event: Event) -> State {
 }
 
 /// True when the event would be accepted against the state given.
-public func isEventValid(_ state: State, _ event: Event) -> Bool {
+public func isEventValid(_ state: AppState, _ event: Event) -> Bool {
     rejectionReason(state, event) == nil
 }
 
 // MARK: - Transitions
 
-private func transition(_ state: State, _ event: Event) -> State {
+private func transition(_ state: AppState, _ event: Event) -> AppState {
     switch event.kind {
     case let .createSeason(id, name, team, format):
         return withSeasonCreated(state, id: id, name: name, team: team, format: format)

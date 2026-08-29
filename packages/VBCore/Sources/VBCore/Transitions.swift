@@ -8,12 +8,12 @@ import Foundation
 // MARK: - Seasons
 
 func withSeasonCreated(
-    _ state: State,
+    _ state: AppState,
     id: String,
     name: String,
     team: String,
     format: SeasonFormat
-) -> State {
+) -> AppState {
     var next = state
     next.seasons.append(
         Season(
@@ -28,7 +28,7 @@ func withSeasonCreated(
     return next
 }
 
-func withSeasonRenamed(_ state: State, id: String, name: String, team: String?) -> State {
+func withSeasonRenamed(_ state: AppState, id: String, name: String, team: String?) -> AppState {
     mapSeason(state, id) { season in
         var next = season
         next.name = name.trimmed
@@ -41,7 +41,7 @@ func withSeasonRenamed(_ state: State, id: String, name: String, team: String?) 
 ///
 /// Requiring the operator to create one before adding a player would be ceremony; the first
 /// is made for them, and can be renamed.
-private func ensureSeason(_ state: State) -> State {
+private func ensureSeason(_ state: AppState) -> AppState {
     if !state.seasons.isEmpty, state.activeSeasonId != nil { return state }
     return withSeasonCreated(
         state,
@@ -60,12 +60,12 @@ private func ensureSeason(_ state: State) -> State {
 /// The number goes on the membership, never on the person — next season the same child may
 /// wear a different one for a different team.
 func withPlayerAdded(
-    _ state: State,
+    _ state: AppState,
     id: String,
     name: String,
     number: String,
     seasonId: String?
-) -> State {
+) -> AppState {
     var seeded = ensureSeason(state)
     let resolved = seasonIdFor(seeded, seasonId)
 
@@ -82,12 +82,12 @@ func withPlayerAdded(
 
 /// Corrects the name career-wide, and the number for this season only.
 func withPlayerEdited(
-    _ state: State,
+    _ state: AppState,
     id: String,
     name: String,
     number: String,
     seasonId: String?
-) -> State {
+) -> AppState {
     var next = state
     next.players = state.players.map { player in
         guard player.id == id else { return player }
@@ -115,7 +115,7 @@ func withPlayerEdited(
 /// figures it produced then. Redefining it would change statistics for games already
 /// played, which is the one thing a migration must never do. Release 003's roster screen
 /// uses the non-destructive path instead.
-func withPlayerRemoved(_ state: State, id: String, seasonId: String?) -> State {
+func withPlayerRemoved(_ state: AppState, id: String, seasonId: String?) -> AppState {
     var next = state
     next.players = state.players.filter { $0.id != id }
     next.games = state.games.map { game in
@@ -139,7 +139,7 @@ func withPlayerRemoved(_ state: State, id: String, seasonId: String?) -> State {
 
 /// Leaves the person, and everything they recorded, exactly where it is. Removing someone
 /// from this year's squad says nothing about the serves they took last year.
-func withMembershipRemoved(_ state: State, playerId: String, seasonId: String?) -> State {
+func withMembershipRemoved(_ state: AppState, playerId: String, seasonId: String?) -> AppState {
     mapSeason(state, seasonIdFor(state, seasonId)) { season in
         var next = season
         next.members = season.members.filter { $0.playerId != playerId }
@@ -150,11 +150,11 @@ func withMembershipRemoved(_ state: State, playerId: String, seasonId: String?) 
 // MARK: - Games
 
 func withGameStarted(
-    _ state: State,
+    _ state: AppState,
     id: String,
     seasonId: String?,
     rotatesAtServeLimit: Bool
-) -> State {
+) -> AppState {
     var seeded = ensureSeason(state)
     let game = Game(
         id: id,
@@ -168,7 +168,7 @@ func withGameStarted(
     return seeded
 }
 
-func withGameDiscarded(_ state: State, id: String) -> State {
+func withGameDiscarded(_ state: AppState, id: String) -> AppState {
     var next = state
     next.games = state.games.filter { $0.id != id }
     if state.currentGameId == id { next.currentGameId = nil }
@@ -180,14 +180,14 @@ func withGameDiscarded(_ state: State, id: String) -> State {
 /// It holds no matches and no turns, because that detail was never written down.
 /// Synthesising them would report turn counts that never happened.
 func withHistoricalGameAdded(
-    _ state: State,
+    _ state: AppState,
     id: String,
     seasonId: String?,
     context: GameContext,
     entries: [RawHistoricalEntry],
     notes: GameNotes,
     result: ResultField
-) -> State {
+) -> AppState {
     var seeded = ensureSeason(state)
     seeded.games.append(
         Game(
@@ -204,13 +204,13 @@ func withHistoricalGameAdded(
 }
 
 func withHistoricalGameEdited(
-    _ state: State,
+    _ state: AppState,
     id: String,
     context: GameContext,
     entries: [RawHistoricalEntry],
     notes: GameNotes,
     result: ResultField
-) -> State {
+) -> AppState {
     mapGame(state, id) { game in
         var next = game
         next.context = context
@@ -223,7 +223,7 @@ func withHistoricalGameEdited(
 
 // MARK: - Ending
 
-func withMatchEnded(_ state: State, result: MatchResult) -> State {
+func withMatchEnded(_ state: AppState, result: MatchResult) -> AppState {
     guard let game = state.currentGame, let ending = state.currentMatch else { return state }
 
     var ended = ending
@@ -249,7 +249,7 @@ func withMatchEnded(_ state: State, result: MatchResult) -> State {
 ///
 /// The match in progress is closed and keeps every serve it holds; no further match opens,
 /// because none was played.
-func withGameEnded(_ state: State, result: MatchResult) -> State {
+func withGameEnded(_ state: AppState, result: MatchResult) -> AppState {
     guard let game = state.currentGame, let ending = state.currentMatch else { return state }
 
     var ended = ending
@@ -266,7 +266,7 @@ func withGameEnded(_ state: State, result: MatchResult) -> State {
 
 // MARK: - The match in progress
 
-func withSubstitution(_ state: State, outPlayerId: String, inPlayerId: String) -> State {
+func withSubstitution(_ state: AppState, outPlayerId: String, inPlayerId: String) -> AppState {
     updateCurrentMatch(state) { match, _ in
         guard let lineup = match.lineup, let position = lineup.firstIndex(of: outPlayerId) else {
             return match
@@ -298,7 +298,7 @@ func withSubstitution(_ state: State, outPlayerId: String, inPlayerId: String) -
     }
 }
 
-func withServerSelected(_ state: State, playerId: String) -> State {
+func withServerSelected(_ state: AppState, playerId: String) -> AppState {
     updateCurrentMatch(state) { match, _ in
         let pending = pendingPosition(for: match)
         let closed = closeOpenTurn(match.turns)
@@ -315,7 +315,7 @@ func withServerSelected(_ state: State, playerId: String) -> State {
     }
 }
 
-func withServeRecorded(_ state: State, outcome: Outcome) -> State {
+func withServeRecorded(_ state: AppState, outcome: Outcome) -> AppState {
     updateCurrentMatch(state) { match, game in
         var next = match
         next.turns = match.turns.map { turn in
@@ -372,12 +372,12 @@ private func advanceRotation(_ match: Match) -> Match {
 // MARK: - Corrections
 
 func withTurnServesSet(
-    _ state: State,
+    _ state: AppState,
     gameId: String,
     matchIndex: Int,
     ordinal: Int,
     outcomes: [String]
-) -> State {
+) -> AppState {
     let serves = outcomes.compactMap(Outcome.init(rawValue:)).map(Serve.init(outcome:))
     return mapTurn(state, gameId: gameId, matchIndex: matchIndex, ordinal: ordinal) { turn in
         var next = turn
@@ -393,12 +393,12 @@ func withTurnServesSet(
 /// The turn keeps its place in the order. Only who took it changes — a serve recorded
 /// against the wrong player is still a serve that happened, at that point in the match.
 func withTurnReassigned(
-    _ state: State,
+    _ state: AppState,
     gameId: String,
     matchIndex: Int,
     ordinal: Int,
     playerId: String
-) -> State {
+) -> AppState {
     mapTurn(state, gameId: gameId, matchIndex: matchIndex, ordinal: ordinal) { turn in
         var next = turn
         next.playerId = playerId
@@ -412,12 +412,12 @@ func withTurnReassigned(
 /// being played. It copies the lineup that was on court around it, so time on court still
 /// counts for the players who were standing there.
 func withTurnInserted(
-    _ state: State,
+    _ state: AppState,
     gameId: String,
     matchIndex: Int,
     afterOrdinal: Int,
     playerId: String
-) -> State {
+) -> AppState {
     mapMatch(state, gameId: gameId, matchIndex: matchIndex) { match in
         let neighbour = match.turns.indices.contains(afterOrdinal)
             ? match.turns[afterOrdinal]
@@ -506,24 +506,24 @@ func renumber(_ turns: [Turn]) -> [Turn] {
 
 // MARK: - Mapping helpers
 
-func mapSeason(_ state: State, _ seasonId: String, _ transform: (Season) -> Season) -> State {
+func mapSeason(_ state: AppState, _ seasonId: String, _ transform: (Season) -> Season) -> AppState {
     var next = state
     next.seasons = state.seasons.map { $0.id == seasonId ? transform($0) : $0 }
     return next
 }
 
-func mapGame(_ state: State, _ gameId: String, _ transform: (Game) -> Game) -> State {
+func mapGame(_ state: AppState, _ gameId: String, _ transform: (Game) -> Game) -> AppState {
     var next = state
     next.games = state.games.map { $0.id == gameId ? transform($0) : $0 }
     return next
 }
 
 func mapMatch(
-    _ state: State,
+    _ state: AppState,
     gameId: String,
     matchIndex: Int,
     _ transform: (Match) -> Match
-) -> State {
+) -> AppState {
     mapGame(state, gameId) { game in
         var next = game
         next.matches = game.matches.map { $0.index == matchIndex ? transform($0) : $0 }
@@ -532,12 +532,12 @@ func mapMatch(
 }
 
 func mapTurn(
-    _ state: State,
+    _ state: AppState,
     gameId: String,
     matchIndex: Int,
     ordinal: Int,
     _ transform: (Turn) -> Turn
-) -> State {
+) -> AppState {
     mapMatch(state, gameId: gameId, matchIndex: matchIndex) { match in
         var next = match
         next.turns = match.turns.map { $0.ordinal == ordinal ? transform($0) : $0 }
@@ -545,7 +545,7 @@ func mapTurn(
     }
 }
 
-func updateCurrentMatch(_ state: State, _ transform: (Match, Game) -> Match) -> State {
+func updateCurrentMatch(_ state: AppState, _ transform: (Match, Game) -> Match) -> AppState {
     guard let game = state.currentGame else { return state }
     return mapGame(state, game.id) { each in
         var next = each
@@ -560,7 +560,7 @@ func updateCurrentMatch(_ state: State, _ transform: (Match, Game) -> Match) -> 
 ///
 /// Recomputed on every change and never stored — a number resolved through a season is the
 /// whole point of release 003, and a cached copy is how it would drift.
-func withActiveRoster(_ state: State) -> State {
+func withActiveRoster(_ state: AppState) -> AppState {
     var next = state
     next.roster = state.members(ofSeason: state.activeSeasonId)
     return next

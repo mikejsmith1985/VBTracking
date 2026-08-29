@@ -28,7 +28,7 @@ final class PhoneLink {
     }
 
     /// Sends the newest court, if there is one to send.
-    private func send(_ state: State) {
+    private func send(_ state: AppState) {
         guard let session, let court = state.courtView() else { return }
         sequence += 1
         let snapshot = CourtSnapshot(court: court, sequence: sequence, capturedAt: Date())

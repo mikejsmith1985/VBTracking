@@ -15,7 +15,7 @@ import Testing
 @Suite("Parity with the shipped web app")
 struct ParityTests {
     /// Replays a stored log through the migration chain and the ported reducer.
-    private func replayed(_ name: String) throws -> State {
+    private func replayed(_ name: String) throws -> AppState {
         let (events, version) = try Fixture.log(name)
         let carried = try #require(migrate(events, from: version).events, "\(name) failed to migrate")
         return replay(raw: carried)

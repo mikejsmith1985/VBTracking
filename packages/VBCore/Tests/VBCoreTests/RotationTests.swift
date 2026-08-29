@@ -7,7 +7,7 @@ import Testing
 private let six = ["p1", "p2", "p3", "p4", "p5", "p6"]
 
 /// Nine on the roster, a game underway with the rotation rule in force, six on court.
-private func inPlay(_ extra: [Event]...) -> State {
+private func inPlay(_ extra: [Event]...) -> AppState {
     var events = roster(9)
     events += [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: true))]
     events += [event(.setLineup(playerIds: six))]

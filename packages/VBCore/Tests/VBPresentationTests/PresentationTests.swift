@@ -24,7 +24,7 @@ private func roster(_ count: Int) -> [Event] {
 private let six = ["p1", "p2", "p3", "p4", "p5", "p6"]
 
 /// Nine on the roster, a game underway, six on court.
-private func onCourt(_ extra: [Event] = []) -> State {
+private func onCourt(_ extra: [Event] = []) -> AppState {
     var events = roster(9)
     events += [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: true))]
     events += [event(.setLineup(playerIds: six))]
@@ -232,7 +232,7 @@ struct DockTests {
 @Suite("The five-serve alert")
 struct ServeLimitAlertTests {
     /// A player who has just taken their fifth serve, with the order advancing.
-    private func afterFive() -> (state: State, serving: String) {
+    private func afterFive() -> (state: AppState, serving: String) {
         var events: [Event] = [event(.selectServer(playerId: "p1"))]
         events += (0..<serveLimit).map { _ in event(.recordServe(outcome: .inPoint)) }
         return (onCourt(events), "p1")
@@ -337,7 +337,7 @@ struct TapIntentTests {
 
 @Suite("What travels to the wrist")
 struct SnapshotTests {
-    private func snapshot(_ state: State, sequence: Int = 1) -> CourtSnapshot? {
+    private func snapshot(_ state: AppState, sequence: Int = 1) -> CourtSnapshot? {
         state.courtView().map { CourtSnapshot(court: $0, sequence: sequence, capturedAt: Date()) }
     }
 
@@ -494,6 +494,6 @@ struct MergeTests {
 
 // MARK: - Helper
 
-private func build(_ groups: [Event]...) -> State {
+private func build(_ groups: [Event]...) -> AppState {
     replay(groups.flatMap { $0 })
 }

@@ -14,7 +14,7 @@ import Testing
 @Suite("Parity with the operator's own season")
 struct RealSeasonParityTests {
     /// The season, read through the native import exactly as the app will read it.
-    private func season() throws -> State {
+    private func season() throws -> AppState {
         let url = Fixture.directory.appendingPathComponent("season-2026.json")
         let text = try String(contentsOf: url, encoding: .utf8)
         let imported = try #require(readBackup(text).log, "the real season could not be read")

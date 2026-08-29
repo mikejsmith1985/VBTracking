@@ -13,7 +13,7 @@ import VBStore
 @Observable
 public final class Store {
     /// The replayed state. Read by every screen; written by nothing but `dispatch`.
-    public private(set) var state = State()
+    public private(set) var state = AppState()
 
     /// The last refusal, in the operator's words. Cleared by the next accepted event.
     public private(set) var notice: Notice?
@@ -31,7 +31,7 @@ public final class Store {
 
     /// Called after every accepted event, so the wrist can be told without the store
     /// knowing what a wrist is.
-    public var onChange: ((State) -> Void)?
+    public var onChange: ((AppState) -> Void)?
 
     public init(directory: URL, now: @escaping () -> Date = Date.init) {
         self.log = LogFile(url: directory.appendingPathComponent("log.jsonl"))
@@ -56,7 +56,7 @@ public final class Store {
             }
         } catch {
             events = []
-            state = State()
+            state = AppState()
             notice = Notice(text: (error as? LogFileError)?.message ?? "The saved log could not be read.", isFailure: true)
         }
     }
