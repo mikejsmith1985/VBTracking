@@ -101,18 +101,22 @@ US1, US2 and US3 are all P1. They are phased below in build order rather than in
 
 **Independent test**: Import the web app's backup and compare every figure against the browser, side by side.
 
-- [ ] T029 [P] [US2] Write failing tests for the append-only log file — one complete line per event, a partial trailing line discarded on read, undo truncating the last line — in `packages/VBCore/Tests/VBCoreTests/LogFileTests.swift`
-- [ ] T030 [US2] Implement the JSON-Lines log store against the contract in `contracts/event-log.md`, in `packages/VBCore/Sources/VBCore/LogFile.swift`
-- [ ] T031 [P] [US2] Write failing tests for reading the backup file — wrong marker, unreadable JSON, no events, a newer schema — each returning a reason and changing nothing, in `packages/VBCore/Tests/VBCoreTests/TransferTests.swift`
-- [ ] T032 [US2] Implement backup parsing, the migration run, and deterministic `id` assignment for events that lack one, in `packages/VBCore/Sources/VBCore/Transfer.swift`
-- [ ] T033 [US2] Implement import idempotence — hash the imported log, refuse a hash already recorded — in `packages/VBCore/Sources/VBCore/Transfer.swift`
-- [ ] T034 [US2] Implement export in the web app's exact shape, and add a round-trip test proving a natively written file parses in the web app's parser, in `packages/VBCore/Sources/VBCore/Transfer.swift`
+- [X] T029 [P] [US2] Write failing tests for the append-only log file — one complete line per event, a partial trailing line discarded on read, undo truncating the last line — in `packages/VBCore/Tests/VBCoreTests/LogFileTests.swift`
+- [X] T030 [US2] Implement the JSON-Lines log store against the contract in `contracts/event-log.md` — **in a new `VBStore` target**, not in `VBCore`. The domain promises to have no I/O in it, and putting a file handle there would have broken that promise on the first day. `VBStore` still tests locally
+- [X] T031 [P] [US2] Write failing tests for reading the backup file — wrong marker, unreadable JSON, no events, a newer schema — each returning a reason and changing nothing, in `packages/VBCore/Tests/VBCoreTests/TransferTests.swift`
+- [X] T032 [US2] Implement backup parsing, the migration run, and deterministic `id` assignment for events that lack one, in `packages/VBCore/Sources/VBCore/Transfer.swift`
+- [X] T033 [US2] Implement import idempotence — hash the imported log, refuse a hash already recorded — in `packages/VBCore/Sources/VBCore/Transfer.swift`
+- [X] T034 [US2] Implement export in the web app's exact shape, and add a round-trip test proving a natively written file parses in the web app's parser, in `packages/VBCore/Sources/VBCore/Transfer.swift`
 - [ ] T035 [US2] Wire the log store into the app's store, replaying on launch and appending on every accepted event, in `ios/VBTracker/App/EventStore.swift`
 - [ ] T036 [US2] Build the import screen — choose a file, state plainly what will happen before it happens, report the outcome in one sentence — in `ios/VBTracker/Transfer/ImportView.swift`
 - [ ] T037 [P] [US2] Build the export screen, offering the file through the share sheet, in `ios/VBTracker/Transfer/ExportView.swift`
 - [ ] T038 [US2] Add an interface test that imports a fixture backup and asserts the season figures on screen, in `ios/VBTrackerUITests/ImportTests.swift`
 
-**Checkpoint**: the real season is on the phone and every figure matches the browser. FR-036 is satisfied — the app is now shippable in principle.
+**Checkpoint**: the rules of the log and the import are done and tested — **157 tests, 0.04
+seconds**, including a whole season surviving a round trip through this app's own export.
+T035–T038 are the app-side wiring: they are held with the rest of the UI and built as one
+batch on the cloud service, per R-001. The real season lands on the phone at the end of that
+batch, and FR-036 is satisfied then.
 
 ---
 

@@ -15,6 +15,24 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **The log on disk, and the route a season takes across.** The event log is one
+  append-only file of JSON lines: one write per event, flushed, so a crash loses at most the
+  serve being written — and the next read discards that half-line and says so rather than
+  guessing at it. Damage anywhere earlier stops the read instead of loading half a season
+  while looking like a whole one.
+- **A backup can be read and written in the shape the web app already uses.** A whole season
+  survives a round trip through the native export and back with every figure intact, which
+  is what lets both apps read the same season while the native one is still being built.
+- **Importing the same backup twice is recognised, not doubled.** Each event that arrives
+  without an identifier is given one derived from its place in the log and its own content,
+  so the same file always produces the same identifiers, and a small ledger beside the log
+  remembers what has already landed. A repeat import is refused with "nothing was changed".
+- **`VBStore`**, a second package target holding the one type that touches a filesystem — so
+  `VBCore` keeps its promise of having no I/O in it, and the rules about a half-written line
+  stay testable on a machine with no device attached.
+
+### Added
+
 - **The rulebook now exists in Swift, and it counts the same.** `packages/VBCore` is a pure
   domain package — events, reducer, statistics, aggregation, migrations, and the court
   geometry — with no storage, no clock and no randomness. It builds and tests on the Windows
