@@ -444,12 +444,9 @@ document.addEventListener('click', (event) => {
   const target = event.target.closest('[data-action]')
 
   // A tap on anything that is not a player abandons a half-made substitution.
-  if (!target || target.dataset.action !== 'select-server') {
-    store.clearSubstitution()
-    cancelPendingSelect()
-  }
+  if (target?.dataset.action !== 'select-server') abandonPendingSubstitution(event)
 
-  if (!target || target.disabled) { render(); return }
+  if (!target || target.disabled) return
 
   const handler = ACTIONS[target.dataset.action]
   if (!handler) return
@@ -478,6 +475,21 @@ document.addEventListener('change', (event) => {
   dispatch(E.editPlayer(player.id, edited.name, edited.number, store.getState().activeSeasonId))
   render()
 })
+
+/**
+ * Clears a half-made substitution, and redraws only if that actually changed something.
+ *
+ * Redrawing on every stray click is what broke every submit button in the app: the click
+ * on Save destroyed and rebuilt the form before the browser's own submit event could fire,
+ * so the form never submitted. A click inside a form therefore never redraws -- the
+ * submit handler that follows will.
+ */
+function abandonPendingSubstitution(event) {
+  const wasArmed = store.pendingSubstitution() !== null || pendingSelect !== null
+  store.clearSubstitution()
+  cancelPendingSelect()
+  if (wasArmed && !event.target.closest('form')) render()
+}
 
 /** A tap on anything else cancels a confirmation the operator did not follow through on. */
 function clearPendingConfirmations(action) {
