@@ -8,7 +8,8 @@ import { build, roster } from '../helpers.js'
 const baseUi = { tab: 'roster', scope: 'match', pickerOpen: false, confirmingEndMatch: false, confirmingRemoveId: null }
 
 function render(state, overrides = {}) {
-  return view({ state, store: { canUndo: () => false }, ui: { ...baseUi, ...overrides } })
+  const store = { canUndo: () => false, pendingSubstitution: () => null, clearSubstitution: () => {} }
+  return view({ state, store, ui: { ...baseUi, ...overrides } })
 }
 
 /** Counts non-overlapping occurrences of a substring. */

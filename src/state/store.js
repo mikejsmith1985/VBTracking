@@ -4,6 +4,7 @@
 // something inverse logic has to get right.
 import { replay, rejectionReason } from '../domain/reducer.js'
 import { undoableCount } from '../domain/stats.js'
+import { EVENT } from '../domain/events.js'
 
 /**
  * Creates the application store over a storage adapter.
@@ -16,6 +17,11 @@ export function createStore(persistence) {
   let events = loaded.events
   let state = replay(events)
   let status = loaded.status
+
+  // The armed half of a two-step substitution. Interaction state, not history: it is
+  // never appended to the log and never persisted, so a reload or a crash cannot leave a
+  // substitution half-made.
+  let armedForSubstitution = null
 
   function commit(nextEvents) {
     events = nextEvents
@@ -36,8 +42,31 @@ export function createStore(persistence) {
     dispatch(event) {
       const reason = rejectionReason(state, event)
       if (reason) return { accepted: false, reason }
+
+      // A pending substitution cannot outlive the thing it was pending against.
+      if (event.t === EVENT.END_MATCH || event.t === EVENT.SUBSTITUTE) armedForSubstitution = null
+
       commit([...events, event])
       return { accepted: true, reason: null }
+    },
+
+    /** Arms a player for substitution. Transient; never recorded. */
+    armSubstitution(playerId) { armedForSubstitution = playerId },
+
+    /** The player armed for substitution, or null. */
+    pendingSubstitution: () => armedForSubstitution,
+
+    /** Cancels an armed substitution without recording anything. */
+    clearSubstitution() { armedForSubstitution = null },
+
+    /**
+     * Replaces the entire log, for restoring a backup. The caller is responsible for
+     * having validated the events and for having confirmed with the operator first --
+     * this discards everything currently recorded.
+     */
+    replaceAll(nextEvents) {
+      armedForSubstitution = null
+      commit(nextEvents.slice())
     },
 
     /** Removes the most recent undoable event and replays. */

@@ -30,7 +30,8 @@ describe('localStorage persistence', () => {
   })
 
   it('returns an empty log for a first run', () => {
-    expect(createLocalStoragePersistence(window.localStorage).load()).toEqual({ events: [], status: 'ok' })
+    expect(createLocalStoragePersistence(window.localStorage).load())
+      .toMatchObject({ events: [], status: 'ok' })
   })
 
   it('reports corrupt data rather than partially applying it', () => {

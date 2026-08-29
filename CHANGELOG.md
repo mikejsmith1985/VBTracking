@@ -4,6 +4,70 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added — Rotation, Substitutions, and Durable Data (`feature/rotation-and-subs`)
+
+**Your data survives the upgrade**
+
+- Games recorded on the previous release load unchanged, with nothing to confirm or
+  re-enter. Verified against a log written by the shipped release-001 build and kept as a
+  test fixture, so the check is against the format as shipped rather than as remembered.
+- Stored data now carries a version and is carried forward on load through an ordered
+  migration chain. The 1 to 2 step does nothing, because this release only adds event
+  types — the point is that the mechanism is proven to run before a release needs it to do
+  real work.
+- Data written by a newer version is refused, explained, and left untouched rather than
+  loaded or overwritten.
+- If the carried-forward log cannot be written back, the app keeps running from what it
+  read and leaves the original alone. A failed write is never worse than not trying.
+
+**Backup and restore**
+
+- **Save a backup file** on the Stats screen, in one action. On a phone it opens the
+  native share sheet, so Save to Files is one tap; elsewhere it downloads.
+- **Restore from a backup** replaces everything on the device, after a second deliberate
+  tap that says so.
+- A damaged, truncated, or unrelated file is refused with a plain explanation and changes
+  nothing. A backup from a newer version is refused; one from an older version is carried
+  forward like any stored data.
+
+**The rotation serves for you**
+
+- A match takes an ordered lineup of the six on court. It is per match, not per game — with
+  nine on the roster three sit out, and who sits out changes every match. Matches 2 and 3
+  open prefilled from the previous match, editable before the first serve.
+- When a turn ends, the next player in the order becomes the server with no action taken.
+  **A side-out is now one tap instead of two**, and the dock stays on the outcome controls
+  instead of swapping to the picker.
+- One undo still reverses one operator action: the serve and the advance it caused are
+  reversed together. The advance is part of the serve transition rather than an event of
+  its own, so this holds by construction.
+- Any player can be chosen to override the order, and the rotation carries on from them.
+- Serving from outside the lineup — usually a substitution not yet entered — is recorded
+  and marked rather than refused, and it takes over the position that was due, so the order
+  does not lag by one for the rest of the match.
+- A lineup is optional. Below six players, or after skipping, the app behaves exactly as
+  the previous release did.
+
+**Substitutions**
+
+- Double-tap a player on court, then tap whoever replaces them. They take that exact slot
+  in the serving order, and the rotation follows.
+- Serves already recorded stay with the player who took them, including when the
+  substitution replaces the player mid-turn.
+- Refused when the incoming player is already on court, is not on the roster, or is the
+  same player. Undoable. A player who came off can come back on.
+- Each match lists its substitutions: who came off, who came on, and at what point.
+
+**Reading at arm's length**
+
+- Player buttons now show one large jersey number instead of a number and a clipped name.
+  Three characters and an ellipsis was never a name; the number is what you scan for.
+  Full names stay on the tally board and in every statistics view.
+- The current server is shown at display size, because the app chooses them now and a wrong
+  one is the app's mistake to make obvious.
+- New statistic: turns on court, counting turns a player was in the lineup for whether or
+  not they served — which distinguishes sitting out from never reaching the service slot.
+
 ### Added — Volleyball Serve Tracker (`feature/volleyball-serve-tracker`)
 
 The first release: an offline-first, installable web app for recording volleyball serve

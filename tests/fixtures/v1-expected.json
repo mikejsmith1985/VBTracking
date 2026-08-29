@@ -1,0 +1,74 @@
+{
+  "roster": 9,
+  "matches": [
+    {
+      "index": 0,
+      "status": "ended",
+      "turns": 4,
+      "score": 9
+    },
+    {
+      "index": 1,
+      "status": "ended",
+      "turns": 3,
+      "score": 6
+    },
+    {
+      "index": 2,
+      "status": "in_progress",
+      "turns": 2,
+      "score": 6
+    }
+  ],
+  "game": {
+    "p1": {
+      "serves": 5,
+      "servesIn": 3,
+      "points": 3,
+      "turnsTaken": 2,
+      "inPercentage": 0.6
+    },
+    "p3": {
+      "serves": 2,
+      "servesIn": 2,
+      "points": 1,
+      "turnsTaken": 1,
+      "inPercentage": 1
+    },
+    "p5": {
+      "serves": 7,
+      "servesIn": 6,
+      "points": 6,
+      "turnsTaken": 1,
+      "inPercentage": 0.8571428571428571
+    },
+    "p2": {
+      "serves": 4,
+      "servesIn": 2,
+      "points": 2,
+      "turnsTaken": 2,
+      "inPercentage": 0.5
+    },
+    "p4": {
+      "serves": 4,
+      "servesIn": 3,
+      "points": 3,
+      "turnsTaken": 1,
+      "inPercentage": 0.75
+    },
+    "p9": {
+      "serves": 3,
+      "servesIn": 3,
+      "points": 2,
+      "turnsTaken": 1,
+      "inPercentage": 1
+    },
+    "p6": {
+      "serves": 5,
+      "servesIn": 4,
+      "points": 4,
+      "turnsTaken": 1,
+      "inPercentage": 0.8
+    }
+  }
+}

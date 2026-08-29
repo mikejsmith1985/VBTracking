@@ -260,6 +260,10 @@ button {
   border-style: dashed;
 }
 
+/* Served by someone outside the lineup -- usually a substitution not yet entered. */
+.turn.off-lineup { border-color: var(--accent); border-style: dotted; }
+.turn.off-lineup .turn-meta { color: var(--accent); }
+
 .marks {
   display: flex;
   flex-wrap: wrap;
@@ -331,31 +335,80 @@ button {
   background: var(--surface);
 }
 
-.picker-grid {
+.chip-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(62px, 1fr));
   gap: 8px;
   max-height: 42vh;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
+.chip-grid-captioned {
+  grid-template-columns: repeat(auto-fill, minmax(66px, 1fr));
+  max-height: 34vh;
+}
+
+/* The jersey number alone, set large. A truncated name is neither a name nor readable at
+   arm's length, and the number is what the operator is scanning for. */
 .chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  position: relative;
+  display: grid;
+  place-items: center;
   min-height: var(--tap-min);
-  padding: 8px 10px;
+  padding: 6px 4px;
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--surface-2);
-  font-size: 14px;
-  text-align: left;
+}
+
+.chip-number {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The serving-order slot, so the picker doubles as a view of the rotation. */
+.chip-slot {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--muted);
 }
 
 .chip:active { background: var(--surface-3); }
+.chip.is-on-court { border-color: var(--surface-3); background: var(--surface-3); }
 .chip.is-serving { border-color: var(--accent); background: #0d2f38; }
-.chip .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Armed for substitution: loud, because it changes what the next tap means. */
+.chip.is-armed {
+  border-color: var(--warn);
+  background: #3a1f07;
+  box-shadow: 0 0 0 2px var(--warn);
+}
+
+.chip-captioned { display: grid; gap: 3px; }
+
+.chip-caption {
+  overflow: hidden;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.picker-hint {
+  padding-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.picker-hint strong { color: var(--warn); }
 
 /* --- Track: server strip ------------------------------------------------ */
 
@@ -398,6 +451,91 @@ button {
 /* Between servers the label is the only colour cue needed -- the picker standing where the
    outcome controls normally are already says it, from across a court. */
 .status-row.awaiting .server-label { color: var(--warn); }
+
+/* The app picks the server now, so a wrong one is the app's mistake and the operator has to
+   catch it. The number is set at display size for exactly that reason. */
+.serving-number {
+  flex: 0 0 auto;
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.serving-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.off-lineup-badge {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: var(--warn);
+  color: #241800;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+/* --- Lineup ------------------------------------------------------------- */
+
+.lineup-hint {
+  margin: 0 0 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.lineup-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-align: left;
+}
+
+.lineup-row .chip-slot { position: static; font-size: 12px; }
+.lineup-row.is-empty { border-style: dashed; color: var(--muted); }
+.lineup-row.is-next { border-color: var(--accent); background: #0d2f38; }
+.lineup-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; }
+
+.lineup-next {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.lineup-actions { display: grid; gap: 8px; margin-top: 18px; }
+
+/* --- Substitutions ------------------------------------------------------ */
+
+.sub-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.sub-row .chip-slot { position: static; }
+.sub-out { color: var(--muted); }
+.sub-arrow { color: var(--muted); }
+.sub-when { margin-left: auto; font-size: 11px; color: var(--muted); }
 
 .btn-undo {
   flex: 0 0 auto;

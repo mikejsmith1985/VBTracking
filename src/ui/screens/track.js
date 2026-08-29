@@ -1,22 +1,42 @@
 // The screen the operator uses for the whole match. Everything here answers one question:
 // how few taps, and how little looking away from the court, does one serve cost?
+//
+// With a lineup set the answer is one: the rotation hands the serve to the next player, so
+// the dock stays on the outcome controls through a side-out instead of swapping to the
+// picker. The picker returns only when asked for, or when there is no lineup to advance.
 import { OUTCOME, MATCHES_PER_GAME } from '../../domain/events.js'
-import { currentGame, currentMatch, isGameComplete } from '../../domain/reducer.js'
+import { currentGame, currentMatch, isGameComplete, openTurn } from '../../domain/reducer.js'
 import { matchScore, hasReachedTarget, activeServerId, gameStats, TARGET_SCORE } from '../../domain/stats.js'
 import { tallyBoard } from '../components/tally.js'
 import { statsTable } from '../components/statstable.js'
+import { chipGrid } from '../components/chip.js'
+import { needsSetup, setupView, reviewView } from './lineup.js'
 import { esc, playerLabel, playerById } from '../html.js'
 
 /** Builds the scrolling area and the fixed dock beneath it. */
 export function view(context) {
-  const { state } = context
+  const { state, ui } = context
 
   if (state.roster.length === 0) return { screen: needsRoster(), dock: '' }
 
   const match = currentMatch(state)
   if (!match) return { screen: betweenGames(state), dock: '' }
 
-  return { screen: matchView(context, state, match), dock: dockView(context, state) }
+  if (ui.showLineup && match.lineup) return { screen: reviewView(context, match), dock: '' }
+  if (needsSetup(match, state.roster) && !isSetupDismissed(ui, state, match)) {
+    return { screen: setupView(context, match), dock: '' }
+  }
+
+  return { screen: matchView(context, state, match), dock: dockView(context, state, match) }
+}
+
+/** The setup step is offered once per match; skipping it must not re-prompt every render. */
+export function matchKey(state, match) {
+  return `${state.currentGameId}:${match.index}`
+}
+
+function isSetupDismissed(ui, state, match) {
+  return ui.lineupDismissedFor === matchKey(state, match)
 }
 
 function needsRoster() {
@@ -65,35 +85,39 @@ function matchView(context, state, match) {
     ${tallyBoard(match, state.roster)}`
 }
 
-// The dock is a thin status row over exactly one action block: the outcome controls, or
-// the player picker. Never both, and never a disabled set of either.
-//
-// A turn can only end two ways -- a serve that wins no point, or a different player being
-// chosen -- so "between servers" needs no announcement. Swapping the three large outcome
-// controls for a grid of player chips IS the signal, readable across a court, and it makes
-// recording a serve against the wrong player impossible rather than merely discouraged:
-// while no one is serving, no control exists that could record one.
-function dockView(context, state) {
+function dockView(context, state, match) {
   const servingId = activeServerId(state)
   const showPicker = !servingId || context.ui.pickerOpen
 
   return `
-    <div class="dock-panel">${statusRow(context, state, servingId, showPicker)}</div>
-    ${showPicker ? picker(state, servingId) : outcomes()}`
+    <div class="dock-panel">${statusRow(context, state, match, servingId, showPicker)}</div>
+    ${showPicker ? picker(context, state, servingId) : outcomes()}`
 }
 
-function statusRow(context, state, servingId, showPicker) {
+function statusRow(context, state, match, servingId, showPicker) {
   const canUndo = context.store.canUndo()
+  const player = playerById(state.roster, servingId)
+  const isOffLineup = Boolean(openTurn(match)?.isOffLineup)
 
   return `
     <div class="status-row${servingId ? '' : ' awaiting'}">
       <div class="who">
-        <span class="server-label">${servingId ? 'Now serving' : 'Next server'}</span>
-        <span class="server-name">${servingId ? playerLabel(playerById(state.roster, servingId)) : ''}</span>
+        ${servingId ? servingPlayer(player, isOffLineup) : '<span class="server-label">Next server</span>'}
       </div>
+      ${match.lineup ? '<button class="btn-undo" data-action="show-lineup" type="button">Order</button>' : ''}
       ${servingId ? changeServerButton(showPicker) : ''}
-      <button class="btn-undo" data-action="undo" type="button" ${canUndo ? '' : 'disabled'}>Undo</button>`
-    + '</div>'
+      <button class="btn-undo" data-action="undo" type="button" ${canUndo ? '' : 'disabled'}>Undo</button>
+    </div>`
+}
+
+// The app chooses the server now, so a wrong one is the app's mistake and the operator has
+// to catch it. The number is set at display size for exactly that reason.
+function servingPlayer(player, isOffLineup) {
+  return `
+    <span class="server-label">Now serving</span>
+    <span class="serving-number">${esc(player?.number) || '–'}</span>
+    <span class="serving-name">${esc(player?.name ?? 'Removed player')}</span>
+    ${isOffLineup ? '<span class="off-lineup-badge" title="Not in the lineup">off order</span>' : ''}`
 }
 
 function changeServerButton(showPicker) {
@@ -102,16 +126,30 @@ function changeServerButton(showPicker) {
   </button>`
 }
 
-function picker(state, servingId) {
-  const chips = state.roster
-    .map((player) => `
-      <button class="chip${player.id === servingId ? ' is-serving' : ''}"
-              data-action="select-server" data-id="${player.id}" type="button">
-        <span class="jersey">${esc(player.number) || '—'}</span><span class="name">${esc(player.name)}</span>
-      </button>`)
-    .join('')
+function picker(context, state, servingId) {
+  const armed = context.store.pendingSubstitution()
+  const lineup = currentMatch(state)?.lineup ?? null
 
-  return `<div class="picker"><div class="picker-grid">${chips}</div></div>`
+  const grid = chipGrid(state.roster, {
+    action: 'select-server',
+    stateFor: (player) => {
+      if (player.id === armed) return 'is-armed'
+      if (player.id === servingId) return 'is-serving'
+      return lineup?.includes(player.id) ? 'is-on-court' : ''
+    },
+    positionFor: (player) => {
+      const position = lineup ? lineup.indexOf(player.id) : -1
+      return position === -1 ? null : position
+    },
+  })
+
+  return `
+    <div class="picker">
+      ${grid}
+      <div class="picker-hint">${armed
+        ? `Now tap whoever replaces <strong>${esc(playerById(state.roster, armed)?.name ?? '')}</strong>`
+        : (lineup ? 'Tap to change server · double-tap to substitute' : 'Tap the next server')}</div>
+    </div>`
 }
 
 // Rendered only while someone is serving, so these controls are never present-but-dead.

@@ -74,12 +74,28 @@ export function undoableCount(events) {
   return events.length - lastEnded - 1
 }
 
+/**
+ * How many serve turns elapsed while this player was on court, whether or not they served.
+ *
+ * Read from each turn's lineup snapshot rather than folded from substitution history: it
+ * distinguishes a player who sat the match out from one who was on court the whole time
+ * and simply never reached the service position.
+ */
+export function turnsOnCourt(turns, playerId) {
+  return played(turns).filter((turn) => turn.lineupSnapshot?.includes(playerId)).length
+}
+
+/** The substitutions made during a match, in the order they happened. */
+export function substitutionsFor(match) {
+  return match?.substitutions ?? []
+}
+
 // --- Internals ---------------------------------------------------------------
 
 function aggregate(turns) {
   const byPlayer = new Map()
 
-  for (const turn of turns) {
+  for (const turn of played(turns)) {
     const running = byPlayer.get(turn.playerId) ?? { serves: 0, servesIn: 0, points: 0, turnsTaken: 0 }
     const stats = turnStats(turn)
     running.serves += stats.serves
@@ -93,6 +109,15 @@ function aggregate(turns) {
     running.inPercentage = ratioOrNull(running.servesIn, running.serves)
   }
   return byPlayer
+}
+
+/**
+ * Turns that have actually happened. A turn opened by a server selection or by the
+ * rotation holds no serves until one is recorded; counting it would put a player on the
+ * statistics table with nothing to their name, and credit them a turn they have not taken.
+ */
+function played(turns) {
+  return (turns ?? []).filter((turn) => turn.serves.length > 0)
 }
 
 /** Null rather than NaN or zero when the denominator is zero, so the UI can say so. */
