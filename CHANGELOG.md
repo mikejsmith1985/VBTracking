@@ -30,6 +30,17 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **A server now rotates out after their five serves.** A run of five straight points left
+  the same player serving forever: a turn only ended on a serve that lost the rally, so a
+  server who kept scoring never handed on and the order stood still. The turn now ends at
+  the league's limit and the serve passes to the next player.
+- Nothing is discarded. All five serves stay with the player who took them, and a referee
+  who miscounts and lets someone serve again is recorded by choosing that player once more
+   — a second turn, every serve kept.
+- **Games recorded before this rule existed are untouched.** The rule is written into the
+  game when it starts rather than read from the code, because a rule read from the code
+  applies backwards: it would have re-attributed serves in games already played. Both
+  migration fixtures caught exactly that and are the reason it works this way.
 - **A tracked game's match results can be set after the fact.** Marking each match as it
   ends is the fast path, but a match ended in a hurry — or before the app could ask — was
   stuck as "not recorded" for good. Every match of a tracked game now carries a Won / Lost /

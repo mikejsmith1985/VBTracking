@@ -3,7 +3,7 @@
 // because undo works by replaying the event log from empty.
 import {
   EVENT, OUTCOME, MAX_ROSTER, MATCHES_PER_GAME, LINEUP_SIZE,
-  MATCH_RESULT, GAME_KIND, DEFAULT_FORMAT, isValidOutcome, isValidResult,
+  MATCH_RESULT, GAME_KIND, DEFAULT_FORMAT, SERVE_LIMIT, isValidOutcome, isValidResult,
 } from './events.js'
 import { colorIndexForTurn } from './palette.js'
 
@@ -474,6 +474,8 @@ function withGameStarted(state, event) {
     id: event.id,
     seasonId: seasonIdFor(seeded, event),
     kind: GAME_KIND.TRACKED,
+    // Absent on games recorded before the rule existed, which is exactly the point.
+    rotatesAtServeLimit: event.rotatesAtServeLimit === true,
     ...emptyContext(),
     ...emptyNotes(),
     matches: [newMatch(0)],
@@ -623,14 +625,36 @@ function withServerSelected(state, event) {
 }
 
 function withServeRecorded(state, event) {
-  return updateCurrentMatch(state, (match) => {
+  return updateCurrentMatch(state, (match, game) => {
     const turns = match.turns.map((turn) =>
       turn.isOpen
         ? { ...turn, serves: [...turn.serves, { outcome: event.outcome }], isOpen: event.outcome === OUTCOME.IN_POINT }
         : turn,
     )
-    return advanceRotation({ ...match, turns })
+    return advanceRotation(closeAtServeLimit({ ...match, turns }, game.rotatesAtServeLimit))
   })
+}
+
+/**
+ * Ends a turn once the server has taken their five, even when the fifth won the point.
+ *
+ * Without this a server on a run never rotates: the turn only closed on a serve that lost
+ * the rally, so five straight points left them serving forever while the order stood still.
+ *
+ * It ends the turn; it does not discard anything. A referee who miscounts and lets someone
+ * serve a sixth time is recorded by choosing that player again -- a second turn, every
+ * serve kept.
+ *
+ * Only where a lineup exists. With manual selection there is no next server to move to,
+ * and the operator is already deciding.
+ */
+function closeAtServeLimit(match, rotatesAtServeLimit) {
+  if (!rotatesAtServeLimit || !match.lineup) return match
+
+  const open = openTurn(match)
+  if (!open || open.serves.length < SERVE_LIMIT) return match
+
+  return { ...match, turns: match.turns.map((turn) => (turn.isOpen ? { ...turn, isOpen: false } : turn)) }
 }
 
 /**
@@ -756,7 +780,7 @@ function updateCurrentMatch(state, transform) {
   if (!game) return state
   return mapGame(state, game.id, (each) => ({
     ...each,
-    matches: each.matches.map((match) => (match.status === 'in_progress' ? transform(match) : match)),
+    matches: each.matches.map((match) => (match.status === 'in_progress' ? transform(match, each) : match)),
   }))
 }
 
