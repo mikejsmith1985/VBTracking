@@ -43,6 +43,19 @@ in the repository root.
   test asserts the on-deck box is at least 1.5x the smallest box by area). Batch UI changes;
   working in ones is the expensive habit here.
 
+**Where the native work stands** (phase one is written; six tasks left, all needing a
+device or the operator):
+
+| Target | What is in it | Tested |
+|---|---|---|
+| `packages/VBCore` | The rulebook: events, reducer, statistics, aggregation, migrations, court geometry, the backup and paper-import readers, the event encoder | Windows |
+| `packages/VBStore` | The append-only log file and the import ledger - the only I/O | Windows |
+| `packages/VBPresentation` | Every decision a screen would otherwise make: the dash rule, box sizes, what a tap means, link freshness, merging | Windows |
+| `ios/` | Both SwiftUI apps and the interface tests | Cloud build only |
+
+`.\scriptsbcore-test.ps1` runs the local suite: **237 tests in a fifth of a second**. The
+web app's 685 still pass and it still deploys from `main`.
+
 **The shape of the native work** - read `plan.md` before starting any of it:
 - `packages/VBCore` is a pure Swift package with no I/O. It builds and tests on Windows,
   which is the entire local development loop; only the screens need a Mac.
@@ -50,8 +63,14 @@ in the repository root.
   season export must replay to figures identical to the JavaScript, dashes included.
 - The phone holds the truth. The watch sends events with an id made at the tap; the phone
   ignores an id it already holds. That is what makes delivery exactly-once.
-- Every event now carries an `id`. It is additive, so a log written natively still loads in
-  the web app - which is what lets both apps read the same season during the phase gap.
+- Every event now carries an `eventId` - named apart from `id`, which several event types
+  already use for the thing the event is about. It is additive, so a log written natively
+  still loads in the web app, which is what lets both apps read the same season during the
+  phase gap.
+- Screens hold no rules. Anything a view decides, a type in `VBPresentation` decides first -
+  that is the only reason writing SwiftUI on a machine that cannot compile it is acceptable.
+- A visual requirement is written as a measured one. The on-deck box being biggest is
+  `CourtLayout` plus a test, not an eye.
 
 ## The web app (releases 001-003, still shipping)
 
