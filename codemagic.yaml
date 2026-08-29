@@ -58,7 +58,7 @@ workflows:
       # Built once from the App Store Connect key, and reused by every future app.
       # The .p8 itself is uploaded to Codemagic by hand; the vault holds the copy every
       # other consumer uses.
-      app_store_connect: Codemagic CI
+      app_store_connect: RLL_Codemagic_CI_AppManager
     environment:
       xcode: latest
       ios_signing:
@@ -75,22 +75,11 @@ workflows:
           cd packages/VBCore
           swift test
 
-      - name: Build and test the phone
+      - name: Build the phone and the watch it carries
         script: |
           xcode-project build-ipa \
             --project ios/VBTracker.xcodeproj \
             --scheme VBTracker
-
-      - name: The interface suite, on both platforms
-        script: |
-          xcode-project run-tests \
-            --project ios/VBTracker.xcodeproj \
-            --scheme VBTracker \
-            --device "iPhone 17 Pro"
-          xcode-project run-tests \
-            --project ios/VBTracker.xcodeproj \
-            --scheme VBTrackerWatch \
-            --device "Apple Watch Ultra 2 (49mm)"
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -107,3 +96,30 @@ workflows:
       events: [tag]
       tag_patterns:
         - pattern: "v*"
+
+  # The interface suites, kept out of the shipping path.
+  #
+  # They need named simulators, and a name this runner does not have would fail after the
+  # archive was already built -- stopping the app reaching a phone for a reason that has
+  # nothing to do with the app. They run on their own, and they gate nothing.
+  interface-tests:
+    name: The interface suites
+    max_build_duration: 40
+    environment:
+      xcode: latest
+    scripts:
+      - name: Generate the Xcode project
+        script: |
+          brew install xcodegen
+          cd ios && xcodegen generate
+
+      - name: The phone
+        script: |
+          xcode-project run-tests             --project ios/VBTracker.xcodeproj             --scheme VBTracker             --device "iPhone 17 Pro"
+
+      - name: The watch, where the on-deck box is measured
+        script: |
+          xcode-project run-tests             --project ios/VBTracker.xcodeproj             --scheme VBTrackerWatch             --device "Apple Watch Ultra 2 (49mm)"
+
+    triggering:
+      events: []
