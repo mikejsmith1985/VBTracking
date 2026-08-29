@@ -203,3 +203,138 @@ describe('the real file transcribed from the paper sheets', () => {
     expect(top).toEqual({ playerId: tegan.id, servesIn: 8 })
   })
 })
+
+describe('matching a name typed one way against a roster typed another', () => {
+  /** The roster as it was actually built on the phone: first names only. */
+  const firstNamesOnly = {
+    id: 's1',
+    name: '2026',
+    members: [
+      { id: 'p1', name: 'Layna', number: '1' },
+      { id: 'p2', name: 'Tegan', number: '4' },
+      { id: 'p3', name: 'Aria', number: '5' },
+    ],
+  }
+
+  const fileWithFullNames = (serves) => JSON.stringify({
+    app: IMPORT_MARKER,
+    kind: IMPORT_KIND,
+    formatVersion: 1,
+    season: {
+      name: '2026',
+      team: 'Bethel Tigers',
+      roster: [
+        { number: '1', name: 'Layna Blankenship' },
+        { number: '4', name: 'Tegan Jodrey' },
+        { number: '5', name: 'Aria Smith' },
+      ],
+    },
+    games: [{ date: '2026-08-08', opponent: 'Georgetown A', serves }],
+  })
+
+  it('matches a full name in the file to a first name on the roster', () => {
+    const result = parseHistoricalGames(fileWithFullNames([
+      { name: 'Layna Blankenship', in: 5, out: 2 },
+      { name: 'Tegan Jodrey', in: 10, out: 1 },
+    ]), firstNamesOnly, makeId)
+
+    expect(result.ok, result.reason).toBe(true)
+    expect(result.events[0].entries).toEqual([
+      { playerId: 'p1', in: 5, out: 2 },
+      { playerId: 'p2', in: 10, out: 1 },
+    ])
+  })
+
+  it('still matches when the roster has full names and the file has first names', () => {
+    const fullNames = {
+      id: 's1', name: '2026',
+      members: [{ id: 'p1', name: 'Layna Blankenship', number: '1' }],
+    }
+    const file = JSON.stringify({
+      app: IMPORT_MARKER, kind: IMPORT_KIND, formatVersion: 1,
+      games: [{ opponent: 'X', serves: [{ name: 'Layna', in: 1, out: 0 }] }],
+    })
+    expect(parseHistoricalGames(file, fullNames, makeId).ok).toBe(true)
+  })
+
+  it('bridges through the jersey number when the names share nothing', () => {
+    const nicknames = {
+      id: 's1', name: '2026',
+      members: [{ id: 'p1', name: 'Lay', number: '1' }],
+    }
+    const result = parseHistoricalGames(
+      fileWithFullNames([{ name: 'Layna Blankenship', in: 3, out: 1 }]),
+      nicknames,
+      makeId,
+    )
+    expect(result.ok, result.reason).toBe(true)
+    expect(result.events[0].entries[0].playerId).toBe('p1')
+  })
+
+  it('ignores case and stray spacing', () => {
+    const result = parseHistoricalGames(
+      fileWithFullNames([{ name: '  LAYNA   BLANKENSHIP ', in: 1, out: 0 }]),
+      firstNamesOnly,
+      makeId,
+    )
+    expect(result.ok, result.reason).toBe(true)
+  })
+
+  it('refuses rather than guesses when two players share a first name', () => {
+    const twoLaynas = {
+      id: 's1', name: '2026',
+      members: [
+        { id: 'p1', name: 'Layna B', number: '1' },
+        { id: 'p2', name: 'Layna C', number: '2' },
+      ],
+    }
+    const file = JSON.stringify({
+      app: IMPORT_MARKER, kind: IMPORT_KIND, formatVersion: 1,
+      games: [{ opponent: 'X', serves: [{ name: 'Layna', in: 1, out: 0 }] }],
+    })
+    const result = parseHistoricalGames(file, twoLaynas, makeId)
+
+    expect(result.ok).toBe(false)
+    expect(result.reason).toMatch(/More than one player/)
+    expect(result.reason).toMatch(/full names/)
+    expect(result.events).toEqual([])
+  })
+
+  it('names the roster when nothing matches, so the mismatch can be seen', () => {
+    const result = parseHistoricalGames(
+      fileWithFullNames([{ name: 'Somebody Else', in: 1, out: 0 }]),
+      firstNamesOnly,
+      makeId,
+    )
+    expect(result.ok).toBe(false)
+    expect(result.reason).toMatch(/Somebody Else/)
+    expect(result.reason).toMatch(/Layna, Tegan, Aria/)
+    expect(result.reason).toMatch(/Nothing was imported/)
+  })
+
+  it('imports the real four-game file against a first-name roster', () => {
+    const file = readFileSync('import/paper-games-1-4.json', 'utf8')
+    const parsed = JSON.parse(file)
+
+    // Exactly the roster the operator built: first names, real numbers.
+    const asBuilt = {
+      id: 's1',
+      name: '2026',
+      members: parsed.season.roster.map((player, index) => ({
+        id: `p${index}`,
+        name: player.name.split(' ')[0],
+        number: player.number,
+      })),
+    }
+
+    const result = parseHistoricalGames(file, asBuilt, makeId)
+    expect(result.ok, result.reason).toBe(true)
+    expect(result.events).toHaveLength(4)
+
+    const totals = result.events.map((event) => [
+      event.entries.reduce((sum, entry) => sum + entry.in, 0),
+      event.entries.reduce((sum, entry) => sum + entry.out, 0),
+    ])
+    expect(totals).toEqual([[37, 15], [42, 15], [42, 17], [42, 19]])
+  })
+})
