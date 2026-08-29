@@ -94,9 +94,26 @@ function renderTabs() {
 }
 
 function renderBanner() {
-  const text = ui.message ?? STORAGE_PROBLEMS[store.storageStatus()] ?? null
-  bannerElement.textContent = text ?? ''
-  bannerElement.hidden = text === null
+  const storageProblem = STORAGE_PROBLEMS[store.storageStatus()]
+  const notice = ui.notice ?? (storageProblem ? { text: storageProblem, tone: 'error' } : null)
+
+  bannerElement.textContent = notice?.text ?? ''
+  bannerElement.className = notice ? `banner banner-${notice.tone}` : 'banner'
+  bannerElement.hidden = !notice
+}
+
+/** Reports something that worked. */
+function succeed(text) {
+  ui.notice = { text, tone: 'success' }
+}
+
+/** Reports something that did not. */
+function fail(text) {
+  ui.notice = { text, tone: 'error' }
+}
+
+function clearNotice() {
+  ui.notice = null
 }
 
 /** Remembers which field had focus so a re-render does not interrupt typing. */
@@ -277,7 +294,8 @@ function disarmed(armedValue) {
 /** Dispatches and surfaces any refusal. Returns whether it was accepted. */
 function dispatch(event) {
   const result = store.dispatch(event)
-  ui.message = result.accepted ? null : result.reason
+  if (result.accepted) clearNotice()
+  else fail(result.reason)
   return result.accepted
 }
 
@@ -338,7 +356,7 @@ async function withFileText(file, handler) {
   try {
     text = await file.text()
   } catch {
-    ui.message = 'That file could not be read.'
+    fail('That file could not be read.')
     render()
     return
   }
@@ -351,11 +369,11 @@ function readBackup(text) {
   const parsed = parseImport(text)
   if (!parsed.ok) {
     // Nothing has been written at this point, so existing data is untouched by definition.
-    ui.message = parsed.reason
+    fail(parsed.reason)
     return
   }
   store.replaceAll(parsed.events)
-  ui.message = null
+  succeed('Backup restored.')
   ui.tab = 'track'
 }
 
@@ -370,13 +388,14 @@ function readHistorical(text) {
 
   const parsed = parseHistoricalGames(text, withMembers, newId)
   if (!parsed.ok) {
-    ui.message = parsed.reason
-    return
+    fail(parsed.reason)
+    return false
   }
 
   for (const event of parsed.events) dispatch(event)
-  ui.message = `Added ${parsed.events.length} game${parsed.events.length === 1 ? '' : 's'}.`
+  succeed(`Added ${parsed.events.length} game${parsed.events.length === 1 ? '' : 's'}.`)
   ui.tab = 'season'
+  return true
 }
 
 // --- Forms --------------------------------------------------------------------
@@ -403,11 +422,11 @@ function submitAddPlayer(form) {
 function submitPastedGames(form) {
   const text = form.querySelector('[name="games"]').value.trim()
   if (!text) {
-    ui.message = 'Paste the contents of the games file first.'
+    fail('Paste the contents of the games file first.')
     return
   }
-  readHistorical(text)
-  if (!ui.message || ui.message.startsWith('Added')) ui.pastingGames = false
+  // The box stays open on failure so the paste can be corrected rather than redone.
+  if (readHistorical(text)) ui.pastingGames = false
 }
 
 function submitCreateSeason(form) {
@@ -510,13 +529,28 @@ function abandonPendingSubstitution(event) {
   if (wasArmed && !event.target.closest('form')) render()
 }
 
+/**
+ * Brings the focused field clear of the on-screen keyboard.
+ *
+ * iOS does not shrink the viewport for the keyboard in a standalone app, so a field low on
+ * a form -- the notes box, most of all -- ends up behind it with the operator typing blind.
+ * The delay lets the keyboard finish animating before the page decides where to scroll.
+ */
+document.addEventListener('focusin', (event) => {
+  const field = event.target.closest('input, textarea')
+  if (!field) return
+  setTimeout(() => {
+    if (document.activeElement === field) field.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, 300)
+})
+
 /** A tap on anything else cancels a confirmation the operator did not follow through on. */
 function clearPendingConfirmations(action) {
   for (const [owner, flag] of Object.entries(CONFIRMATIONS)) {
     if (owner !== action) ui[flag] = disarmed(ui[flag])
   }
   if (action !== 'end-match') ui.confirmingEndMatch = false
-  ui.message = null
+  clearNotice()
 }
 
 function newId() {

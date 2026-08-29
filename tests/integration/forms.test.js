@@ -223,3 +223,60 @@ describe('pasting a batch of games', () => {
     expect(game.entries).toHaveLength(2)
   })
 })
+
+describe('the banner tells success from failure by colour', () => {
+  const banner = () => document.getElementById('banner')
+
+  const goodBatch = JSON.stringify({
+    app: 'vbtracking', kind: 'historical-games', formatVersion: 1,
+    games: [{
+      date: '2026-08-22', opponent: 'CNE', location: 'Felicity', court: '1',
+      serves: [{ name: 'Aria Smith', in: 20, out: 2 }],
+    }],
+  })
+
+  beforeAll(() => { click('[data-tab="season"]') })
+
+  it('reports an import that worked in the success tone, not the failure one', () => {
+    click('[data-action="paste-games"]')
+    fillAndPress('paste-games-form', { games: goodBatch })
+
+    expect(banner().textContent).toMatch(/^Added 1 game\.$/)
+    expect(banner().className).toContain('banner-success')
+    expect(banner().className).not.toContain('banner-error')
+  })
+
+  it('reports a refusal in the failure tone', () => {
+    click('[data-action="paste-games"]')
+    fillAndPress('paste-games-form', { games: '{ not json' })
+
+    expect(banner().className).toContain('banner-error')
+    expect(banner().className).not.toContain('banner-success')
+  })
+
+  it('reports a rejected event in the failure tone', () => {
+    click('[data-action="cancel-paste"]')
+    click('[data-tab="roster"]')
+    fillAndPress('add-player-form', { number: '9', name: '   ' })
+
+    expect(banner().className).toContain('banner-error')
+  })
+
+  it('clears the banner entirely once something else is tapped', () => {
+    click('[data-tab="season"]')
+    expect(banner().hidden).toBe(true)
+    expect(banner().className).toBe('banner')
+  })
+
+  it('keeps the paste box open on failure, so the paste can be corrected', () => {
+    click('[data-action="paste-games"]')
+    fillAndPress('paste-games-form', { games: '{ still not json' })
+    expect(document.getElementById('paste-games-form')).toBeTruthy()
+  })
+
+  it('closes it on success', () => {
+    fillAndPress('paste-games-form', { games: goodBatch })
+    expect(document.getElementById('paste-games-form')).toBeFalsy()
+    expect(banner().className).toContain('banner-success')
+  })
+})
