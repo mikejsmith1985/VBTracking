@@ -30,6 +30,18 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- The version badge module was briefly emptied by a bad in-place edit during this change.
+  The test asserting it matches the service worker cache caught it at once — which is why
+  that test checks agreement rather than mere existence.
+- **The import no longer demands that two people typed a name the same way.** The roster is
+  typed on a phone before a match; the file is transcribed from handwriting afterwards.
+  Requiring "Layna" and "Layna Blankenship" to agree character for character is a rule the
+  data cannot keep. Names are now matched by full name, then through the jersey number the
+  file declares, then by first name.
+- Ambiguity is still refused rather than guessed: if two players answer to one first name,
+  the import stops and says so. Putting a serve against the wrong child is worse than asking.
+- A failed match now **names the roster it was matched against**, so the mismatch can be
+  seen instead of guessed at.
 - **The file picker refused the file iOS had just saved.** It filtered on
   `application/json`, and iOS names the download `.json.txt` — so the file was greyed out
   and could not be chosen at all. The picker now sets no `accept` attribute at all, not even
