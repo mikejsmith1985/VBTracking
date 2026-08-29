@@ -118,7 +118,7 @@ private struct GameRow: View {
                 Spacer()
                 Text(text(result: game.result))
                     .font(.caption.bold())
-                    .foregroundStyle(game.result == .won ? .green : (game.result == .lost ? .red : .secondary))
+                    .foregroundStyle(game.result == .won ? Color.green : (game.result == .lost ? Color.red : Color.secondary))
             }
             HStack(spacing: 8) {
                 Text(subtitle(of: game)).font(.caption).foregroundStyle(.secondary)

@@ -59,7 +59,7 @@ private struct Header: View {
                 // substitute on a percentage that has since moved.
                 Text(freshness.label)
                     .font(.system(size: 10))
-                    .foregroundStyle(freshness.isCurrent ? .secondary : .orange)
+                    .foregroundStyle(freshness.isCurrent ? Color.secondary : Color.orange)
             }
         }
         .accessibilityIdentifier("court-header")
