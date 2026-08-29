@@ -24,9 +24,29 @@ public enum CourtLayout {
     /// shorter side. Small: every point spent on space is a point not spent on a number.
     public static let gapFraction = 0.02
 
-    /// The smallest screen this has to work on: an Apple Watch Series 11 at 42 mm.
-    /// If the court reads here it reads on the 46 mm.
-    public static let designSize = (width: 374.0, height: 446.0)
+    /// The smallest screen this has to work on.
+    ///
+    /// Not the operator's own watch — the smallest watch Apple still supports, which is a
+    /// 40 mm Series 6 or SE. The court is designed against that, so every watch that can
+    /// install the app can read it; anything bigger is the same layout with more room.
+    public static let designSize = smallestSupportedWatch
+
+    /// Every watch size the app can be installed on, smallest first.
+    ///
+    /// watchOS 11 reaches back to a Series 6, so these are the sizes in the field. They are
+    /// listed rather than assumed because the layout has to be checked against all of them,
+    /// and the smallest is the one that decides the design.
+    public static let supportedWatchSizes: [(name: String, width: Double, height: Double)] = [
+        (name: "40 mm (Series 6-9, SE)", width: 324, height: 394),
+        (name: "41 mm (Series 7-9)", width: 352, height: 430),
+        (name: "42 mm (Series 10-11)", width: 374, height: 446),
+        (name: "44 mm (Series 6, SE)", width: 368, height: 448),
+        (name: "45 mm (Series 7-9)", width: 396, height: 484),
+        (name: "46 mm (Series 10-11)", width: 416, height: 496),
+        (name: "49 mm (Ultra 1-2)", width: 410, height: 502),
+    ]
+
+    private static let smallestSupportedWatch = (width: 324.0, height: 394.0)
 
     /// The box sizes for a given area, in the order the boxes are drawn.
     public static func boxes(in size: (width: Double, height: Double)) -> [BoxSize] {
