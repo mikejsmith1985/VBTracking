@@ -1,11 +1,12 @@
 // Review screen. Three scopes -- individual turns, each match, and the game as a whole --
 // all reading from the same derived statistics, so they cannot disagree.
-import { MATCHES_PER_GAME } from '../../domain/events.js'
-import { currentGame } from '../../domain/reducer.js'
+import { MATCHES_PER_GAME, GAME_KIND } from '../../domain/events.js'
+import { currentGame, gameById } from '../../domain/reducer.js'
+import { aggregate } from '../../domain/aggregate.js'
 import { matchStats, gameStats, matchScore, turnStats, isOverServeLimit, substitutionsFor } from '../../domain/stats.js'
 import { statsTable } from '../components/statstable.js'
 import { turnGroup } from '../components/tally.js'
-import { playerLabel, playerById } from '../html.js'
+import { playerLabel, playerById, esc } from '../html.js'
 
 const SCOPES = [
   { key: 'turns', label: 'Turns' },
@@ -13,10 +14,18 @@ const SCOPES = [
   { key: 'game', label: 'Game' },
 ]
 
-/** The stats screen. No dock: nothing here is used mid-rally. */
+/**
+ * The stats screen. No dock: nothing here is used mid-rally.
+ *
+ * It shows whichever game was picked on the Season screen, falling back to the one being
+ * tracked. Before that it only ever showed the live game, which left every finished game in
+ * the season with no figures to look at at all.
+ */
 export function view(context) {
   const { state, ui } = context
-  const game = currentGame(state)
+  const live = currentGame(state)
+  const chosen = ui.viewingGameId ? gameById(state, ui.viewingGameId) : null
+  const game = chosen ?? live
 
   if (!game) {
     return {
@@ -25,10 +34,48 @@ export function view(context) {
     }
   }
 
+  const body = game.kind === GAME_KIND.HISTORICAL
+    ? fromPaper(game, state.roster)
+    : scopeSwitch(ui.scope) + bodyFor(ui.scope, game, state.roster)
+
   return {
-    screen: scopeSwitch(ui.scope) + bodyFor(ui.scope, game, state.roster) + dataTools(ui, game.id),
+    screen: whichGame(game, chosen, live) + body + dataTools(ui, game.id),
     dock: '',
   }
+}
+
+/**
+ * Names the game on screen, and offers the way back to the live one.
+ *
+ * Without it the figures for a game played last week are indistinguishable from the
+ * figures for the game in progress.
+ */
+function whichGame(game, chosen, live) {
+  const when = game.date ?? 'No date'
+  const who = game.opponent || 'Unnamed opponent'
+
+  return `
+    <div class="viewing-game">
+      <div class="viewing-who">${esc(who)}</div>
+      <div class="viewing-when">${esc(when)}${chosen && live && chosen.id !== live.id ? ' · not the live game' : ''}</div>
+      ${chosen && live && chosen.id !== live.id
+        ? '<button class="btn" data-action="view-live-game" type="button">Show the game being tracked</button>'
+        : ''}
+      ${game.kind === GAME_KIND.HISTORICAL
+        ? '<div class="roster-count">Copied from paper — there is no serve-by-serve record to open.</div>'
+        : `<button class="btn" data-action="open-record" data-id="${game.id}" type="button">
+             Serve record — view and correct
+           </button>`}
+    </div>`
+}
+
+/** A game copied from paper: serves in and out, and honest dashes for the rest. */
+function fromPaper(game, roster) {
+  return `
+    <div class="section-title">Serves — copied from paper</div>
+    ${statsTable(aggregate([game]).byPlayer, roster)}
+    <div class="roster-count">Points, turns and time on court were never written down for
+      this game, so they are shown as dashes rather than as zero.</div>`
 }
 
 // Backup and discarding live here rather than on the track screen: both are
