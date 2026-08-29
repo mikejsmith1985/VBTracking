@@ -6,6 +6,11 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **An import file holding games 1–4 only**, at `import/paper-games-1-4.json`. The 29 August
+  game is already tracked in the app, so importing the complete five-game transcription
+  would count it twice. The full five-game file stays as the record of what the sheets said.
+  Both are covered by tests: every game must parse, every player must resolve against the
+  roster, and every total must still reconcile with the figures written on the paper.
 - **Any game can be discarded from its own record**, not only the one in progress. A game
   entered twice — the same match tracked live and also imported from paper — would
   otherwise count twice in the season with no way to undo it. Two taps, and the
