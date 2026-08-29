@@ -65,17 +65,40 @@ function matchView(context, state, match) {
     ${tallyBoard(match, state.roster)}`
 }
 
+// Status and picker share one panel rather than stacking two padded bars. Two bars read
+// as a single heavy block and cost the tally board a chunk of screen it needs more.
 function dockView(context, state) {
   const servingId = activeServerId(state)
   const showPicker = !servingId || context.ui.pickerOpen
 
   return `
-    ${showPicker ? picker(state, servingId) : ''}
-    ${serverStrip(context, state, servingId)}
+    <div class="dock-panel${servingId ? '' : ' side-out'}">
+      ${statusRow(context, state, servingId, showPicker)}
+      ${showPicker ? pickerGrid(state, servingId) : ''}
+    </div>
     ${outcomes(Boolean(servingId))}`
 }
 
-function picker(state, servingId) {
+// The side-out state is the loudest thing on the screen: recording a serve against the
+// wrong player is exactly the failure this layout exists to prevent.
+function statusRow(context, state, servingId, showPicker) {
+  const player = playerById(state.roster, servingId)
+  const canUndo = context.store.canUndo()
+
+  return `
+    <div class="status-row">
+      <div class="who">
+        <span class="server-label">${servingId ? 'Now serving' : 'Side out'}</span>
+        <span class="server-name">${servingId ? playerLabel(player) : 'Select the next server'}</span>
+      </div>
+      ${servingId && !showPicker
+        ? '<button class="btn-undo" data-action="toggle-picker" type="button">Change</button>'
+        : ''}
+      <button class="btn-undo" data-action="undo" type="button" ${canUndo ? '' : 'disabled'}>Undo</button>
+    </div>`
+}
+
+function pickerGrid(state, servingId) {
   const chips = state.roster
     .map((player) => `
       <button class="chip${player.id === servingId ? ' is-serving' : ''}"
@@ -84,26 +107,7 @@ function picker(state, servingId) {
       </button>`)
     .join('')
 
-  return `<div class="picker"><div class="picker-grid">${chips}</div></div>`
-}
-
-// The side-out state is the loudest thing on the screen: recording a serve against the
-// wrong player is exactly the failure this layout exists to prevent.
-function serverStrip(context, state, servingId) {
-  const player = playerById(state.roster, servingId)
-  const canUndo = context.store.canUndo()
-
-  return `
-    <div class="server-strip${servingId ? '' : ' side-out'}">
-      <div class="who">
-        <div class="server-label">${servingId ? 'Now serving' : 'Side out'}</div>
-        <div class="server-name">${servingId ? playerLabel(player) : 'Select the next server'}</div>
-      </div>
-      ${servingId && !context.ui.pickerOpen
-        ? '<button class="btn-undo" data-action="toggle-picker" type="button">Change</button>'
-        : ''}
-      <button class="btn-undo" data-action="undo" type="button" ${canUndo ? '' : 'disabled'}>Undo</button>
-    </div>`
+  return `<div class="picker-grid">${chips}</div>`
 }
 
 function outcomes(isEnabled) {

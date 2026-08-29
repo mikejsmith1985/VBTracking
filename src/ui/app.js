@@ -3,6 +3,7 @@
 import { createStore } from '../state/store.js'
 import { createLocalStoragePersistence } from '../state/persistence.js'
 import * as E from '../domain/events.js'
+import { currentGame } from '../domain/reducer.js'
 import * as track from './screens/track.js'
 import * as stats from './screens/stats.js'
 import * as roster from './screens/roster.js'
@@ -27,7 +28,16 @@ const ui = {
   pickerOpen: false,
   confirmingRemoveId: null,
   confirmingEndMatch: false,
+  confirmingDiscardGame: false,
   message: null,
+}
+
+// Destructive actions each arm a flag on the first tap and commit on the second. A tap on
+// anything else disarms them, so a confirmation is never left hanging.
+const CONFIRMATIONS = {
+  'remove-player': 'confirmingRemoveId',
+  'end-match': 'confirmingEndMatch',
+  'discard-game': 'confirmingDiscardGame',
 }
 
 const screenElement = document.getElementById('screen')
@@ -98,6 +108,11 @@ const ACTIONS = {
     const playerId = element.dataset.id
     confirmThen('confirmingRemoveId', playerId, () => dispatch(E.removePlayer(playerId)))
   },
+  'discard-game': () => {
+    const game = currentGame(store.getState())
+    if (!game) return
+    confirmThen('confirmingDiscardGame', true, () => dispatch(E.discardGame(game.id)))
+  },
 }
 
 function recordServe(outcome) {
@@ -113,8 +128,12 @@ function confirmThen(flag, armedValue, commit) {
     ui[flag] = armedValue
     return
   }
-  ui[flag] = flag === 'confirmingEndMatch' ? false : null
+  ui[flag] = disarmed(armedValue)
   commit()
+}
+
+function disarmed(armedValue) {
+  return typeof armedValue === 'boolean' ? false : null
 }
 
 function dispatch(event) {
@@ -166,8 +185,9 @@ document.addEventListener('change', (event) => {
 
 /** A tap on anything else cancels a confirmation the operator did not follow through on. */
 function clearPendingConfirmations(action) {
-  if (action !== 'remove-player') ui.confirmingRemoveId = null
-  if (action !== 'end-match') ui.confirmingEndMatch = false
+  for (const [owner, flag] of Object.entries(CONFIRMATIONS)) {
+    if (owner !== action) ui[flag] = disarmed(ui[flag])
+  }
   ui.message = null
 }
 

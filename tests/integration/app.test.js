@@ -139,4 +139,40 @@ describe('a match, driven through the real UI', () => {
     expect(kinds).toContain('SELECT_SERVER')
     expect(kinds).toContain('RECORD_SERVE')
   })
+
+  it('offers to discard the game, and says what that costs', () => {
+    expect(screenText()).toContain('Discard this game')
+    expect(screenText()).toContain('roster is not affected')
+  })
+
+  it('does not discard on the first tap', () => {
+    click('[data-action="discard-game"]')
+    expect(screenText()).toContain('Discard this game?')
+    expect(screenText()).toContain('Every serve in all three matches is thrown away')
+    expect(storedEvents().some((event) => event.t === 'DISCARD_GAME')).toBe(false)
+  })
+
+  it('disarms the confirmation when something else is tapped', () => {
+    click('[data-scope="game"]')
+    expect(screenText()).not.toContain('Discard this game?')
+  })
+
+  it('discards on a deliberate second tap, keeping the roster', () => {
+    click('[data-action="discard-game"]')
+    click('[data-action="discard-game"]')
+
+    expect(storedEvents().some((event) => event.t === 'DISCARD_GAME')).toBe(true)
+    expect(screenText()).toContain('Nothing to show yet')
+
+    click('[data-tab="roster"]')
+    expect(screenText()).toContain('2 of 20 players')
+  })
+
+  it('lets a fresh game start straight afterwards', () => {
+    click('[data-tab="track"]')
+    expect(screenText()).toContain('Start game')
+
+    click('[data-action="start-game"]')
+    expect(screenText()).toContain('Match 1 of 3')
+  })
 })

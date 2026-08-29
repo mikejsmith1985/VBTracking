@@ -67,6 +67,21 @@ outcomes courtside on a phone.
   layout. Outcome controls sit in the thumb zone; every control is at least 44 pt; double-tap
   zoom, pinch zoom, and pull-to-refresh are suppressed.
 
+**Discarding a game**
+
+- A game and every serve in it can be thrown away from the Stats screen, which is where
+  test data gets noticed and is safely away from anything tapped during a rally.
+- Two deliberate taps, with the consequence stated before the second. The roster survives.
+- Discarding is an event like any other, so it replays deterministically and no statistic
+  anywhere still counts the discarded game.
+
+### Changed
+
+- The server status and the player picker now share one panel instead of stacking two
+  separately padded bars. The status line is one row rather than two, and its height is
+  fixed across both states so the outcome buttons never shift under a thumb that has
+  learned where they are.
+
 ### Known limitations
 
 - The opponent's score is deliberately not tracked, so the app cannot determine the

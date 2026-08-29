@@ -18,11 +18,32 @@ export function view(context) {
   const { state, ui } = context
   const game = currentGame(state)
 
-  const body = game
-    ? bodyFor(ui.scope, game, state.roster)
-    : '<div class="empty"><strong>Nothing to show yet</strong>Start a game to record serves.</div>'
+  if (!game) {
+    return {
+      screen: '<div class="empty"><strong>Nothing to show yet</strong>Start a game to record serves.</div>',
+      dock: '',
+    }
+  }
 
-  return { screen: scopeSwitch(ui.scope) + body, dock: '' }
+  return { screen: scopeSwitch(ui.scope) + bodyFor(ui.scope, game, state.roster) + discardGame(ui), dock: '' }
+}
+
+// Discarding lives here rather than on the track screen: it is destructive, and it has no
+// business sitting anywhere near the controls tapped during a rally.
+function discardGame(ui) {
+  const isConfirming = ui.confirmingDiscardGame
+
+  return `
+    <div class="danger-zone">
+      <button class="btn btn-danger" data-action="discard-game" type="button">
+        ${isConfirming ? 'Discard this game?' : 'Discard this game'}
+      </button>
+      <div class="roster-count">
+        ${isConfirming
+          ? 'Tap again to discard. Every serve in all three matches is thrown away. The roster is kept.'
+          : 'Removes this game and all of its recorded serves. The roster is not affected.'}
+      </div>
+    </div>`
 }
 
 function scopeSwitch(active) {
