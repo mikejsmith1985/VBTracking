@@ -28,17 +28,17 @@ func turn(_ playerId: String, points pointCount: Int, closing: Outcome = .out) -
 }
 
 /// Replays a list of event groups, which is how a test reads best: `build(roster(3), started)`.
-func build(_ groups: [Event]...) -> State {
+func build(_ groups: [Event]...) -> AppState {
     replay(groups.flatMap { $0 })
 }
 
 /// The reason the state would refuse this event, or nil.
-func refusal(_ state: State, _ kind: Event.Kind) -> String? {
+func refusal(_ state: AppState, _ kind: Event.Kind) -> String? {
     rejectionReason(state, event(kind))
 }
 
 /// Applies one event to a state.
-func apply(_ state: State, _ kind: Event.Kind) -> State {
+func apply(_ state: AppState, _ kind: Event.Kind) -> AppState {
     applyEvent(state, event(kind))
 }
 

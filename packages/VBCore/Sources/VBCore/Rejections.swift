@@ -7,7 +7,7 @@
 import Foundation
 
 /// Why the event would be refused, or nil when it would be accepted.
-public func rejectionReason(_ state: State, _ event: Event) -> String? {
+public func rejectionReason(_ state: AppState, _ event: Event) -> String? {
     switch event.kind {
     case let .createSeason(id, name, _, _):
         if state.season(id: id) != nil { return "That season already exists." }
@@ -120,7 +120,7 @@ public func rejectionReason(_ state: State, _ event: Event) -> String? {
 
 // MARK: - Individual rules
 
-private func addPlayerRejection(_ state: State, id: String, name: String, seasonId: String?) -> String? {
+private func addPlayerRejection(_ state: AppState, id: String, name: String, seasonId: String?) -> String? {
     let resolved = seasonIdFor(state, seasonId)
     if let season = state.season(id: resolved) {
         if season.members.count >= maxRoster {
@@ -134,7 +134,7 @@ private func addPlayerRejection(_ state: State, id: String, name: String, season
 }
 
 private func setMatchResultRejection(
-    _ state: State,
+    _ state: AppState,
     gameId: String,
     matchIndex: Int,
     result: ResultField
@@ -152,7 +152,7 @@ private func setMatchResultRejection(
 }
 
 private func historicalGameRejection(
-    _ state: State,
+    _ state: AppState,
     id: String,
     seasonId: String?,
     entries: [RawHistoricalEntry]?,
@@ -175,7 +175,7 @@ private func historicalGameRejection(
     return nil
 }
 
-private func setLineupRejection(_ state: State, playerIds: [String]) -> String? {
+private func setLineupRejection(_ state: AppState, playerIds: [String]) -> String? {
     guard let match = state.currentMatch else { return "No match is in progress." }
     guard playerIds.count == lineupSize else { return "A lineup needs exactly \(lineupSize) players." }
     guard Set(playerIds).count == lineupSize else { return "A player cannot hold two positions." }
@@ -190,7 +190,7 @@ private func setLineupRejection(_ state: State, playerIds: [String]) -> String? 
     return nil
 }
 
-private func substituteRejection(_ state: State, outPlayerId: String, inPlayerId: String) -> String? {
+private func substituteRejection(_ state: AppState, outPlayerId: String, inPlayerId: String) -> String? {
     guard let match = state.currentMatch else { return "No match is in progress." }
     guard let lineup = match.lineup else { return "This match has no lineup to substitute into." }
     if outPlayerId == inPlayerId { return "Choose a different player to come on." }
@@ -200,7 +200,7 @@ private func substituteRejection(_ state: State, outPlayerId: String, inPlayerId
     return nil
 }
 
-private func endMatchRejection(_ state: State, result: ResultField) -> String? {
+private func endMatchRejection(_ state: AppState, result: ResultField) -> String? {
     if state.currentMatch == nil { return "No match is in progress." }
     if result.isUnrecognised { return "Unrecognised match result." }
     return nil
@@ -220,7 +220,7 @@ private enum TurnCorrection {
 /// match is immutable protects the play from being rewritten mid-game; it was never meant to
 /// make a typo permanent.
 private func turnCorrectionRejection(
-    _ state: State,
+    _ state: AppState,
     gameId: String,
     matchIndex: Int,
     ordinal: Int,
@@ -256,7 +256,7 @@ private func turnCorrectionRejection(
 /// after the last. It is the one correction not made against an existing turn, so it
 /// validates the place rather than the turn.
 private func insertTurnRejection(
-    _ state: State,
+    _ state: AppState,
     gameId: String,
     matchIndex: Int,
     afterOrdinal: Int?,
@@ -284,7 +284,7 @@ private func namePresence(_ value: String, of what: String) -> String? {
 
 /// The season an event belongs to: the one it names, else the active one, else the implicit
 /// first season that is created for an operator who has not made one.
-func seasonIdFor(_ state: State, _ seasonId: String?) -> String {
+func seasonIdFor(_ state: AppState, _ seasonId: String?) -> String {
     seasonId ?? state.activeSeasonId ?? "season-1"
 }
 

@@ -228,7 +228,7 @@ public func aggregate(_ games: [Game]) -> Aggregate {
     )
 }
 
-extension State {
+extension AppState {
     /// Per-player figures for one season.
     public func seasonStatistics(_ seasonId: String) -> Aggregate {
         aggregate(games(inSeason: seasonId))

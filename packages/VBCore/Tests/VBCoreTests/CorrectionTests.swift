@@ -23,18 +23,18 @@ private var played: [Event] {
         ]
 }
 
-private var finished: State { replay(played) }
+private var finished: AppState { replay(played) }
 
-private func turns(_ state: State) -> [Turn] {
+private func turns(_ state: AppState) -> [Turn] {
     state.game(id: "g1")?.matches.first?.turns ?? []
 }
 
-private func figures(_ state: State) -> [String: Figures] {
+private func figures(_ state: AppState) -> [String: Figures] {
     state.game(id: "g1")?.matches.first?.statistics ?? [:]
 }
 
 /// A game copied from paper, which has no turns to correct.
-private var fromPaper: State {
+private var fromPaper: AppState {
     build(
         roster(2),
         [
@@ -132,7 +132,7 @@ struct ReassignTurnTests {
 
 @Suite("Deleting a turn recorded by mistake")
 struct DeleteTurnTests {
-    private var deleted: State {
+    private var deleted: AppState {
         apply(finished, .deleteTurn(gameId: "g1", matchIndex: 0, ordinal: 0))
     }
 

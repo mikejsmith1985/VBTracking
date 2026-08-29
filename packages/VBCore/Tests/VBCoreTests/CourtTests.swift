@@ -9,7 +9,7 @@ import Testing
 private let six = ["p1", "p2", "p3", "p4", "p5", "p6"]
 
 /// A match with the six on court and a rotation in force.
-private func onCourt(_ extra: [Event]...) -> State {
+private func onCourt(_ extra: [Event]...) -> AppState {
     var events = roster(8)
     events += [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: true))]
     events += [event(.setLineup(playerIds: six))]

@@ -37,7 +37,7 @@ public struct DockState: Equatable, Sendable {
     ///
     /// `isPickerRequested` is the operator's own override; everything else follows from the
     /// record. A dock that decided for itself would fight the operator at the worst moment.
-    public init(state: State, isPickerRequested: Bool, canUndo: Bool) {
+    public init(state: AppState, isPickerRequested: Bool, canUndo: Bool) {
         self.canUndo = canUndo
         self.isPickerRequested = isPickerRequested
         self.hasLineup = state.currentMatch?.lineup != nil
@@ -76,7 +76,7 @@ public struct ServeLimitAlert: Equatable, Sendable {
     ///
     /// Exactly at the limit, never past it: a sixth serve is a referee's miscount, recorded
     /// without being nagged about a second time.
-    public static func raised(after state: State, servingPlayerId: String?) -> ServeLimitAlert? {
+    public static func raised(after state: AppState, servingPlayerId: String?) -> ServeLimitAlert? {
         guard let servingPlayerId,
             let match = state.currentMatch,
             let served = match.turns.last(where: { $0.playerId == servingPlayerId }),

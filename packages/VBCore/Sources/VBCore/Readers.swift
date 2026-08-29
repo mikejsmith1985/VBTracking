@@ -4,7 +4,7 @@
 // leave a total disagreeing with the serves underneath it.
 import Foundation
 
-extension State {
+extension AppState {
     /// The season new games belong to, or nil.
     public var activeSeason: Season? {
         season(id: activeSeasonId)

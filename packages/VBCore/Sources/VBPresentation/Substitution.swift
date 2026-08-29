@@ -32,7 +32,7 @@ public enum TapIntent: Equatable, Sendable {
 /// asked for or a server nobody chose.
 public func intent(
     ofTapping playerId: String,
-    state: State,
+    state: AppState,
     armedIncoming: String?
 ) -> TapIntent {
     let match = state.currentMatch
@@ -54,7 +54,7 @@ public func intent(
 }
 
 /// The words under the picker, which change what the next tap will do and so must say so.
-public func pickerHint(state: State, armedIncoming: String?) -> String {
+public func pickerHint(state: AppState, armedIncoming: String?) -> String {
     if let armedIncoming {
         let name = state.rosterEntry(id: armedIncoming)?.name ?? "That player"
         return "\(name) is coming on — tap who they replace. Tap them again to serve without substituting."
