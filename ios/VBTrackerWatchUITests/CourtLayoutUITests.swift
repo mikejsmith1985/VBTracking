@@ -8,21 +8,23 @@
 // screen.
 import XCTest
 
-// XCUITest drives a running app, so every one of its APIs is main-actor isolated. A test
-// class that is not says so in 123 compiler errors.
+// XCUITest drives a running app, so every one of its APIs is main-actor isolated -- and
+// `setUp` is not, even inside a main-actor class. So there is no `setUp`: each test says
+// what it launches, which reads better anyway.
 @MainActor
 final class CourtLayoutUITests: XCTestCase {
-    private var app: XCUIApplication!
+    private var app = XCUIApplication()
 
-    override func setUp() {
+    /// A fixture court, so the layout can be measured without a paired phone.
+    private func launch() {
         continueAfterFailure = false
         app = XCUIApplication()
-        // A fixture court, so the layout can be measured without a paired phone.
         app.launchArguments = ["-uiTestCourt", "full"]
         app.launch()
     }
 
     func testOnDeckBoxIsTheLargestOnScreen() {
+        launch()
         let onDeck = app.otherElements["court-box-on-deck"]
         XCTAssertTrue(onDeck.waitForExistence(timeout: 5), "the on-deck box must be identifiable")
 
@@ -38,6 +40,7 @@ final class CourtLayoutUITests: XCTestCase {
     }
 
     func testOnDeckBoxClearsTheStatedMargin() {
+        launch()
         let onDeck = app.otherElements["court-box-on-deck"]
         XCTAssertTrue(onDeck.waitForExistence(timeout: 5))
 
@@ -48,11 +51,13 @@ final class CourtLayoutUITests: XCTestCase {
     }
 
     func testEveryPositionIsDrawn() {
+        launch()
         XCTAssertTrue(app.otherElements["court-box-serving"].waitForExistence(timeout: 5))
         XCTAssertEqual(boxes().count, 6, "six positions, always")
     }
 
     func testTheCourtSaysWhatItsFiguresCover() {
+        launch()
         let header = app.otherElements["court-header"]
         XCTAssertTrue(header.waitForExistence(timeout: 5), "the scope must be stated")
     }
