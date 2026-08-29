@@ -192,6 +192,32 @@ describe('correcting a game that is no longer the one being tracked', () => {
   })
 })
 
+describe('saving a copy of everything', () => {
+  it('is on the Season screen, where the record lives', () => {
+    click('[data-tab="season"]')
+    expect(document.querySelector('[data-action="export-data"]')).toBeTruthy()
+    expect(screenText()).toContain('Save a copy of everything')
+  })
+
+  it('is not hidden behind having a game in progress', () => {
+    // It used to live on the Game tab, which shows nothing at all until a game exists --
+    // so an operator between games had no way to save their season.
+    click('[data-tab="stats"]')
+    expect(document.querySelector('[data-action="export-data"]')).toBeFalsy()
+
+    click('[data-tab="season"]')
+    expect(document.querySelector('[data-action="export-data"]')).toBeTruthy()
+  })
+
+  it('says what a restore replaces before it commits to one', () => {
+    click('[data-action="import-data"]')
+    expect(screenText()).toContain('Replace everything from a file?')
+    expect(screenText()).toContain('including any match in progress')
+
+    click('[data-tab="season"]')
+  })
+})
+
 describe('the Game tab follows the game chosen on the Season screen', () => {
   it('shows the live game until another one is chosen', () => {
     click('[data-tab="stats"]')

@@ -150,6 +150,38 @@ describe('escaping', () => {
   })
 })
 
+describe('saving and restoring the whole record', () => {
+  it('offers a copy of everything from the season screen', () => {
+    const html = render(season()).screen
+    expect(html).toContain('data-action="export-data"')
+    expect(html).toContain('Save a copy of everything')
+  })
+
+  it('offers a restore, and says what restoring costs before it is armed', () => {
+    const html = render(season()).screen
+    expect(html).toContain('data-action="import-data"')
+    expect(html).toContain('Nothing is sent anywhere')
+  })
+
+  it('states plainly what a restore replaces once it is armed', () => {
+    const html = render(season(), { confirmingImport: true }).screen
+    expect(html).toContain('Replace everything from a file?')
+    expect(html).toContain('including any match in progress')
+  })
+
+  it('is reachable with no game recorded at all', () => {
+    // The bug this replaces: backup lived on the game screen, which shows nothing until a
+    // game exists -- so an operator between games could not save their season at all.
+    const html = render(build(roster(3))).screen
+    expect(html).toContain('data-action="export-data"')
+  })
+
+  it('is reachable with nothing recorded at all', () => {
+    const html = render(build()).screen
+    expect(html).toContain('data-action="export-data"')
+  })
+})
+
 describe('the running build', () => {
   it('is shown, so a stale cache can be told from a broken fix', () => {
     expect(render(season()).screen).toMatch(/Version v\d+/)
