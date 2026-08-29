@@ -89,9 +89,11 @@ US1, US2 and US3 are all P1. They are phased below in build order rather than in
 ### The proof
 
 - [X] T027 Write the parity suite: replay `tests/fixtures/v1-log.json` and `v2-log.json` through the Swift reducer and assert every figure equals `v1-expected.json` and `v2-expected.json`, in `packages/VBCore/Tests/VBCoreTests/ParityTests.swift`
-- [ ] T028 Export the operator's real season from the shipped web app, commit it as `tests/fixtures/season-2026.json`, and assert in `ParityTests` that every per-player, per-match, per-game and per-season figure matches the web app's — **including which figures are dashes**
+- [X] T028 Export the operator's real season from the shipped web app, commit it as `tests/fixtures/season-2026.json`, and assert in `ParityTests` that every per-player, per-match, per-game and per-season figure matches the web app's — **including which figures are dashes**
 
-**Checkpoint**: **done except T028.** `swift test` is green — 117 tests, 0.02 seconds — and both shipped fixtures replay to identical figures. `VBCore` has no I/O, no clock and no randomness. T028 waits on a fresh export of the real season.
+**Checkpoint**: **done.** `swift test` is green — 167 tests — and the two shipped fixtures
+*and the operator's own season* replay to identical figures, dashes included. `VBCore` has
+no I/O, no clock and no randomness. Phase 2 is closed; the user stories are unblocked.
 
 ---
 
