@@ -109,10 +109,10 @@ no I/O, no clock and no randomness. Phase 2 is closed; the user stories are unbl
 - [X] T032 [US2] Implement backup parsing, the migration run, and deterministic `id` assignment for events that lack one, in `packages/VBCore/Sources/VBCore/Transfer.swift`
 - [X] T033 [US2] Implement import idempotence — hash the imported log, refuse a hash already recorded — in `packages/VBCore/Sources/VBCore/Transfer.swift`
 - [X] T034 [US2] Implement export in the web app's exact shape, and add a round-trip test proving a natively written file parses in the web app's parser, in `packages/VBCore/Sources/VBCore/Transfer.swift`
-- [ ] T035 [US2] Wire the log store into the app's store, replaying on launch and appending on every accepted event, in `ios/VBTracker/App/EventStore.swift`
-- [ ] T036 [US2] Build the import screen — choose a file, state plainly what will happen before it happens, report the outcome in one sentence — in `ios/VBTracker/Transfer/ImportView.swift`
-- [ ] T037 [P] [US2] Build the export screen, offering the file through the share sheet, in `ios/VBTracker/Transfer/ExportView.swift`
-- [ ] T038 [US2] Add an interface test that imports a fixture backup and asserts the season figures on screen, in `ios/VBTrackerUITests/ImportTests.swift`
+- [X] T035 [US2] Wire the log store into the app's store, replaying on launch and appending on every accepted event, in `ios/VBTracker/App/EventStore.swift`
+- [X] T036 [US2] Build the import screen — choose a file, state plainly what will happen before it happens, report the outcome in one sentence — in `ios/VBTracker/Transfer/ImportView.swift`
+- [X] T037 [P] [US2] Build the export screen, offering the file through the share sheet, in `ios/VBTracker/Transfer/ExportView.swift`
+- [X] T038 [US2] Add an interface test that imports a fixture backup and asserts the season figures on screen, in `ios/VBTrackerUITests/ImportTests.swift`
 
 **Checkpoint**: the rules of the log and the import are done and tested — **157 tests, 0.04
 seconds**, including a whole season surviving a round trip through this app's own export.
@@ -128,17 +128,17 @@ batch, and FR-036 is satisfied then.
 
 **Independent test**: Track a full three-match game in aeroplane mode against a paper tally.
 
-- [ ] T039 [US3] Build the observable store — dispatch, rejection reasons surfaced, undo dropping the last event and replaying — in `ios/VBTracker/App/Store.swift`
-- [ ] T040 [P] [US3] Build the roster screen: add, edit, remove from season, in `ios/VBTracker/Track/RosterView.swift`
-- [ ] T041 [P] [US3] Build the lineup chooser for the six on court, in `ios/VBTracker/Track/LineupView.swift`
-- [ ] T042 [US3] Build the court picker on the phone — the same arrangement the wrist uses, driven by `VBCore.Court` — in `ios/VBTracker/Track/CourtPicker.swift`
-- [ ] T043 [US3] Build the outcome controls in the thumb zone, one tap per serve, with the repeat-tap guard, in `ios/VBTracker/Track/OutcomeControls.swift`
-- [ ] T044 [US3] Build the tally board — one mark per serve, grouped and coloured by turn, outcome carried by shape not colour — in `ios/VBTracker/Track/TallyBoard.swift`
-- [ ] T045 [US3] Implement bench-first substitution: tap the incoming player, then tap who they replace, in `ios/VBTracker/Track/CourtPicker.swift`
-- [ ] T046 [US3] Implement the five-serve alert as a full-screen interruption cleared by any tap, in `ios/VBTracker/Track/ServeLimitAlert.swift`
-- [ ] T047 [P] [US3] Build ending a match with its result, and ending a game part-way, in `ios/VBTracker/Track/EndMatchView.swift`
-- [ ] T048 [US3] Add an interface test tracking a whole match through real taps and asserting the recorded figures, in `ios/VBTrackerUITests/TrackingTests.swift`
-- [ ] T049 [US3] Add an interface test asserting one undo reverses exactly one operator action, including the rotation advance it caused, in `ios/VBTrackerUITests/UndoTests.swift`
+- [X] T039 [US3] Build the observable store — dispatch, rejection reasons surfaced, undo dropping the last event and replaying — in `ios/VBTracker/App/Store.swift`
+- [X] T040 [P] [US3] Build the roster screen: add, edit, remove from season, in `ios/VBTracker/Track/RosterView.swift`
+- [X] T041 [P] [US3] Build the lineup chooser for the six on court, in `ios/VBTracker/Track/LineupView.swift`
+- [X] T042 [US3] Build the court picker on the phone — the same arrangement the wrist uses, driven by `VBCore.Court` — in `ios/VBTracker/Track/CourtPicker.swift`
+- [X] T043 [US3] Build the outcome controls in the thumb zone, one tap per serve, with the repeat-tap guard, in `ios/VBTracker/Track/OutcomeControls.swift`
+- [X] T044 [US3] Build the tally board — one mark per serve, grouped and coloured by turn, outcome carried by shape not colour — in `ios/VBTracker/Track/TallyBoard.swift`
+- [X] T045 [US3] Implement bench-first substitution: tap the incoming player, then tap who they replace, in `ios/VBTracker/Track/CourtPicker.swift`
+- [X] T046 [US3] Implement the five-serve alert as a full-screen interruption cleared by any tap, in `ios/VBTracker/Track/ServeLimitAlert.swift`
+- [X] T047 [P] [US3] Build ending a match with its result, and ending a game part-way, in `ios/VBTracker/Track/EndMatchView.swift`
+- [X] T048 [US3] Add an interface test tracking a whole match through real taps and asserting the recorded figures, in `ios/VBTrackerUITests/TrackingTests.swift`
+- [X] T049 [US3] Add an interface test asserting one undo reverses exactly one operator action, including the rotation advance it caused, in `ios/VBTrackerUITests/UndoTests.swift`
 
 **Checkpoint**: a game can be tracked start to finish with no network and no watch.
 
@@ -150,16 +150,16 @@ batch, and FR-036 is satisfied then.
 
 **Independent test**: Drive the watch view from a fixture snapshot — no phone, no link — and read it at arm's length.
 
-- [ ] T050 [P] [US1] Write failing tests for the snapshot codec against `contracts/watch-link.md`, including nulls surviving as nulls, in `ios/SharedTests/CourtSnapshotTests.swift`
-- [ ] T051 [US1] Implement the court snapshot type, encoded from `VBCore.Court`, in `ios/Shared/Link/CourtSnapshot.swift`
-- [ ] T052 [US1] Build the court grid with uneven tracks — columns 1 : 1 : 1.35, rows 1.25 : 1 — sized for the 42 mm screen, in `ios/VBTrackerWatch/CourtView/CourtGrid.swift`
-- [ ] T053 [US1] Build the box: jersey number primary at ~46 pt on deck and ~32 pt elsewhere, serve-in percentage second, points third, in `ios/VBTrackerWatch/CourtView/PlayerBox.swift`
-- [ ] T054 [US1] Render a figure that was never recorded as a dash, never as zero and never as a full percentage, in `ios/VBTrackerWatch/CourtView/PlayerBox.swift`
-- [ ] T055 [P] [US1] Render an empty court position as empty, and say plainly when there is no lineup to name a next server from, in `ios/VBTrackerWatch/CourtView/CourtGrid.swift`
-- [ ] T056 [US1] Show the scope the figures cover — which match or game — so one cannot be mistaken for the other, in `ios/VBTrackerWatch/CourtView/ScopeLabel.swift`
-- [ ] T057 [US1] Make the layout legible in the always-on display, with nothing carried by colour alone, in `ios/VBTrackerWatch/CourtView/CourtGrid.swift`
-- [ ] T058 [US1] Add the interface test that **measures** every box frame and asserts the on-deck box is at least 1.5× the smallest by area on the 42 mm screen (SC-014), in `ios/VBTrackerWatchUITests/CourtLayoutTests.swift`
-- [ ] T059 [US1] Add an interface test driving the view from three fixture snapshots — full court, five on court, no lineup — in `ios/VBTrackerWatchUITests/CourtContentTests.swift`
+- [X] T050 [P] [US1] Write failing tests for the snapshot codec against `contracts/watch-link.md`, including nulls surviving as nulls, in `ios/SharedTests/CourtSnapshotTests.swift`
+- [X] T051 [US1] Implement the court snapshot type, encoded from `VBCore.Court`, in `ios/Shared/Link/CourtSnapshot.swift`
+- [X] T052 [US1] Build the court grid with uneven tracks — columns 1 : 1 : 1.35, rows 1.25 : 1 — sized for the 42 mm screen, in `ios/VBTrackerWatch/CourtView/CourtGrid.swift`
+- [X] T053 [US1] Build the box: jersey number primary at ~46 pt on deck and ~32 pt elsewhere, serve-in percentage second, points third, in `ios/VBTrackerWatch/CourtView/PlayerBox.swift`
+- [X] T054 [US1] Render a figure that was never recorded as a dash, never as zero and never as a full percentage, in `ios/VBTrackerWatch/CourtView/PlayerBox.swift`
+- [X] T055 [P] [US1] Render an empty court position as empty, and say plainly when there is no lineup to name a next server from, in `ios/VBTrackerWatch/CourtView/CourtGrid.swift`
+- [X] T056 [US1] Show the scope the figures cover — which match or game — so one cannot be mistaken for the other, in `ios/VBTrackerWatch/CourtView/ScopeLabel.swift`
+- [X] T057 [US1] Make the layout legible in the always-on display, with nothing carried by colour alone, in `ios/VBTrackerWatch/CourtView/CourtGrid.swift`
+- [X] T058 [US1] Add the interface test that **measures** every box frame and asserts the on-deck box is at least 1.5× the smallest by area on the 42 mm screen (SC-014), in `ios/VBTrackerWatchUITests/CourtLayoutTests.swift`
+- [X] T059 [US1] Add an interface test driving the view from three fixture snapshots — full court, five on court, no lineup — in `ios/VBTrackerWatchUITests/CourtContentTests.swift`
 
 **Checkpoint**: the wrist court reads correctly from fixture data, and its layout is asserted by measurement rather than by an eye that cannot open a simulator.
 
@@ -171,13 +171,13 @@ batch, and FR-036 is satisfied then.
 
 **Independent test**: Record on the phone and watch the wrist follow; separate the devices and confirm the watch marks itself not current.
 
-- [ ] T060 [US6] Define the connectivity protocol and its fake, so every rule below is testable without two devices, in `ios/Shared/Link/ConnectivitySession.swift`
-- [ ] T061 [P] [US6] Write failing tests for snapshot ordering — sequence 5 then 4, and 5 wins — in `ios/SharedTests/LinkTests.swift`
-- [ ] T062 [US6] Implement sending the snapshot: `updateApplicationContext` always, plus `sendMessage` while reachable, in `ios/VBTracker/App/PhoneLink.swift`
-- [ ] T063 [US6] Implement receiving on the watch, discarding anything not newer than what is held, in `ios/VBTrackerWatch/Link/WatchLink.swift`
-- [ ] T064 [US6] Send a snapshot after every event that changes the court, substitutions included, in `ios/VBTracker/App/PhoneLink.swift`
-- [ ] T065 [US6] Show how long ago the court was current, and mark it not-current past the threshold, in `ios/VBTrackerWatch/CourtView/StalenessBanner.swift`
-- [ ] T066 [P] [US6] Add tests for losing contact and recovering — the fake drops everything, then reconnects and flushes — in `ios/SharedTests/LinkTests.swift`
+- [X] T060 [US6] Define the connectivity protocol and its fake, so every rule below is testable without two devices, in `ios/Shared/Link/ConnectivitySession.swift`
+- [X] T061 [P] [US6] Write failing tests for snapshot ordering — sequence 5 then 4, and 5 wins — in `ios/SharedTests/LinkTests.swift`
+- [X] T062 [US6] Implement sending the snapshot: `updateApplicationContext` always, plus `sendMessage` while reachable, in `ios/VBTracker/App/PhoneLink.swift`
+- [X] T063 [US6] Implement receiving on the watch, discarding anything not newer than what is held, in `ios/VBTrackerWatch/Link/WatchLink.swift`
+- [X] T064 [US6] Send a snapshot after every event that changes the court, substitutions included, in `ios/VBTracker/App/PhoneLink.swift`
+- [X] T065 [US6] Show how long ago the court was current, and mark it not-current past the threshold, in `ios/VBTrackerWatch/CourtView/StalenessBanner.swift`
+- [X] T066 [P] [US6] Add tests for losing contact and recovering — the fake drops everything, then reconnects and flushes — in `ios/SharedTests/LinkTests.swift`
 - [ ] T067 [US6] Verify on the real devices that a serve reaches the wrist within 3 seconds (SC-002), and record the result in `CHANGELOG.md`
 
 **Checkpoint**: the wrist follows the phone, and never lies about how current it is.
@@ -190,13 +190,13 @@ batch, and FR-036 is satisfied then.
 
 **Independent test**: Put the phone down, record a whole turn from the watch, and compare the phone's record against one recorded on the phone.
 
-- [ ] T068 [US7] Build the record page — three outcome buttons, reached by a swipe from the court, never by a gesture or the crown — in `ios/VBTrackerWatch/RecordView/RecordView.swift`
-- [ ] T069 [US7] Send recorded events with `transferUserInfo`, keeping each until the phone confirms it, in `ios/VBTrackerWatch/Link/WatchLink.swift`
-- [ ] T070 [US7] Implement exactly-once on the phone: ignore an event `id` already held, in `ios/VBTracker/App/PhoneLink.swift`
-- [ ] T071 [P] [US7] Write failing tests delivering the same event twice and asserting the log holds it once, in `ios/SharedTests/LinkTests.swift`
-- [ ] T072 [US7] Show the count of serves not yet landed on the phone, so a serve recorded out of range is never assumed safe, in `ios/VBTrackerWatch/RecordView/PendingBadge.swift`
-- [ ] T073 [US7] Raise the five-serve limit as a haptic on the wrist as well as a visual, in `ios/VBTrackerWatch/RecordView/ServeLimitHaptic.swift`
-- [ ] T074 [US7] Add an interface test asserting a watch-recorded serve is indistinguishable in the log from a phone-recorded one, in `ios/VBTrackerWatchUITests/RecordTests.swift`
+- [X] T068 [US7] Build the record page — three outcome buttons, reached by a swipe from the court, never by a gesture or the crown — in `ios/VBTrackerWatch/RecordView/RecordView.swift`
+- [X] T069 [US7] Send recorded events with `transferUserInfo`, keeping each until the phone confirms it, in `ios/VBTrackerWatch/Link/WatchLink.swift`
+- [X] T070 [US7] Implement exactly-once on the phone: ignore an event `id` already held, in `ios/VBTracker/App/PhoneLink.swift`
+- [X] T071 [P] [US7] Write failing tests delivering the same event twice and asserting the log holds it once, in `ios/SharedTests/LinkTests.swift`
+- [X] T072 [US7] Show the count of serves not yet landed on the phone, so a serve recorded out of range is never assumed safe, in `ios/VBTrackerWatch/RecordView/PendingBadge.swift`
+- [X] T073 [US7] Raise the five-serve limit as a haptic on the wrist as well as a visual, in `ios/VBTrackerWatch/RecordView/ServeLimitHaptic.swift`
+- [X] T074 [US7] Add an interface test asserting a watch-recorded serve is indistinguishable in the log from a phone-recorded one, in `ios/VBTrackerWatchUITests/RecordTests.swift`
 - [ ] T075 [US7] Wear the watch through an ordinary evening with no intent to record, and confirm nothing was recorded by accident (SC-011)
 
 **Checkpoint**: phase one of the release is complete and ready for TestFlight.
@@ -209,12 +209,12 @@ batch, and FR-036 is satisfied then.
 
 **Independent test**: Mis-enter a game deliberately, then correct every kind of mistake.
 
-- [ ] T076 [US4] Build the game list, opening any game in the season and not only the one being tracked, in `ios/VBTracker/Record/GameListView.swift`
-- [ ] T077 [US4] Build the serve record: every turn in order, with its serves, in `ios/VBTracker/Record/ServeRecordView.swift`
-- [ ] T078 [US4] Implement cycling a serve outcome, adding one, and removing the last, in `ios/VBTracker/Record/TurnEditor.swift`
-- [ ] T079 [P] [US4] Implement reassigning a turn and deleting one, each confirmed before it commits, in `ios/VBTracker/Record/TurnEditor.swift`
-- [ ] T080 [US4] Implement adding a turn missed at the time, at any point in the match, in `ios/VBTracker/Record/TurnEditor.swift`
-- [ ] T081 [US4] Add an interface test correcting each kind of mistake and asserting the season figures follow, in `ios/VBTrackerUITests/CorrectionTests.swift`
+- [X] T076 [US4] Build the game list, opening any game in the season and not only the one being tracked, in `ios/VBTracker/Record/GameListView.swift`
+- [X] T077 [US4] Build the serve record: every turn in order, with its serves, in `ios/VBTracker/Record/ServeRecordView.swift`
+- [X] T078 [US4] Implement cycling a serve outcome, adding one, and removing the last, in `ios/VBTracker/Record/TurnEditor.swift`
+- [X] T079 [P] [US4] Implement reassigning a turn and deleting one, each confirmed before it commits, in `ios/VBTracker/Record/TurnEditor.swift`
+- [X] T080 [US4] Implement adding a turn missed at the time, at any point in the match, in `ios/VBTracker/Record/TurnEditor.swift`
+- [X] T081 [US4] Add an interface test correcting each kind of mistake and asserting the season figures follow, in `ios/VBTrackerUITests/CorrectionTests.swift`
 
 ---
 
@@ -224,23 +224,31 @@ batch, and FR-036 is satisfied then.
 
 **Independent test**: Walk every web-app screen and find its counterpart, with the same figures.
 
-- [ ] T082 [US5] Build the season screen — per-player totals, win-loss record, breakdown by opponent — in `ios/VBTracker/Season/SeasonView.swift`
-- [ ] T083 [P] [US5] Build season management: create, rename, switch, and season membership with this season's numbers, in `ios/VBTracker/Season/SeasonAdminView.swift`
-- [ ] T084 [P] [US5] Build the career screen, one player across every season they appear in, in `ios/VBTracker/Season/CareerView.swift`
-- [ ] T085 [US5] Build the game record editor — context, per-match results, and the three note boxes — in `ios/VBTracker/Season/GameFormView.swift`
-- [ ] T086 [US5] Build entry of a game copied from paper, serves in and out only, in `ios/VBTracker/Season/PaperGameView.swift`
-- [ ] T087 [P] [US5] Build importing a batch of paper games from a prepared file, in `ios/VBTracker/Transfer/PaperImportView.swift`
-- [ ] T088 [US5] Add an interface test walking every screen and asserting the figures against the web app's for the same season, in `ios/VBTrackerUITests/ParityScreenTests.swift`
+- [X] T082 [US5] Build the season screen — per-player totals, win-loss record, breakdown by opponent — in `ios/VBTracker/Season/SeasonView.swift`
+- [X] T083 [P] [US5] Build season management: create, rename, switch, and season membership with this season's numbers, in `ios/VBTracker/Season/SeasonAdminView.swift`
+- [X] T084 [P] [US5] Build the career screen, one player across every season they appear in, in `ios/VBTracker/Season/CareerView.swift`
+- [X] T085 [US5] Build the game record editor — context, per-match results, and the three note boxes — in `ios/VBTracker/Season/GameFormView.swift`
+- [X] T086 [US5] Build entry of a game copied from paper, serves in and out only, in `ios/VBTracker/Season/PaperGameView.swift`
+- [X] T087 [P] [US5] Build importing a batch of paper games from a prepared file, in `ios/VBTracker/Transfer/PaperImportView.swift`
+- [X] T088 [US5] Add an interface test walking every screen and asserting the figures against the web app's for the same season, in `ios/VBTrackerUITests/ParityScreenTests.swift`
+
+---
+
+> **Everything above marked done and living under `ios/` is written but not yet compiled.**
+> There is no Mac here (R-001), so the first cloud build is where the SwiftUI is first seen
+> by a compiler. That is the working condition, not an oversight — and it is why every
+> decision those screens would otherwise make was moved into `VBPresentation`, where 218
+> tests run in a fifth of a second on this machine.
 
 ---
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T089 [P] Add the app icon and the watch complication placeholder assets in `ios/VBTracker/Assets.xcassets` and `ios/VBTrackerWatch/Assets.xcassets`
-- [ ] T090 [P] Confirm every screen holds no rules: any decision a view makes has a tested type behind it (R-001)
+- [X] T089 [P] Add the app icon and the watch complication placeholder assets in `ios/VBTracker/Assets.xcassets` and `ios/VBTrackerWatch/Assets.xcassets`
+- [X] T090 [P] Confirm every screen holds no rules: any decision a view makes has a tested type behind it (R-001)
 - [ ] T091 Verify a full three-match game in aeroplane mode on the real devices, against a paper tally (SC-004)
 - [ ] T092 Hand the watch to someone who has never seen it and ask who serves next: nine of ten correct, under two seconds (SC-008)
-- [ ] T093 [P] Update `CHANGELOG.md` with the release, and `CLAUDE.md` with the numeric `APP_ID` and the TestFlight route
+- [X] T093 [P] Update `CHANGELOG.md` with the release, and `CLAUDE.md` with the numeric `APP_ID` and the TestFlight route
 - [ ] T094 Ship phase one to TestFlight through Codemagic, and confirm the build installs on both devices
 
 ---
