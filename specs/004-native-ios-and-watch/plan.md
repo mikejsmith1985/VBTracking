@@ -39,8 +39,10 @@ build-time tool only, run on CI.
 persistence and the watch link against a faked session; XCUITest for the interface layer on
 both platforms. The cross-language parity suite gates every build.
 
-**Target Platform**: iOS 17+, watchOS 10+. iPhone portrait only. Floor to be confirmed
-against the coach's actual watch (R-002).
+**Target Platform**: iOS 18+, watchOS 11+. iPhone portrait only. The devices this release is
+for are an **Apple Watch Series 11 at 42 mm** (374 × 446 pt — the smaller size, and therefore
+the design target) and an **iPhone 14 Pro**. The floor sits below both, for a later public
+release rather than for these two.
 
 **Project Type**: Native mobile app with a watch companion, over a shared pure-domain
 package. The existing web app stays in the repository root, untouched and still shipping.
@@ -51,8 +53,9 @@ one tap per serve (SC-005).
 
 **Constraints**: Offline in a gym — no network of any kind during a match (FR-033). No
 account, no sign-in (FR-041). All data on the operator's own devices (FR-040). Nothing in
-the tracking loop may wait on the watch (FR-015). **No Mac on the workstation** — the
-constraint that shapes the sequencing more than any other (R-001).
+the tracking loop may wait on the watch (FR-015). **No Mac, and none coming** — every build
+with a screen in it runs on the cloud service, so screens hold no rules and visual
+requirements are written as measurable ones (R-001).
 
 **Scale/Scope**: One operator, several seasons, ~20 players per season, a few thousand
 events per season. Phase one is roughly a dozen screens across two platforms; phase two adds
@@ -157,7 +160,8 @@ Phase one, in the order each slice can be proved:
 3. **The phone's tracking loop.** One tap per serve, the rotation advancing itself, the
    five-serve alert, undo reversing exactly one action.
 4. **The wrist court.** Six boxes, the arrangement of the floor, the on-deck box the biggest
-   thing on the screen.
+   thing on the screen — sized against the 42 mm watch and asserted by measurement, not by
+   eye, since no simulator can be opened here.
 5. **The link.** Snapshot out, events back, staleness stated plainly, exactly-once delivery.
 6. **Recording from the wrist.** Three buttons, a haptic at five, and no accidental serves.
 

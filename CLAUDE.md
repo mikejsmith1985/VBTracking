@@ -34,6 +34,15 @@ in the repository root.
 | App Group | `group.com.mikejsmith.vbtracker` |
 | App Store Connect `APP_ID` | not yet created |
 
+**Devices and the build loop** - both are load-bearing:
+- Target devices are an **Apple Watch Series 11 at 42 mm** (374 x 446 pt) and an **iPhone 14
+  Pro**. The 42 mm screen is the design target; nothing may depend on the roomier 46 mm.
+- Minimum iOS 18 / watchOS 11 - chosen for a later public release, not for these two devices.
+- **There is no Mac.** Every build with a screen in it runs on the cloud build service, so
+  screens hold no rules, and a visual requirement is written as a measured one (an interface
+  test asserts the on-deck box is at least 1.5x the smallest box by area). Batch UI changes;
+  working in ones is the expensive habit here.
+
 **The shape of the native work** - read `plan.md` before starting any of it:
 - `packages/VBCore` is a pure Swift package with no I/O. It builds and tests on Windows,
   which is the entire local development loop; only the screens need a Mac.

@@ -13,10 +13,11 @@ is the evidence Article X asks for, and each names what would count as a failure
 |---|---|---|
 | Swift toolchain for Windows | `VBCore` | swift.org. This is the whole local loop |
 | Codemagic, connected to this repository | Every build with a UI | Key already in the vault as `APPLE_ASC_KEY_ID`, `APPLE_ASC_ISSUER_ID`, `APPLE_ASC_PRIVATE_KEY`, `APPLE_TEAM_ID` |
-| An iPhone and the paired Apple Watch | The court on the wrist | Confirm the watch model before fixing the deployment floor |
+| iPhone 14 Pro, and the paired Apple Watch Series 11 (42 mm) | The court on the wrist | The 42 mm screen is the design target; it is the size that has to work |
 | A backup file from the shipped web app | Parity, and the migration | *Game tab → Save a backup file* |
 
-No Mac is required for anything above the line marked *(needs a Mac)*.
+There is no Mac and none is coming. Slice 1 is the only part with a local loop; everything
+with a screen in it is built on the cloud service and verified on the two devices above.
 
 ---
 
@@ -90,7 +91,7 @@ With a match in progress, and **without touching either device**:
 | Rotation | Server steps to bottom-middle; top-right steps down into service |
 | Each box | Number, serve-in percentage, points |
 | A player who has not served | A dash. Never `0%`, never `100%` |
-| The on-deck box | Unmistakably the largest box on the screen (FR-005) |
+| The on-deck box | Unmistakably the largest box on the screen (FR-005). Asserted by measurement in the interface suite — at least 1.5x the area of the smallest box (SC-014) — because no simulator can be opened on this workstation |
 | Substitution | The incoming player appears in the outgoing player's exact box |
 | No lineup set | The watch says it cannot name the next server, rather than naming one |
 | Five on court | The empty position shows as empty |

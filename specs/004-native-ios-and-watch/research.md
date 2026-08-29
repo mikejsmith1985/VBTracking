@@ -32,34 +32,52 @@ cannot be seen until CI has built it. That is slow, and it will stay slow.
 SwiftUI does not, and never will. Splitting on that line is not a preference; it is the only
 line that exists.
 
-**Alternatives considered**:
+**Settled**: there is no Mac and none is being bought. The build runs on the cloud service.
+So the slow loop is not a risk to be managed away — it is the working condition, and the plan
+has to be built for it rather than around it.
 
-- *A Mac.* A used Mac mini removes the slowest part of this plan entirely and would repay
-  itself in a week of UI work. **This is the recommendation**, but the plan does not require
-  it — everything below works without one.
-- *A hosted Mac by the hour.* Cheaper up front, worse to live in: the loop is remote and the
-  state is not yours.
-- *Writing the whole app blind and letting CI find everything.* Rejected. A UI that has
-  never been run is not a UI that has been built.
+**What that forces, and it is worth the discipline**:
+
+- **Screens hold no rules.** Anything a view decides, a testable type decides first. A
+  SwiftUI view that cannot be run locally must be thin enough that being unable to run it
+  costs little.
+- **Visual requirements become machine-checkable ones.** "The on-deck box is the biggest
+  thing on the screen" is not left to an eye that cannot see the simulator: an interface test
+  measures every box's frame and asserts the on-deck box is the largest by area, by a stated
+  margin. It runs on the same CI that builds the app.
+- **UI changes are batched.** One build that carries five layout changes costs what one
+  carrying one costs. Working in ones is the expensive habit here.
+
+**Alternatives considered**: a used Mac mini (would remove the slow loop entirely; the
+operator has decided against it for now); a hosted Mac by the hour (a remote loop with state
+that is not yours); writing everything blind with no invariant tests (rejected — a UI that
+has never been run and cannot be measured is not a UI that has been built).
 
 ---
 
 ## R-002 — Stack
 
-**Decision**: Swift 6, SwiftUI on both platforms, minimum iOS 17 and watchOS 10.
+**Decision**: Swift 6, SwiftUI on both platforms, minimum iOS 18 and watchOS 11.
 
-**Rationale**: SwiftUI is the only framework with one language across phone and watch, and
-the watch view is six boxes and three numbers — precisely what a declarative layout is good
-at. iOS 17 / watchOS 10 is the floor that still supports an Apple Watch Series 6 (2020); the
-coach's watch model is not yet known, and choosing a higher floor could exclude the one
-device the release exists for.
+**The devices this release is actually for**:
+
+| Device | Screen | Notes |
+|---|---|---|
+| Apple Watch Series 11, 42 mm | 374 × 446 pt | **The smaller of the two sizes — this is the design target.** If the court works here it works on the 46 mm |
+| iPhone 14 Pro | 393 × 852 pt | Comfortably above the floor |
+
+**Rationale**: both devices are current, so the floor is not being dragged down by them. iOS
+18 / watchOS 11 is chosen for a later public release rather than for these two: it reaches
+back to an Apple Watch Series 6 and an iPhone XS, which is a reasonable audience to keep,
+while still allowing modern layout APIs.
+
+SwiftUI is the only framework with one language across phone and watch, and the watch view is
+six boxes and three numbers — precisely what a declarative layout is good at.
 
 **Alternatives considered**: UIKit + WatchKit (two idioms, more code, no gain here);
 Flutter or React Native (no watchOS story worth having; a wrist court in a cross-platform
-runtime is the one thing these are worst at).
-
-**Open point**: confirm the coach's Apple Watch model before the floor is fixed. If it is a
-Series 4 or 5, the floor drops to watchOS 9 and some layout APIs go with it.
+runtime is the one thing these are worst at); floors at watchOS 26 (nothing needs it, and it
+would exclude most of a future audience for no gain).
 
 ---
 
@@ -151,9 +169,23 @@ coach is making is about them (FR-005).
 neighbours, and the arrangement *is* the information. Uneven tracks keep every box in its
 true position and still leave one box unmistakably the biggest.
 
-**Within a box**: the jersey number is primary and set large; the serve-in percentage is
-second; points are third. The on-deck box shows all three at a size that can be read at
-arm's length; the others compress. A figure never recorded is a dash (FR-006).
+**The numbers, on the 42 mm watch** — the smaller size is the design target, so the layout is
+sized against 374 × 446 pt rather than against the roomier 46 mm:
+
+| | Width | Height |
+|---|---|---|
+| Columns (1 : 1 : 1.35) | ~100 pt · ~100 pt · ~135 pt | |
+| Rows (1.25 : 1) | | ~205 pt · ~165 pt |
+| **On-deck box** (top right) | **~135 pt** | **~205 pt** |
+| Smallest box (bottom left/middle) | ~100 pt | ~165 pt |
+
+The on-deck box is roughly **1.7× the area** of the smallest — a margin an interface test can
+assert rather than an eye can judge (R-001).
+
+**Within a box**: the jersey number is primary and set large — around 46 pt in the on-deck
+box, around 32 pt elsewhere; the serve-in percentage is second at ~15 pt; points third at
+~13 pt. Only the on-deck box shows all three at full size; the others compress, and the
+smallest may drop points to a glyph. A figure never recorded is a dash (FR-006).
 
 **Also decided**: the court is the first page; recording is the second page of a two-page
 layout, reached by a swipe. Recording is buttons only — never a gesture, never the crown —

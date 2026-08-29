@@ -270,6 +270,7 @@ This release adds:
 - **SC-011**: A serve can be recorded from the wrist in one deliberate action, and no serve is recorded by accident across a full evening of ordinary wrist movement.
 - **SC-012**: Phase one ships with the migration included — an app that can track a match but not hold the season already recorded is not shippable.
 - **SC-013**: Phase two reaches parity with releases 001–003 before the current season ends, with every screen of the web app having a counterpart.
+- **SC-014**: The on-deck player's box occupies at least 1.5 times the area of the smallest box on the watch, measured on the smaller 42 mm screen — the size that has to work, not the one that is easiest.
 
 ## Assumptions
 
@@ -277,6 +278,10 @@ This release adds:
 - **The route the data takes across is the backup file the web app already produces.** The shipped web app can export its whole event log as a file through the iOS share sheet, and the native app can read that file. This needs no new capability on the web side, and it works with no network. If a faster route exists it is an optimisation, not a requirement.
 - **The watch shows the current match by default.** Game-scope and season-scope figures are more useful sitting down than standing up; the coach's decision is about how this player has served today.
 - **Serve-in percentage on the watch is scoped to the current game**, not to the season or career — the coach is deciding about this evening.
+- **The devices are known**: an Apple Watch Series 11 at 42 mm and an iPhone 14 Pro. The
+  smaller watch is the design target; nothing may depend on the roomier 46 mm screen.
+- **There is no Mac, and none is coming.** Every build containing a screen runs on the cloud
+  build service. This is a working condition rather than a risk, and the plan is shaped by it.
 - **The first native release ships to the operator's own devices** through TestFlight. Public App Store submission is not a deliverable of this release, but nothing in it may make submission harder later.
 - **The watch and the phone are two hands of one operation, not two independent recorders.** Both can record, but the phone always holds the truth, and two people recording the same serve is a mistake to be made visible rather than a case to be merged cleverly.
 - **The watch is paired to the tracking phone.** Whoever wears it during a match wears the watch belonging to the phone doing the recording. Reaching a second person's phone is explicitly out of scope for this release.
