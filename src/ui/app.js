@@ -320,11 +320,12 @@ function downloadFallback(text, filename) {
 function chooseFile(handler) {
   const input = document.createElement('input')
   input.type = 'file'
-  // Deliberately unrestricted. iOS saves a JSON file from Safari as ".json.txt", and an
-  // accept filter greys the file out so it cannot even be chosen. The parser validates the
-  // contents and refuses anything that is not ours with a reason, so an extension guess
-  // must never be what stands between the operator and their own data.
-  input.accept = ''
+  // No accept filter at all -- not even an empty one. iOS saves a JSON file from Safari as
+  // ".json.txt", and any filter greys it out so the file the phone just wrote cannot be
+  // chosen. The parser reads the contents and refuses anything that is not ours with a
+  // plain reason, so a guess at an extension must never stand between the operator and
+  // their own data.
+  input.removeAttribute('accept')
   input.addEventListener('change', () => {
     const file = input.files?.[0]
     if (file) void withFileText(file, handler)
@@ -530,6 +531,16 @@ render()
 store.requestPersistent()
 
 if ('serviceWorker' in navigator) {
+  // A new version otherwise needs two launches to appear: one for the worker to install,
+  // another for the page to pick it up. That is a trap -- it looks exactly like a fix that
+  // did not work, and it costs a round of "it is still broken" every release.
+  let reloading = false
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (reloading) return
+    reloading = true
+    window.location.reload()
+  })
+
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => {
       // Registration fails on an insecure origin. The app still runs; it just is not

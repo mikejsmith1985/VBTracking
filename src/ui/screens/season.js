@@ -7,6 +7,7 @@ import { seasonStats, seasonRecord, recordByOpponent, gameResult, gameSummary } 
 import { statsTable } from '../components/statstable.js'
 import { careerView } from './career.js'
 import { esc, percent } from '../html.js'
+import { APP_VERSION } from '../version.js'
 
 /** The season screen, or a career view when the operator has tapped a player. */
 export function view(context) {
@@ -118,6 +119,8 @@ function seasonAdmin(state, season, ui) {
         A new season starts with an empty roster. Add players to it from the people you have
         already recorded, so their history follows them.
       </div>
+
+      <div class="app-version">Version ${esc(APP_VERSION)}</div>
 
       <div class="section-title">Games from paper</div>
       <button class="btn" data-action="add-historical" type="button">Enter a game by hand</button>

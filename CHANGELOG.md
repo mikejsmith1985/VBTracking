@@ -18,6 +18,12 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **The running version is shown** at the bottom of the Season screen. Nine releases went
+  out in a day with no way for whoever was holding the phone to tell a broken fix from a
+  stale copy. Now there is.
+- **A new version lands on the first launch, not the second.** The page reloads itself once
+  when a new service worker takes over. Waiting for a second launch looks exactly like a fix
+  that did not work, and cost a round of "it is still broken" every release.
 - **Games can be pasted instead of imported from a file.** On iOS, saving a JSON file from
   Safari lands it as `.json.txt`; opening it, selecting all and pasting is both shorter and
   harder to get wrong than the file round trip.
@@ -26,7 +32,8 @@ All notable changes to this project are recorded here.
 
 - **The file picker refused the file iOS had just saved.** It filtered on
   `application/json`, and iOS names the download `.json.txt` — so the file was greyed out
-  and could not be chosen at all. The picker no longer filters by type. The parser reads the
+  and could not be chosen at all. The picker now sets no `accept` attribute at all, not even
+  an empty one. The parser reads the
   contents and refuses anything that is not ours with a plain reason, so a guess at an
   extension must never be what stands between the operator and their own data.
 - **Every submit button in the app was broken.** Save, Create, Add player and the game

@@ -310,3 +310,12 @@
 }
 
 #paste-games-form textarea::placeholder { color: #6b7c8e; }
+
+/* The running build, so a stale cache can be told from a broken fix at a glance. */
+.app-version {
+  margin-top: 20px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}

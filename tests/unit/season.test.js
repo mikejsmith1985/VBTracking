@@ -149,3 +149,9 @@ describe('escaping', () => {
     expect(screen).toContain('&lt;img')
   })
 })
+
+describe('the running build', () => {
+  it('is shown, so a stale cache can be told from a broken fix', () => {
+    expect(render(season()).screen).toMatch(/Version v\d+/)
+  })
+})
