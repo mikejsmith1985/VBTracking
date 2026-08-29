@@ -6,6 +6,18 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **The Swift port is now proved against the season that actually matters.** The operator's
+  own record — nine players, four games copied from paper, one tracked serve by serve and
+  then corrected, five games discarded along the way, and a team name with an apostrophe in
+  it — is committed as a golden file and replayed through the native import and reducer.
+  Every figure matches what the shipped web app derives from the same file: the roster and
+  its numbers, each game's result and serves, the season record, the breakdown by opponent,
+  every player's season figures, all three matches of the tracked game with their
+  corrections applied, and time on court. Dashes stay dashes. A one-serve difference fails
+  the build.
+
+### Added
+
 - **The log on disk, and the route a season takes across.** The event log is one
   append-only file of JSON lines: one write per event, flushed, so a crash loses at most the
   serve being written — and the next read discards that half-line and says so rather than
