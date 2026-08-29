@@ -57,3 +57,51 @@ describe('statsTable', () => {
     expect(html).toContain('&lt;b&gt;')
   })
 })
+
+
+describe('a figure that was never recorded', () => {
+  const paperOnly = () => new Map([['p1', {
+    serves: 11, servesIn: 9, inPercentage: 9 / 11,
+    points: null, turnsTaken: null, turnsOnCourt: null,
+    games: 1, trackedGames: 0,
+  }]])
+
+  it('renders as a dash, never as a zero (FR-045)', () => {
+    const html = statsTable(paperOnly(), team)
+    expect(html).toContain('<td class="none" title="Not recorded">—</td>')
+    expect(html).not.toContain('<td>0</td>')
+  })
+
+  it('still shows the serve figures, which the game did record', () => {
+    const html = statsTable(paperOnly(), team)
+    expect(html).toContain('<td>11</td>')
+    expect(html).toContain('<td>9</td>')
+    expect(html).toContain('82%')
+  })
+
+  it('says which columns cover which games when the two differ (FR-044)', () => {
+    const html = statsTable(paperOnly(), team, null, { coverage: { totalGames: 6, trackedGames: 1 } })
+    expect(html).toContain('cover all 6 games')
+    expect(html).toContain('the other 5 came from paper')
+  })
+
+  it('says nothing when every game was tracked', () => {
+    const html = statsTable(paperOnly(), team, null, { coverage: { totalGames: 3, trackedGames: 3 } })
+    expect(html).not.toContain('came from paper')
+  })
+
+  it('links a player to their career when asked to', () => {
+    const html = statsTable(paperOnly(), team, null, { action: 'open-career' })
+    expect(html).toContain('data-action="open-career"')
+    expect(html).toContain('data-id="p1"')
+  })
+
+  it('ranks by serves in when no points were recorded', () => {
+    const mixed = new Map([
+      ['p1', { serves: 2, servesIn: 1, inPercentage: 0.5, points: null, turnsTaken: null, turnsOnCourt: null, games: 1, trackedGames: 0 }],
+      ['p2', { serves: 9, servesIn: 8, inPercentage: 8 / 9, points: null, turnsTaken: null, turnsOnCourt: null, games: 1, trackedGames: 0 }],
+    ])
+    const html = statsTable(mixed, team)
+    expect(html.indexOf('Okafor')).toBeLessThan(html.indexOf('Rivera'))
+  })
+})

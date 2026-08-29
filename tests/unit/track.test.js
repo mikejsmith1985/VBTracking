@@ -63,10 +63,25 @@ describe('during a match', () => {
     expect(dock).toContain('data-outcome=') // recording continues
   })
 
-  it('asks for confirmation before ending a match', () => {
-    expect(render(started).screen).not.toContain('End match?')
-    expect(render(started).screen).toContain('End match')
-    expect(render(started, { confirmingEndMatch: true }).screen).toContain('End match?')
+  it('asks how the match went before ending it (FR-028)', () => {
+    const idle = render(started).screen
+    expect(idle).toContain('data-action="end-match"')
+    expect(idle).not.toContain('How did that match go?')
+
+    const asking = render(started, { confirmingEndMatch: true }).screen
+    expect(asking).toContain('How did that match go?')
+    expect(asking).toContain('data-result="won"')
+    expect(asking).toContain('data-result="lost"')
+  })
+
+  it('offers to end without recording a result, rather than forcing a guess', () => {
+    const asking = render(started, { confirmingEndMatch: true }).screen
+    expect(asking).toContain('data-result="undecided"')
+    expect(asking).toContain('End without recording')
+  })
+
+  it('offers a way back to playing', () => {
+    expect(render(started, { confirmingEndMatch: true }).screen).toContain('data-action="cancel-end-match"')
   })
 })
 

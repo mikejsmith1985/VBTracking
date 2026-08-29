@@ -4,6 +4,60 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added — Seasons, Career Players, and Game Context (`feature/seasons-and-career`)
+
+**A player is now a person, and the number belongs to the season**
+
+- A player is a career identity that outlives every roster. The jersey number moved onto
+  the season's roster entry, where it belongs — next year the same child plays for a
+  different team wearing a different number, and she is still the same child.
+- Seasons have a name and a team. A player joins one either from the people already
+  recorded or as someone new. Removing them from a season no longer deletes anything:
+  the person stays, and every serve they recorded stays theirs.
+- Switching seasons is refused while a game is under way, and says so.
+- A season records the format it was played under, so a later release can vary matches per
+  game or players on court without touching stored data.
+
+**Everything already recorded became a season, with nothing lost**
+
+- The first migration that does real work. It prepends one season and stamps a field onto
+  the events that now need one. It renames nothing and splits nothing: the tidier migration
+  shifts every index, which turns a bug into silent corruption of the only real season
+  anyone has recorded.
+- Proven against two committed fixtures — a release-001 log and a release-002 log, the
+  latter carrying lineups, a rotation and a substitution — replaying to identical figures.
+- No past match was retroactively declared lost. They are all undecided, because silence
+  is not a defeat.
+
+**Who was played, where, and how it went**
+
+- Every game records a date, an opposing team, a location and a court, editable at any
+  time including long after the game.
+- Ending a match asks how it went, in the same tap. The game's result follows from its
+  matches. An unmarked match counts toward neither side.
+- The Season screen gives a win-loss record and a breakdown by opponent.
+- Notes on every game — what went well, what to work on — because that is on every paper
+  sheet, which is a stronger statement of what matters than anything anyone could say.
+
+**The games from before the app existed**
+
+- A game can be entered from paper: per player, serves in and serves out, at game level.
+- A prepared batch imports in one action. Players are matched by name against the season's
+  roster, and an unknown name aborts the whole import naming that player — a typo must not
+  quietly invent a tenth person on a nine-player squad.
+- All or nothing. A partial import would leave the operator unable to tell what landed.
+
+**Statistics that admit what they do not know**
+
+- Serves, serves in and serve percentage span every game. Points, turns and time on court
+  cover the tracked games only, and the table says so in as many words.
+- A figure that was never recorded shows as a dash. Never a zero — a zero would say the
+  player served and won nothing, and would report worse figures than they earned.
+- A career view: one player across every season, each with its own team and number, plus a
+  combined total.
+- Top scorer and top serve percentage are computed rather than tallied by hand at the
+  bottom of a page.
+
 ### Added — Rotation, Substitutions, and Durable Data (`feature/rotation-and-subs`)
 
 **Your data survives the upgrade**

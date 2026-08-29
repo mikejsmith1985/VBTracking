@@ -9,41 +9,48 @@
 <!-- SPECKIT START -->
 ## Active Feature
 
-**Rotation, Substitutions, and Durable Data** — `feature/rotation-and-subs`
+**Seasons, Career Players, and Game Context** - `feature/seasons-and-career`
 
 | Artifact | Path |
 |---|---|
-| Spec | `specs/002-rotation-and-subs/spec.md` |
-| Checklist | `specs/002-rotation-and-subs/checklists/requirements.md` |
+| Spec | `specs/003-seasons-and-career/spec.md` |
+| Plan | `specs/003-seasons-and-career/plan.md` |
+| Research | `specs/003-seasons-and-career/research.md` |
+| Data model | `specs/003-seasons-and-career/data-model.md` |
+| Contracts | `specs/003-seasons-and-career/contracts/` |
+| Quickstart | `specs/003-seasons-and-career/quickstart.md` |
 
-Plan, research, data model, contracts, and tasks are not yet generated — run `/speckit-plan` next.
+Builds on shipped releases `001-volleyball-serve-tracker` and `002-rotation-and-subs`
+(live at https://mikejsmith1985.github.io/VBTracking/). Their constraints remain in force
+and are not restated in 003.
 
-**Builds on the shipped release** `specs/001-volleyball-serve-tracker/` (live at
-https://mikejsmith1985.github.io/VBTracking/). That spec's constraints remain in force and are
-not restated in 002: phone-portrait only, offline-first, all data local, single operator.
+**Stack**: plain ES2022 modules, no bundler, no framework, no backend. Static files served
+from the repository root. `localStorage` for persistence. Vitest and Cypress are dev-only.
 
-**Stack** (unchanged from 001): plain ES2022 modules, no bundler, no framework, no backend.
-Static files served from the repository root. `localStorage` for persistence. Vitest and
-Cypress are dev-only and never ship.
-
-**Load-bearing constraints** — read `specs/001-volleyball-serve-tracker/plan.md` before
-changing any of these:
-- Imports point one direction only: `ui -> state -> domain`. `src/domain/` is pure — no DOM,
+**Load-bearing constraints** - read the plans before changing any of these:
+- Imports point one direction only: `ui -> state -> domain`. `src/domain/` is pure - no DOM,
   no storage, no clock, no randomness. A rule that appears in `src/ui/` is a defect.
-- State is an append-only event log reduced by a pure function. Undo is "drop the last event
-  and replay". Never add mutate-in-place state or per-action inverse logic.
+- State is an append-only event log reduced by a pure function. Undo drops the last event
+  and replays. Never add mutate-in-place state or per-action inverse logic.
+- **A jersey number lives on the season membership, never on the player.** A player is a
+  person who outlives every roster. This is the one thing that cannot be retrofitted.
+- **A figure that was never recorded is null, and renders as a dash - never zero.** Games
+  copied from paper hold serves only; reporting their missing points as zero would say the
+  players earned less than they did.
+- Migrations are additive: prepend and stamp, never rename or split. A shifted index turns
+  a bug into silent corruption of a real recorded season.
+- The rotation advance happens inside the RECORD_SERVE transition, not as an event, so one
+  undo reverses one operator action.
 - Statistics are always derived on read, never stored.
-- All asset paths are relative. GitHub Pages serves from a subpath; a root-absolute path
-  breaks install and offline silently.
-- Zero network requests after install. The service worker is hand-written and cache-first
-  against an explicit precache list — bump `CACHE` in `sw.js` on every release.
+- All asset paths are relative. GitHub Pages serves from a subpath.
+- Zero network requests after install. Bump `CACHE` in `sw.js` on every release and add
+  every new source file to the precache list; `tests/unit/sw.test.js` fails if one is missed.
 - `src/state/persistence.js` is the only module permitted to touch `localStorage`.
-- Serve turns exceeding 5 serves are recorded in full and flagged. Nothing caps a count at 5.
-- The dock holds a status row over exactly ONE action block — outcome controls or the player
-  picker, never both, never a dimmed copy of either.
-- Offline and install claims are proven on the device in airplane mode, never by a green
-  test suite.
+- Serve turns exceeding 5 serves are recorded in full and flagged. Nothing caps at 5.
+- The dock holds a status row over exactly ONE action block - outcome controls or the
+  player picker, never both.
+- Offline and install claims are proven on the device in airplane mode, never by tests.
 
-**Sequencing constraint for 002**: the carry-forward path (User Story 1) ships before any
-story that writes data in the new shape. Real games are already recorded on the live build.
+**Migration fixtures**: `tests/fixtures/v1-log.json` and `v2-log.json` are logs captured
+from shipped builds. Never edit them - they are the format as shipped, not as remembered.
 <!-- SPECKIT END -->

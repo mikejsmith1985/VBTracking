@@ -20,7 +20,7 @@ describe('loading', () => {
   it('starts empty when storage holds nothing', () => {
     const store = createStore(memoryPersistence())
     expect(store.getEvents()).toEqual([])
-    expect(store.getState()).toEqual({ roster: [], games: [], currentGameId: null })
+    expect(store.getState()).toMatchObject({ roster: [], games: [], players: [], seasons: [], currentGameId: null })
   })
 
   it('carries the load status through', () => {

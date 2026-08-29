@@ -78,11 +78,27 @@ function matchView(context, state, match) {
         <div class="match-score"><b>${matchScore(match)}</b><span>points on serve</span></div>
         ${reached ? `<div class="target-badge">${TARGET_SCORE} reached — win by 2</div>` : ''}
       </div>
-      <button class="btn-end" data-action="end-match" type="button">
-        ${confirming ? 'End match?' : 'End match'}
-      </button>
+      ${confirming ? '' : '<button class="btn-end" data-action="end-match" type="button">End match</button>'}
     </div>
+    ${confirming ? endMatchChoice() : ''}
     ${tallyBoard(match, state.roster)}`
+}
+
+/**
+ * Ending a match asks how it went in the same breath. The opponent's score is still not
+ * tracked, so the app cannot know -- and this is the one moment the operator certainly does.
+ */
+function endMatchChoice() {
+  return `
+    <div class="end-match-choice">
+      <div class="section-title">How did that match go?</div>
+      <div class="result-buttons">
+        <button class="btn btn-won" data-action="end-match" data-result="won" type="button">Won</button>
+        <button class="btn btn-lost" data-action="end-match" data-result="lost" type="button">Lost</button>
+      </div>
+      <button class="btn" data-action="end-match" data-result="undecided" type="button">End without recording</button>
+      <button class="btn" data-action="cancel-end-match" type="button">Keep playing</button>
+    </div>`
 }
 
 function dockView(context, state, match) {
