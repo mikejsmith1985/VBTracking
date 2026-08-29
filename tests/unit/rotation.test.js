@@ -7,7 +7,7 @@ import {
   replay, rejectionReason, currentMatch, openTurn,
   nextRotationPosition, nextRotationPlayerId, lineupPositionOf, currentLineup,
 } from '../../src/domain/reducer.js'
-import { activeServerId } from '../../src/domain/stats.js'
+import { activeServerId, matchStats } from '../../src/domain/stats.js'
 import { build, roster } from '../helpers.js'
 
 const { OUT, IN_POINT, IN_NO_POINT } = E.OUTCOME
@@ -216,5 +216,83 @@ describe('every turn carries who was on court', () => {
     const turn = currentMatch(state).turns[0]
     expect(turn.lineupSnapshot).toBeNull()
     expect(turn.lineupPosition).toBeNull()
+  })
+})
+
+describe('rotating out after five serves', () => {
+  const SIX_UP = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6']
+  const inPlay = (...extra) => replay([
+    ...roster(9), E.startGame('g1'), E.setLineup(SIX_UP), E.selectServer('p1'), ...extra.flat(Infinity),
+  ])
+
+  const point = () => E.recordServe(IN_POINT)
+
+  it('is what a run of points used to break', () => {
+    // Four points: still serving, because the league allows five.
+    expect(activeServerId(inPlay(point(), point(), point(), point()))).toBe('p1')
+  })
+
+  it('hands the serve on once the fifth is taken, even when it won the point', () => {
+    expect(activeServerId(inPlay(point(), point(), point(), point(), point()))).toBe('p2')
+  })
+
+  it('keeps all five serves with the player who took them', () => {
+    const state = inPlay(point(), point(), point(), point(), point())
+    const first = currentMatch(state).turns[0]
+    expect(first.serves).toHaveLength(5)
+    expect(first.playerId).toBe('p1')
+    expect(first.isOpen).toBe(false)
+  })
+
+  it('still ends a turn early on a serve that wins no point', () => {
+    expect(activeServerId(inPlay(point(), E.recordServe(OUT)))).toBe('p2')
+  })
+
+  it('carries on round the order', () => {
+    const five = [point(), point(), point(), point(), point()]
+    expect(activeServerId(inPlay(five, five))).toBe('p3')
+  })
+
+  it('records a referee miscount as a second turn, losing no serve', () => {
+    // Five taken, the rotation moves on, but the referee lets p1 serve again.
+    const state = inPlay(point(), point(), point(), point(), point(), E.selectServer('p1'), point())
+    const mine = currentMatch(state).turns.filter((turn) => turn.playerId === 'p1')
+
+    expect(mine).toHaveLength(2)
+    expect(mine[0].serves).toHaveLength(5)
+    expect(mine[1].serves).toHaveLength(1)
+    expect(matchStats(currentMatch(state)).get('p1').serves).toBe(6)
+  })
+
+  it('is undone in one step, like any other serve', () => {
+    const log = [...roster(9), E.startGame('g1'), E.setLineup(SIX_UP), E.selectServer('p1'),
+      point(), point(), point(), point()]
+    const before = JSON.stringify(replay(log))
+
+    const after = [...log, point()]
+    expect(activeServerId(replay(after))).toBe('p2')
+
+    expect(JSON.stringify(replay(after.slice(0, -1)))).toBe(before)
+    expect(activeServerId(replay(after.slice(0, -1)))).toBe('p1')
+  })
+
+  it('does nothing without a lineup, since there is no next server to move to', () => {
+    const manual = replay([...roster(9), E.startGame('g1'), E.selectServer('p1'),
+      point(), point(), point(), point(), point()])
+    expect(activeServerId(manual)).toBe('p1')
+  })
+
+  it('leaves games recorded before the rule existed exactly as they were', () => {
+    // A START_GAME without the field is how every earlier log looks.
+    const legacy = replay([
+      ...roster(9),
+      { t: 'START_GAME', id: 'g1', seasonId: 'season-1' },
+      E.setLineup(SIX_UP), E.selectServer('p1'),
+      point(), point(), point(), point(), point(), point(),
+    ])
+    const first = currentMatch(legacy).turns[0]
+
+    expect(first.serves).toHaveLength(6)
+    expect(activeServerId(legacy)).toBe('p1')
   })
 })

@@ -42,6 +42,15 @@ export const MATCHES_PER_GAME = 3
 /** Players on court, and therefore positions in the serving order. */
 export const LINEUP_SIZE = 6
 
+/**
+ * The league expects a server to rotate out after this many consecutive serves.
+ *
+ * It ends a turn; it never discards a serve. A referee who miscounts and lets someone
+ * serve again is recorded by choosing that player once more, which is a second turn -- the
+ * serves are all kept either way.
+ */
+export const SERVE_LIMIT = 5
+
 /** How a match ended. Silence is not a defeat, so an unmarked match is undecided. */
 export const MATCH_RESULT = Object.freeze({ WON: 'won', LOST: 'lost', UNDECIDED: 'undecided' })
 
@@ -104,9 +113,16 @@ export function activateSeason(id) {
   return { t: EVENT.ACTIVATE_SEASON, id }
 }
 
-/** Records the start of a new game within a season, which opens its first match. */
-export function startGame(id, seasonId) {
-  return { t: EVENT.START_GAME, id, seasonId }
+/**
+ * Records the start of a new game within a season, which opens its first match.
+ *
+ * `rotatesAtServeLimit` is written into the event rather than read from the code, because
+ * a rule read from the code would apply to games already recorded and silently move their
+ * serves to a different player. Events written before the rule existed simply lack the
+ * field, so they replay exactly as they always did.
+ */
+export function startGame(id, seasonId, rotatesAtServeLimit = true) {
+  return { t: EVENT.START_GAME, id, seasonId, rotatesAtServeLimit }
 }
 
 /** Records who was played, where, on which court, and when. */

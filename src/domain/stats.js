@@ -1,11 +1,12 @@
 // Derived statistics. Nothing here is ever stored -- every figure is computed from the
 // recorded serves on read, which is why undo cannot leave a total out of step with the
 // underlying record.
-import { EVENT, OUTCOME, isServeIn } from './events.js'
+import { EVENT, OUTCOME, SERVE_LIMIT, isServeIn } from './events.js'
 import { currentMatch, openTurn } from './reducer.js'
 
-/** The league's expected maximum consecutive serves before rotating out. */
-export const SERVE_LIMIT = 5
+// Re-exported so callers that already read it from here keep working. It lives with the
+// other constants now, because the reducer needs it and cannot import this module.
+export { SERVE_LIMIT }
 
 /** The score a match is played to. Reaching it is advisory only -- see hasReachedTarget. */
 export const TARGET_SCORE = 21
