@@ -5,7 +5,7 @@
 // done at the same time, with the same care. None of it is touched mid-match.
 import { GAME_KIND } from '../../domain/events.js'
 import { gameById, seasonMembers, activeSeason } from '../../domain/reducer.js'
-import { gameResult } from '../../domain/aggregate.js'
+import { gameResult, gameSummary } from '../../domain/aggregate.js'
 import { esc } from '../html.js'
 
 /** The form for an existing game, or a blank one for a game being entered from paper. */
@@ -26,6 +26,8 @@ export function gameFormView(state, ui) {
       </div>
     </div>
 
+    ${isHistorical ? '' : recordLink(game)}
+
     <form id="game-form" autocomplete="off">
       <div class="section-title">Who, where, when</div>
       <div class="context-grid">
@@ -45,6 +47,21 @@ export function gameFormView(state, ui) {
       </div>
     </form>
     ${isNew ? '' : discardControl(game, ui)}`
+}
+
+/**
+ * The way in to a past game's serve record: every turn, and every serve in it.
+ *
+ * It sits above the form rather than inside it because opening it leaves this screen, and
+ * anything typed here and not yet saved would go with it.
+ */
+function recordLink(game) {
+  const summary = gameSummary(game)
+  return `
+    <button class="btn record-link" data-action="open-record" data-id="${game.id}" type="button">
+      Serve record — ${summary.servesIn}/${summary.serves} in
+      <small>See every turn, and correct anything mis-entered</small>
+    </button>`
 }
 
 /**

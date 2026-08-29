@@ -9,12 +9,14 @@ import {
   currentGame, currentMatch, currentLineup, lineupPositionOf,
   activeSeason, seasonMembers, gameById,
 } from '../domain/reducer.js'
-import { activeServerId } from '../domain/stats.js'
+import { activeServerId, SERVE_LIMIT } from '../domain/stats.js'
+import { rotateOverlay } from './components/rotate.js'
 import * as track from './screens/track.js'
 import * as stats from './screens/stats.js'
 import * as roster from './screens/roster.js'
 import * as season from './screens/season.js'
 import { gameFormView, readGameForm } from './screens/gameform.js'
+import { gameRecordView, nextOutcome, turnKey } from './screens/gamerecord.js'
 
 const SCREENS = { track, stats, roster, season }
 
@@ -22,9 +24,10 @@ const SCREENS = { track, stats, roster, season }
 // a stray repeat -- a double-tap on the same control -- and is ignored.
 const REPEAT_TAP_GUARD_MS = 300
 
-// Two taps on the same player chip inside this window are a substitution gesture rather
-// than two separate selections.
-const DOUBLE_TAP_MS = 400
+// The end-match panel's own controls, which must not close it. Arming the discard
+// confirmation from inside the panel used to close the panel and take the button with it,
+// so the second tap that would have committed it had nowhere to land.
+const END_MATCH_PANEL_ACTIONS = new Set(['end-match', 'discard-game'])
 
 const STORAGE_PROBLEMS = {
   unavailable: 'Storage is unavailable. Serves are being kept in memory only and will be lost if the app closes.',
@@ -48,6 +51,11 @@ const ui = {
   confirmingDiscardGame: null,
   confirmingImport: false,
   confirmingHistoricalImport: false,
+  rotateNotice: null,
+  recordGameId: null,
+  openTurn: null,
+  confirmingDeleteTurn: null,
+  reassigningTurn: null,
   message: null,
 }
 
@@ -56,16 +64,17 @@ const ui = {
 const CONFIRMATIONS = {
   'remove-player': 'confirmingRemoveId',
   'discard-game': 'confirmingDiscardGame',
+  'delete-turn': 'confirmingDeleteTurn',
   'import-data': 'confirmingImport',
   'import-historical': 'confirmingHistoricalImport',
 }
 
 const screenElement = document.getElementById('screen')
 const dockElement = document.getElementById('dock')
+const overlayElement = document.getElementById('overlay')
 const bannerElement = document.getElementById('banner')
 
 let lastServeAt = 0
-let pendingSelect = null
 
 // --- Rendering ----------------------------------------------------------------
 
@@ -75,12 +84,15 @@ function render() {
 
   // Editing a game's record takes over the screen. It is done between matches, with care,
   // and none of it belongs beside the controls tapped during a rally.
-  const view = ui.editingGameId
-    ? { screen: gameFormView(state, ui), dock: '' }
-    : SCREENS[ui.tab].view({ state, store, ui })
+  const view = ui.recordGameId
+    ? { screen: gameRecordView(state, ui), dock: '' }
+    : ui.editingGameId
+      ? { screen: gameFormView(state, ui), dock: '' }
+      : SCREENS[ui.tab].view({ state, store, ui })
 
   screenElement.innerHTML = view.screen
   dockElement.innerHTML = view.dock ?? ''
+  overlayElement.innerHTML = ui.rotateNotice ? rotateOverlay(ui.rotateNotice, state.roster) : ''
 
   renderTabs()
   renderBanner()
@@ -146,6 +158,7 @@ const ACTIONS = {
     ui.showLineup = false
     ui.careerPlayerId = null
     ui.editingGameId = null
+    closeRecord()
   },
   scope: (element) => { ui.scope = element.dataset.scope },
   'toggle-picker': () => { ui.pickerOpen = !ui.pickerOpen; store.clearSubstitution() },
@@ -209,6 +222,75 @@ const ACTIONS = {
   'paste-games': () => { ui.pastingGames = true },
   'cancel-paste': () => { ui.pastingGames = false },
   'activate-season': (element) => dispatch(E.activateSeason(element.dataset.id)),
+  'dismiss-rotate': () => { ui.rotateNotice = null },
+
+  'open-record': (element) => { ui.recordGameId = element.dataset.id; ui.openTurn = null },
+  'close-record': () => closeRecord(),
+  'open-turn': (element) => { ui.openTurn = turnAt(element); ui.reassigningTurn = null },
+  'close-turn': () => { ui.openTurn = null; ui.reassigningTurn = null },
+  'cycle-serve': (element) => correctServes(element, (outcomes) => {
+    const index = Number.parseInt(element.dataset.index, 10)
+    return outcomes.map((outcome, at) => (at === index ? nextOutcome(outcome) : outcome))
+  }),
+  'add-serve': (element) => correctServes(element, (outcomes) => [...outcomes, E.OUTCOME.OUT]),
+  // Never to nothing: a turn with no serves is a turn that did not happen, and deleting it
+  // is a different decision with its own confirmation.
+  'drop-serve': (element) => correctServes(element, (outcomes) =>
+    (outcomes.length > 1 ? outcomes.slice(0, -1) : outcomes)),
+  'reassign-turn': (element) => {
+    const key = keyOf(element)
+    ui.reassigningTurn = ui.reassigningTurn === key ? null : key
+  },
+  'reassign-to': (element) => {
+    const { matchIndex, ordinal } = turnAt(element)
+    if (dispatch(E.reassignTurn(ui.recordGameId, matchIndex, ordinal, element.dataset.id))) {
+      ui.reassigningTurn = null
+    }
+  },
+  'delete-turn': (element) => {
+    const { matchIndex, ordinal } = turnAt(element)
+    confirmThen('confirmingDeleteTurn', keyOf(element), () => {
+      if (dispatch(E.deleteTurn(ui.recordGameId, matchIndex, ordinal))) ui.openTurn = null
+    })
+  },
+}
+
+function closeRecord() {
+  ui.recordGameId = null
+  ui.openTurn = null
+  ui.reassigningTurn = null
+  ui.confirmingDeleteTurn = null
+}
+
+function turnAt(element) {
+  return {
+    matchIndex: Number.parseInt(element.dataset.match, 10),
+    ordinal: Number.parseInt(element.dataset.ordinal, 10),
+  }
+}
+
+function keyOf(element) {
+  const { matchIndex, ordinal } = turnAt(element)
+  return turnKey(matchIndex, ordinal)
+}
+
+/**
+ * Rewrites one turn's serves through the given change.
+ *
+ * The whole list is sent rather than the single serve that moved, because the correction
+ * event says what the turn holds now -- replaying it can never depend on what it held when
+ * the button was tapped.
+ */
+function correctServes(element, change) {
+  const { matchIndex, ordinal } = turnAt(element)
+  const state = store.getState()
+  const turn = gameById(state, ui.recordGameId)
+    ?.matches.find((match) => match.index === matchIndex)
+    ?.turns.find((each) => each.ordinal === ordinal)
+  if (!turn) return
+
+  const outcomes = change(turn.serves.map((serve) => serve.outcome))
+  dispatch(E.setTurnServes(ui.recordGameId, matchIndex, ordinal, outcomes))
 }
 
 function draft() {
@@ -219,48 +301,62 @@ function recordServe(outcome) {
   const now = Date.now()
   if (now - lastServeAt < REPEAT_TAP_GUARD_MS) return
   lastServeAt = now
-  dispatch(E.recordServe(outcome))
+
+  const servingId = activeServerId(store.getState())
+  if (dispatch(E.recordServe(outcome))) noticeServeLimit(servingId)
 }
 
 /**
- * A tap on a player chip is either "this player serves now" or the first half of a
- * substitution, and the app cannot know which until it sees whether a second tap follows.
+ * Says so, loudly, the moment a server has taken their five.
  *
- * When a substitution is possible the selection waits out the double-tap window. That delay
- * costs nothing on the path that matters: with a lineup set the rotation chooses the server,
- * so tapping a chip is a deliberate override or a substitution, never the one-tap side-out.
+ * The rule is the referee's to enforce and easy to lose count of in a rally, so this is
+ * deliberately the one thing in the app that interrupts: it covers the screen, and any tap
+ * clears it. Raised once, on the fifth serve exactly -- a sixth is a miscount the app still
+ * records without nagging about it a second time.
  */
-function selectOrSubstitute(playerId) {
-  const armed = store.pendingSubstitution()
-  if (armed) {
-    completeSubstitution(armed, playerId)
-    return
-  }
+function noticeServeLimit(servingId) {
+  const state = store.getState()
+  const match = currentMatch(state)
+  const served = [...(match?.turns ?? [])].reverse().find((turn) => turn.playerId === servingId)
 
-  const match = currentMatch(store.getState())
-  const canSubstitute = Boolean(match?.lineup) && lineupPositionOf(match, playerId) !== null
-  if (!canSubstitute) {
-    commitSelect(playerId)
-    return
-  }
+  if (served?.serves.length !== SERVE_LIMIT) return
 
-  if (pendingSelect?.playerId === playerId) {
-    cancelPendingSelect()
-    store.armSubstitution(playerId)
-    return
-  }
-
-  cancelPendingSelect()
-  pendingSelect = {
-    playerId,
-    timer: setTimeout(() => {
-      pendingSelect = null
-      commitSelect(playerId)
-      render()
-    }, DOUBLE_TAP_MS),
-  }
+  // Only the order can name who is next. Without one the same player is still holding the
+  // ball, and naming them as "next up" would read as permission to serve a sixth.
+  const nextId = activeServerId(state)
+  ui.rotateNotice = { fromId: servingId, toId: nextId === servingId ? null : nextId }
 }
 
+/**
+ * A tap on a player chip means one of two things, and which one is decided by where the
+ * player is standing rather than by how fast the operator taps.
+ *
+ * Someone already in the order is simply the next server. Someone on the bench is the
+ * player coming ON: the next tap names who they replace, and they take that exact slot.
+ * Bench first, then the player leaving -- the same order the swap happens on the court.
+ * The old gesture asked for a double-tap, which is a thing to remember rather than a thing
+ * to do, and it cost a tap on the path that runs every side-out.
+ */
+function selectOrSubstitute(playerId) {
+  const state = store.getState()
+  const match = currentMatch(state)
+  const isOnCourt = Boolean(match?.lineup) && lineupPositionOf(match, playerId) !== null
+  const incomingId = store.pendingSubstitution()
+
+  if (incomingId) {
+    // Tapping the armed player again means "they serve now", not a substitution -- the
+    // recorded case where the referee lets someone out of the order take the ball.
+    if (incomingId === playerId) { store.clearSubstitution(); commitSelect(playerId); return }
+    if (isOnCourt) { completeSubstitution(playerId, incomingId); return }
+    store.armSubstitution(playerId) // a different bench player: re-aim rather than refuse
+    return
+  }
+
+  if (!match?.lineup || isOnCourt) { commitSelect(playerId); return }
+  store.armSubstitution(playerId)
+}
+
+/** Swaps the incoming player in at the outgoing player's exact position in the order. */
 function completeSubstitution(outPlayerId, inPlayerId) {
   if (outPlayerId === inPlayerId) {
     store.clearSubstitution()
@@ -269,16 +365,11 @@ function completeSubstitution(outPlayerId, inPlayerId) {
   if (dispatch(E.substitute(outPlayerId, inPlayerId))) ui.pickerOpen = false
 }
 
+/** Hands the serve to a player. Re-selecting whoever is already serving does nothing. */
 function commitSelect(playerId) {
   ui.pickerOpen = false
   if (playerId === activeServerId(store.getState())) return
   dispatch(E.selectServer(playerId))
-}
-
-function cancelPendingSelect() {
-  if (!pendingSelect) return
-  clearTimeout(pendingSelect.timer)
-  pendingSelect = null
 }
 
 /** Two-step confirmation, avoiding a native dialog that would block the whole session. */
@@ -533,9 +624,8 @@ document.addEventListener('change', (event) => {
  * submit handler that follows will.
  */
 function abandonPendingSubstitution(event) {
-  const wasArmed = store.pendingSubstitution() !== null || pendingSelect !== null
+  const wasArmed = store.pendingSubstitution() !== null
   store.clearSubstitution()
-  cancelPendingSelect()
   if (wasArmed && !event.target.closest('form')) render()
 }
 
@@ -559,7 +649,7 @@ function clearPendingConfirmations(action) {
   for (const [owner, flag] of Object.entries(CONFIRMATIONS)) {
     if (owner !== action) ui[flag] = disarmed(ui[flag])
   }
-  if (action !== 'end-match') ui.confirmingEndMatch = false
+  if (!END_MATCH_PANEL_ACTIONS.has(action)) ui.confirmingEndMatch = false
   clearNotice()
 }
 

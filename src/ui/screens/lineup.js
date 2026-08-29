@@ -57,7 +57,7 @@ export function reviewView(context, match) {
     ${rows}
     <p class="lineup-hint">
       The order is fixed once the match starts. To change who is on court, substitute:
-      double-tap a player in the picker, then tap whoever replaces them.
+      tap the player coming on in the picker, then tap whoever they replace.
     </p>
     <div class="lineup-actions">
       <button class="btn btn-primary" data-action="close-lineup" type="button">Back to the match</button>

@@ -343,3 +343,164 @@
   font-weight: 700;
   color: var(--muted);
 }
+
+/* --- The five-serve alert -------------------------------------------------- */
+
+/* It covers everything on purpose. The count is the referee's to keep and the easiest
+   thing on the court to lose, so this is the one moment the app interrupts. */
+.rotate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(6, 10, 14, 0.86);
+  animation: rotate-in 140ms ease-out;
+}
+
+@keyframes rotate-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.rotate-card {
+  width: 100%;
+  max-width: 340px;
+  padding: 24px 20px;
+  border: 2px solid var(--warn);
+  border-radius: 20px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.rotate-icon { font-size: 52px; line-height: 1; color: var(--warn); }
+
+.rotate-title {
+  margin-top: 6px;
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--warn);
+}
+
+.rotate-from { margin-top: 10px; font-size: 15px; color: var(--muted); }
+.rotate-from b, .rotate-next b { color: var(--text); font-variant-numeric: tabular-nums; }
+.rotate-next { margin-top: 8px; font-size: 20px; font-weight: 700; }
+.rotate-dismiss { margin-top: 20px; width: 100%; }
+
+/* --- A past game's serve record -------------------------------------------- */
+
+.record-link { width: 100%; text-align: left; margin-bottom: 14px; }
+.record-link small { display: block; margin-top: 3px; font-size: 11px; color: var(--muted); }
+
+.record-turn {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  align-items: center;
+  gap: 8px 10px;
+  width: 100%;
+  margin-bottom: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--turn-color);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+}
+
+.record-turn-no {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--turn-color);
+  color: #0b0f14;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.record-turn-who { font-size: 14px; }
+.record-turn-who b { font-variant-numeric: tabular-nums; }
+
+.record-turn-marks {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.record-turn-figures {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  text-align: right;
+}
+
+.turn-editor {
+  margin-bottom: 10px;
+  padding: 12px;
+  border: 1px solid var(--turn-color);
+  border-left: 4px solid var(--turn-color);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.turn-editor-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.turn-editor-head .record-turn-who { flex: 1; }
+
+.serve-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Each serve is its own target, sized for a thumb: this is the correction being made
+   almost every time, and a mis-tap here writes the wrong figure again. */
+.serve-pill {
+  min-width: 52px;
+  height: var(--tap-min);
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.serve-point { border-color: var(--point); background: rgba(163, 230, 53, 0.18); color: var(--point); }
+.serve-in { border-color: var(--accent); color: var(--accent); }
+.serve-out { border-color: var(--danger); color: var(--danger); }
+.serve-add { border-style: dashed; color: var(--muted); font-size: 22px; }
+
+.turn-editor-actions {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0 8px;
+}
+
+.turn-editor-actions .btn { flex: 1; }
+
+.reassign-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.reassign-choice { flex: 1 1 45%; }
+.reassign-choice b { font-variant-numeric: tabular-nums; color: var(--accent); }
