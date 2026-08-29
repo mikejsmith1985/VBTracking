@@ -162,3 +162,64 @@ describe('a stray tap on empty space', () => {
     expect(document.querySelector('[name="opponent"]').value).toBe('Half typed')
   })
 })
+
+describe('pasting a batch of games', () => {
+  const batch = JSON.stringify({
+    app: 'vbtracking',
+    kind: 'historical-games',
+    formatVersion: 1,
+    games: [{
+      date: '2026-08-15', opponent: 'Eastern A', location: 'Blanchester', court: '2',
+      result: 'won', notes: 'Started matching serves.',
+      serves: [{ name: 'Aria Smith', in: 9, out: 2 }, { name: 'Tegan Jodrey', in: 8, out: 3 }],
+    }],
+  })
+
+  beforeAll(() => {
+    click('[data-tab="season"]')
+  })
+
+  it('is offered, because saving a file on a phone is the harder path', () => {
+    expect(screenText()).toContain('Paste a batch of games')
+    expect(screenText()).toContain('Pasting is usually easier on a phone')
+  })
+
+  it('opens a box to paste into', () => {
+    click('[data-action="paste-games"]')
+    expect(document.getElementById('paste-games-form')).toBeTruthy()
+  })
+
+  it('says so rather than failing silently when nothing was pasted', () => {
+    document.querySelector('#paste-games-form button[type="submit"]').click()
+    expect(document.getElementById('banner').textContent).toMatch(/Paste the contents/i)
+    expect(countOf('ADD_HISTORICAL_GAME')).toBe(1) // only the one added by hand earlier
+  })
+
+  it('refuses something that is not a game file, and keeps the box open to try again', () => {
+    fillAndPress('paste-games-form', { games: '{ not json' })
+    expect(document.getElementById('banner').textContent).toMatch(/not readable/i)
+    expect(document.getElementById('paste-games-form')).toBeTruthy()
+  })
+
+  it('names a player it does not recognise, and imports nothing', () => {
+    const stranger = batch.replace('Aria Smith', 'Somebody Else')
+    fillAndPress('paste-games-form', { games: stranger })
+
+    expect(document.getElementById('banner').textContent).toMatch(/Somebody Else/)
+    expect(countOf('ADD_HISTORICAL_GAME')).toBe(1)
+  })
+
+  it('adds the games when the batch is good, and closes the box', () => {
+    fillAndPress('paste-games-form', { games: batch })
+
+    expect(countOf('ADD_HISTORICAL_GAME')).toBe(2)
+    expect(document.getElementById('paste-games-form')).toBeFalsy()
+    expect(screenText()).toContain('Eastern A')
+  })
+
+  it('records what the paste contained', () => {
+    const game = events().at(-1)
+    expect(game).toMatchObject({ opponent: 'Eastern A', location: 'Blanchester', court: '2' })
+    expect(game.entries).toHaveLength(2)
+  })
+})
