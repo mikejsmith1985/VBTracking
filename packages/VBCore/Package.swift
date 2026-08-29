@@ -8,6 +8,11 @@ import PackageDescription
 
 let package = Package(
     name: "VBCore",
+    // Without these, SwiftPM assumes the oldest Apple platforms it has ever supported --
+    // and refuses anything newer, including the JSON encoding options this package relies
+    // on to write a log the same way twice. Windows has no such floor, so the mistake only
+    // appears on a Mac. These match the app's own deployment targets.
+    platforms: [.macOS(.v13), .iOS(.v18), .watchOS(.v11)],
     products: [
         .library(name: "VBCore", targets: ["VBCore"]),
         .library(name: "VBStore", targets: ["VBStore"]),
