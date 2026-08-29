@@ -94,7 +94,8 @@
           "out": 1
         }
       ],
-      "notes": "Good:\n- Won 1st match\n- Close 2nd match\n- Several vollies\n- Good talking on the lines\n\nWork on:\n- Got tired and started missing serves\n- Sit and pay attention when out\n- Digging ball out of net"
+      "wentWell": "Won 1st match\nClose 2nd match\nSeveral vollies\nGood talking on the lines",
+      "needsWork": "Got tired and started missing serves\nSit and pay attention when out\nDigging ball out of net"
     },
     {
       "date": "2026-08-08",
@@ -144,7 +145,8 @@
           "out": 1
         }
       ],
-      "notes": "Good:\n- Lots of serves in\n- Rally scoring\n\nWork on:\n- Need to talk more\n- Work on multiple hits\n- When to set vs bump"
+      "wentWell": "Lots of serves in\nRally scoring",
+      "needsWork": "Need to talk more\nWork on multiple hits\nWhen to set vs bump"
     },
     {
       "date": "2026-08-15",
@@ -194,7 +196,8 @@
           "out": 2
         }
       ],
-      "notes": "Good:\n- Started matching serves\n- Aubree over hand serve\n- Ella Cate cheering for team\n- Everyone going to line to call in/out\n- Marley moving her feet\n\nWork on:\n- 7th: mix of over and under hand serves; most one hit then over the net; hardly talked\n- 8th: overhand except for one; tried to run plays/rotations; dedicated setter; lots of talking\n- Calls to watch: out of rotation, net, hand up on serve\n\nWent to middle school vs. Eastern game."
+      "wentWell": "Started matching serves\nAubree over hand serve\nElla Cate cheering for team\nEveryone going to line to call in/out\nMarley moving her feet",
+      "needsWork": "7th: mix of over and under hand serves; most one hit then over the net; hardly talked\n8th: overhand except for one; tried to run plays/rotations; dedicated setter; lots of talking\nCalls to watch: out of rotation, net, hand up on serve\nWent to middle school vs. Eastern game."
     },
     {
       "date": "2026-08-22",
@@ -249,7 +252,8 @@
           "out": 1
         }
       ],
-      "notes": "Good:\n- Charlee made 100% in\n- Nice cheering from bench\n- New rotation\n\nWork on:\n- Missed a lot of serves\n- If you hit it up, get out of the way so someone can get to it\n- Hitting/blocking over net balls\n- Be ready 10 min before game\n- New rotation: Kyla/Marley play 2 sets, out sets 1 and 3"
+      "wentWell": "Charlee made 100% in\nNice cheering from bench\nNew rotation",
+      "needsWork": "Missed a lot of serves\nIf you hit it up, get out of the way so someone can get to it\nHitting/blocking over net balls\nBe ready 10 min before game\nNew rotation: Kyla/Marley play 2 sets, out sets 1 and 3"
     }
   ]
 }

@@ -35,12 +35,10 @@ export function gameFormView(state, ui) {
         <label class="wide">Location<input name="location" value="${esc(game?.location ?? '')}" maxlength="60"></label>
       </div>
 
-      ${isHistorical ? resultChoice(game) : ''}
+      ${isHistorical ? resultChoice(game) : matchResults(game)}
       ${isHistorical ? serveEntry(state, season, game) : ''}
 
-      <div class="section-title">Notes</div>
-      <textarea name="notes" rows="8" placeholder="What went well. What to work on."
-                aria-label="Notes">${esc(game?.notes ?? '')}</textarea>
+      ${notesFields(game)}
 
       <div class="lineup-actions">
         <button class="btn btn-primary" type="submit">${isNew ? 'Add this game' : 'Save'}</button>
@@ -69,19 +67,69 @@ function discardControl(game, ui) {
     </div>`
 }
 
-function resultChoice(game) {
-  const current = game?.result ?? 'undecided'
-  const option = (value, label) => `
-    <label class="result-option">
-      <input type="radio" name="result" value="${value}" ${current === value ? 'checked' : ''}>
-      <span>${label}</span>
+/** A game copied from paper has one result, because the paper recorded one. */
+/**
+ * Three boxes rather than one. Every paper sheet keeps "what went well" and "what to work
+ * on" as separate lists, which says more about how the record is used than any free-text
+ * box could -- and typing those headings by hand every game is work the app should do.
+ */
+function notesFields(game) {
+  const box = (name, label, placeholder, value) => `
+    <label class="notes-field">
+      <span class="notes-label">${label}</span>
+      <textarea name="${name}" rows="4" placeholder="${esc(placeholder)}"
+                aria-label="${label}">${esc(value ?? '')}</textarea>
     </label>`
 
   return `
+    <div class="section-title">Notes</div>
+    ${box('wentWell', 'What went well', 'Communication. Following the ball.', game?.wentWell)}
+    ${box('needsWork', 'What to work on', 'Body position. Being on time.', game?.needsWork)}
+    ${box('notes', 'Anything else', 'Tough loss. Line situation.', game?.notes)}`
+}
+
+function resultChoice(game) {
+  return `
     <div class="section-title">Result</div>
-    <div class="result-choice">
-      ${option('won', 'Won')}${option('lost', 'Lost')}${option('undecided', 'Not recorded')}
-    </div>`
+    ${choiceRow('result', game?.result ?? 'undecided')}`
+}
+
+/**
+ * A tracked game has a result per match, and the game's own result follows from them.
+ *
+ * These stay editable after the fact. Marking a match as it ends is the fast path, but a
+ * match ended in a hurry -- or before the app could ask -- would otherwise be stuck as
+ * "not recorded" forever.
+ */
+function matchResults(game) {
+  const matches = game?.matches ?? []
+  if (matches.length === 0) return ''
+
+  const rows = matches
+    .map((match) => `
+      <div class="match-result-row">
+        <span class="match-result-label">Match ${match.index + 1}</span>
+        ${choiceRow(`match-result-${match.index}`, match.result ?? 'undecided')}
+      </div>`)
+    .join('')
+
+  return `
+    <div class="section-title">Results</div>
+    ${rows}
+    <div class="roster-count">The game is won when more matches were won than lost.
+      A match left unrecorded counts toward neither.</div>`
+}
+
+function choiceRow(name, current) {
+  const option = (value, label) => `
+    <label class="result-option">
+      <input type="radio" name="${name}" value="${value}" ${current === value ? 'checked' : ''}>
+      <span>${label}</span>
+    </label>`
+
+  return `<div class="result-choice">
+    ${option('won', 'Won')}${option('lost', 'Lost')}${option('undecided', '—')}
+  </div>`
 }
 
 /**
@@ -135,12 +183,25 @@ export function readGameForm(form, members) {
       location: value('location').trim(),
       court: value('court').trim(),
     },
-    notes: value('notes'),
+    notes: {
+      wentWell: value('wentWell'),
+      needsWork: value('needsWork'),
+      notes: value('notes'),
+    },
     result: form.querySelector('[name="result"]:checked')?.value ?? 'undecided',
+    matchResults: readMatchResults(form),
     entries: members.map((member) => ({
       playerId: member.id,
       in: count(`in-${member.id}`),
       out: count(`out-${member.id}`),
     })),
   }
+}
+
+/** One result per match of a tracked game, in match order. */
+function readMatchResults(form) {
+  return [...form.querySelectorAll('[name^="match-result-"]:checked')].map((input) => ({
+    index: Number.parseInt(input.name.replace('match-result-', ''), 10),
+    result: input.value,
+  }))
 }

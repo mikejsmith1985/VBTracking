@@ -28,6 +28,19 @@ All notable changes to this project are recorded here.
   Safari lands it as `.json.txt`; opening it, selecting all and pasting is both shorter and
   harder to get wrong than the file round trip.
 
+### Added
+
+- **A tracked game's match results can be set after the fact.** Marking each match as it
+  ends is the fast path, but a match ended in a hurry — or before the app could ask — was
+  stuck as "not recorded" for good. Every match of a tracked game now carries a Won / Lost /
+  — control on its record, and the game's result still follows from them.
+- **Notes are three named boxes**: what went well, what to work on, and anything else. Every
+  paper sheet keeps the first two as separate lists, which says more about how the record is
+  used than one free-text box could — and typing those headings by hand every game was work
+  the app should be doing. Existing notes stay exactly where they are, in the third box.
+- The transcribed import files now carry the two lists separately, so a batch lands in the
+  right boxes rather than as one blob.
+
 ### Fixed
 
 - **A success was reported in the colour of a failure.** "Added 4 games." appeared in the

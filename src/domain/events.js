@@ -22,6 +22,7 @@ export const EVENT = Object.freeze({
   DISCARD_GAME: 'DISCARD_GAME',
   SET_GAME_CONTEXT: 'SET_GAME_CONTEXT',
   SET_GAME_NOTES: 'SET_GAME_NOTES',
+  SET_MATCH_RESULT: 'SET_MATCH_RESULT',
   ADD_HISTORICAL_GAME: 'ADD_HISTORICAL_GAME',
   EDIT_HISTORICAL_GAME: 'EDIT_HISTORICAL_GAME',
   SET_LINEUP: 'SET_LINEUP',
@@ -113,9 +114,39 @@ export function setGameContext(gameId, context) {
   return { t: EVENT.SET_GAME_CONTEXT, gameId, ...normaliseContext(context) }
 }
 
-/** Records what went well and what to work on. */
+/**
+ * Corrects how one match of a tracked game turned out.
+ *
+ * A result is a record of what happened, not part of the play, so it stays editable after
+ * the match has ended -- exactly as the opponent and the notes do. Without this the only
+ * chance to say who won is the instant the match ends, and a match ended in a hurry could
+ * never be put right.
+ */
+export function setMatchResult(gameId, matchIndex, result) {
+  return { t: EVENT.SET_MATCH_RESULT, gameId, matchIndex, result }
+}
+
+/**
+ * Records the three things a scoresheet actually carries: what went well, what to work on,
+ * and anything else worth remembering.
+ *
+ * Every paper sheet keeps the first two as separate lists, which is a stronger statement of
+ * how the record is used than one free-text box could be. `notes` is kept alongside them so
+ * that remarks belonging to neither list -- and everything already written into it -- has
+ * somewhere to live.
+ */
 export function setGameNotes(gameId, notes) {
-  return { t: EVENT.SET_GAME_NOTES, gameId, notes }
+  return { t: EVENT.SET_GAME_NOTES, gameId, ...normaliseNotes(notes) }
+}
+
+/** Accepts either the three-part shape or a plain string, which older events carry. */
+export function normaliseNotes(notes) {
+  if (typeof notes === 'string') return { wentWell: '', needsWork: '', notes }
+  return {
+    wentWell: notes?.wentWell ?? '',
+    needsWork: notes?.needsWork ?? '',
+    notes: notes?.notes ?? '',
+  }
 }
 
 /**
@@ -130,7 +161,7 @@ export function addHistoricalGame(id, seasonId, context, entries, notes = '') {
     seasonId,
     ...normaliseContext(context),
     entries: entries.map((entry) => ({ playerId: entry.playerId, in: entry.in, out: entry.out })),
-    notes,
+    ...normaliseNotes(notes),
   }
 }
 
@@ -141,7 +172,7 @@ export function editHistoricalGame(id, context, entries, notes) {
     id,
     ...normaliseContext(context),
     entries: entries.map((entry) => ({ playerId: entry.playerId, in: entry.in, out: entry.out })),
-    notes,
+    ...normaliseNotes(notes),
   }
 }
 

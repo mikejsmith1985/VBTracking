@@ -468,6 +468,12 @@ function submitGameForm(form) {
   } else {
     if (!dispatch(E.setGameContext(game.id, read.context))) return
     if (!dispatch(E.setGameNotes(game.id, read.notes))) return
+    for (const { index, result } of read.matchResults) {
+      const match = game.matches.find((each) => each.index === index)
+      if (match && match.result !== result) {
+        if (!dispatch(E.setMatchResult(game.id, index, result))) return
+      }
+    }
   }
   ui.editingGameId = null
 }

@@ -11,8 +11,9 @@ const context = { date: '2026-08-08', opponent: 'Georgetown A', location: 'Fayet
 
 const tracked = build(
   roster(3), E.startGame('g1'), E.setGameContext('g1', context),
-  E.setGameNotes('g1', 'Good: won the first match.'),
+  E.setGameNotes('g1', { wentWell: 'Communication.', needsWork: 'Body position.', notes: 'Tough loss.' }),
   E.selectServer('p1'), E.recordServe(IN_POINT), E.recordServe(OUT),
+  E.endMatch(E.MATCH_RESULT.WON),
 )
 
 const paper = build(
@@ -20,7 +21,7 @@ const paper = build(
   E.addHistoricalGame('h1', 'season-1', context, [
     { playerId: 'p1', in: 9, out: 2 },
     { playerId: 'p2', in: 4, out: 1 },
-  ], 'Work on: talking.'),
+  ], { wentWell: 'Lots of serves in.', needsWork: 'Talking.', notes: '' }),
 )
 
 describe('a game that was tracked', () => {
@@ -32,20 +33,39 @@ describe('a game that was tracked', () => {
     expect(html).toContain('value="Fayetteville"')
   })
 
-  it('offers its notes for editing, filled in', () => {
-    expect(html).toContain('Good: won the first match.')
+  it('offers the two lists the sheets keep, filled in, plus anywhere else', () => {
+    expect(html).toContain('What went well')
+    expect(html).toContain('Communication.')
+    expect(html).toContain('What to work on')
+    expect(html).toContain('Body position.')
+    expect(html).toContain('Anything else')
+    expect(html).toContain('Tough loss.')
   })
 
   it('offers no serve entry, because those serves were recorded properly', () => {
     expect(html).not.toContain('serve-entry-row')
   })
 
-  it('offers no result choice, because it follows from the matches', () => {
-    expect(html).not.toContain('name="result"')
+  it('offers a result per match, correctable long after the match ended', () => {
+    expect(html).toContain('Match 1')
+    expect(html).toContain('name="match-result-0"')
+    // Match 2 opened when match 1 ended; match 3 does not exist yet, so it is not offered.
+    expect(html).toContain('name="match-result-1"')
+    expect(html).not.toContain('name="match-result-2"')
   })
 
-  it('says how the game turned out', () => {
-    expect(html).toContain('Result not recorded')
+  it('checks the result each match already carries', () => {
+    expect(html).toMatch(/name="match-result-0" value="won" checked/)
+    expect(html).toMatch(/name="match-result-1" value="undecided" checked/)
+  })
+
+  it('offers no single game result, because it follows from the matches', () => {
+    expect(html).not.toContain('name="result"')
+    expect(html).toContain('won when more matches were won than lost')
+  })
+
+  it('says how the game turned out so far', () => {
+    expect(html).toContain('Won')
   })
 })
 
@@ -75,8 +95,14 @@ describe('a game copied from paper', () => {
     expect(html).toContain('value="undecided"')
   })
 
-  it('offers its notes', () => {
-    expect(html).toContain('Work on: talking.')
+  it('offers its notes in the same three parts', () => {
+    expect(html).toContain('Lots of serves in.')
+    expect(html).toContain('Talking.')
+  })
+
+  it('offers one result for the whole game, since the paper recorded one', () => {
+    expect(html).toContain('name="result"')
+    expect(html).not.toContain('name="match-result-')
   })
 })
 
@@ -105,12 +131,15 @@ describe('reading the form back', () => {
   const members = [{ id: 'p1', name: 'A', number: '1' }, { id: 'p2', name: 'B', number: '2' }]
 
   /** A stand-in for the DOM form, answering the queries readGameForm makes. */
-  function fakeForm(values, checkedResult = 'won') {
+  function fakeForm(values, checkedResult = 'won', matchResults = []) {
     return {
       querySelector(selector) {
         if (selector === '[name="result"]:checked') return checkedResult ? { value: checkedResult } : null
         const name = selector.match(/\[name="(.+)"\]/)?.[1]
         return name in values ? { value: values[name] } : null
+      },
+      querySelectorAll() {
+        return matchResults.map(({ index, result }) => ({ name: `match-result-${index}`, value: result }))
       },
     }
   }
@@ -124,7 +153,7 @@ describe('reading the form back', () => {
     expect(read.context).toEqual({
       date: '2026-08-08', opponent: 'Georgetown A', location: 'Fayetteville', court: '1',
     })
-    expect(read.notes).toBe('Some notes')
+    expect(read.notes).toEqual({ wentWell: '', needsWork: '', notes: 'Some notes' })
     expect(read.result).toBe('won')
     expect(read.entries).toEqual([
       { playerId: 'p1', in: 9, out: 2 },
@@ -143,6 +172,22 @@ describe('reading the form back', () => {
 
   it('defaults to undecided when no result is chosen', () => {
     expect(readGameForm(fakeForm({}, null), []).result).toBe('undecided')
+  })
+
+  it('reads one result per match, in match order', () => {
+    const read = readGameForm(fakeForm({}, null, [
+      { index: 0, result: 'won' }, { index: 1, result: 'lost' }, { index: 2, result: 'undecided' },
+    ]), [])
+
+    expect(read.matchResults).toEqual([
+      { index: 0, result: 'won' },
+      { index: 1, result: 'lost' },
+      { index: 2, result: 'undecided' },
+    ])
+  })
+
+  it('reads no match results when there are none to read', () => {
+    expect(readGameForm(fakeForm({}, null), []).matchResults).toEqual([])
   })
 })
 
@@ -179,5 +224,32 @@ describe('discarding a game from its own form', () => {
 
   it('is not offered for a game that has not been created yet', () => {
     expect(gameFormView(paper, { editingGameId: 'new-historical' })).not.toContain('data-action="discard-game"')
+  })
+})
+
+describe('reading the three notes boxes back', () => {
+  /** A stand-in that answers by field name, as the real form does. */
+  const formOf = (values) => ({
+    querySelector: (selector) => {
+      const name = selector.match(/\[name="([^"]+)"\]/)?.[1]
+      return name && name in values ? { value: values[name] } : null
+    },
+    querySelectorAll: () => [],
+  })
+
+  it('returns the two lists separately, not as one blob', () => {
+    const read = readGameForm(formOf({
+      wentWell: 'Communication', needsWork: 'Body position', notes: 'Tough loss',
+    }), [])
+
+    expect(read.notes).toEqual({
+      wentWell: 'Communication',
+      needsWork: 'Body position',
+      notes: 'Tough loss',
+    })
+  })
+
+  it('returns empty strings rather than undefined for boxes left blank', () => {
+    expect(readGameForm(formOf({}), []).notes).toEqual({ wentWell: '', needsWork: '', notes: '' })
   })
 })
