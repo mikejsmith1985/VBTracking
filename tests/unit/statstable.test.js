@@ -23,8 +23,29 @@ describe('statsTable', () => {
     expect(html.split('<tr>').length - 1).toBe(3) // header row plus two players
   })
 
-  it('orders by points, then by serves', () => {
-    const html = statsTable(new Map([['p1', stats(9, 4, 1, 2)], ['p2', stats(3, 3, 5, 1)]]), team)
+  it('ranks the more accurate server above the higher scorer', () => {
+    // Ten points from a hundred serves is a worse serving record than six from ten,
+    // and ranking by points would have said the opposite.
+    const html = statsTable(new Map([
+      ['p1', stats(100, 10, 10, 20)],   // 10% in, 10 points
+      ['p2', stats(10, 6, 6, 2)],       // 60% in, 6 points
+    ]), team)
+    expect(html.indexOf('Okafor')).toBeLessThan(html.indexOf('Rivera'))
+  })
+
+  it('breaks a tie on percentage by who served more often', () => {
+    const html = statsTable(new Map([
+      ['p1', stats(4, 2, 1, 1)],        // 50% of 4
+      ['p2', stats(20, 10, 1, 4)],      // 50% of 20
+    ]), team)
+    expect(html.indexOf('Okafor')).toBeLessThan(html.indexOf('Rivera'))
+  })
+
+  it('sorts a player who never served last, rather than as nought percent', () => {
+    const html = statsTable(new Map([
+      ['p1', stats(0, 0, 0, 0)],
+      ['p2', stats(10, 1, 0, 3)],       // only 10%, but they did serve
+    ]), team)
     expect(html.indexOf('Okafor')).toBeLessThan(html.indexOf('Rivera'))
   })
 
@@ -96,12 +117,12 @@ describe('a figure that was never recorded', () => {
     expect(html).toContain('data-id="p1"')
   })
 
-  it('ranks by serves in when no points were recorded', () => {
-    const mixed = new Map([
-      ['p1', { serves: 2, servesIn: 1, inPercentage: 0.5, points: null, turnsTaken: null, turnsOnCourt: null, games: 1, trackedGames: 0 }],
-      ['p2', { serves: 9, servesIn: 8, inPercentage: 8 / 9, points: null, turnsTaken: null, turnsOnCourt: null, games: 1, trackedGames: 0 }],
-    ])
-    const html = statsTable(mixed, team)
+  it('ranks by accuracy even where no points were recorded at all', () => {
+    const paper = (serves, servesIn) => ({
+      serves, servesIn, inPercentage: servesIn / serves,
+      points: null, turnsTaken: null, turnsOnCourt: null, games: 1, trackedGames: 0,
+    })
+    const html = statsTable(new Map([['p1', paper(30, 6)], ['p2', paper(9, 8)]]), team)
     expect(html.indexOf('Okafor')).toBeLessThan(html.indexOf('Rivera'))
   })
 })

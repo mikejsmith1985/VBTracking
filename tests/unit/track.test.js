@@ -176,3 +176,38 @@ describe('escaping', () => {
     expect(dock).toContain('&lt;b&gt;')
   })
 })
+
+describe('getting out of a game part-way through', () => {
+  const midGame = build(roster(3), E.startGame('g1'), E.selectServer('p1'), E.recordServe(IN_POINT))
+  const asking = () => render(midGame, { confirmingEndMatch: true }).screen
+
+  it('offers ending the game where it stands, not only ending the match', () => {
+    expect(asking()).toContain('data-action="end-game"')
+    expect(asking()).toContain('keep what is recorded')
+  })
+
+  it('says what ending keeps', () => {
+    expect(asking()).toContain('closes the game where it stands, however many matches were played')
+  })
+
+  it('offers throwing the game away, without leaving the tracking screen', () => {
+    expect(asking()).toContain('data-action="discard-game"')
+  })
+
+  it('takes two taps to throw it away, and states the cost before the second', () => {
+    expect(asking()).not.toContain('Throw this game away?')
+
+    const armed = render(midGame, { confirmingEndMatch: true, confirmingDiscardGame: 'g1' }).screen
+    expect(armed).toContain('Throw this game away?')
+    expect(armed).toContain('Every serve in this game goes with it')
+  })
+
+  it('arms the discard against this game, so another cannot be caught by it', () => {
+    const other = render(midGame, { confirmingEndMatch: true, confirmingDiscardGame: 'somewhere-else' }).screen
+    expect(other).not.toContain('Throw this game away?')
+  })
+
+  it('still offers the way back to playing', () => {
+    expect(asking()).toContain('data-action="cancel-end-match"')
+  })
+})

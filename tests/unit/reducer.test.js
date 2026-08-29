@@ -9,6 +9,7 @@ import {
   currentGame,
   currentMatch,
   openTurn,
+  isGameComplete,
 } from '../../src/domain/reducer.js'
 import { build, roster, turn } from '../helpers.js'
 
@@ -252,5 +253,50 @@ describe('purity', () => {
   it('replays deterministically', () => {
     const events = [...roster(2), E.startGame('g1'), ...turn('p1', 3), ...turn('p2', 1)]
     expect(JSON.stringify(replay(events))).toBe(JSON.stringify(replay(events)))
+  })
+})
+
+describe('ending a game before its matches are played out', () => {
+  const stopped = build(
+    roster(2), E.startGame('g1'),
+    E.selectServer('p1'), E.recordServe(IN_POINT), E.recordServe(OUT),
+    E.endGame(E.MATCH_RESULT.WON),
+  )
+
+  it('closes the match in progress and opens no other', () => {
+    const matches = currentGame(stopped).matches
+    expect(matches).toHaveLength(1)
+    expect(matches[0].status).toBe('ended')
+    expect(currentMatch(stopped)).toBeNull()
+  })
+
+  it('keeps every serve the match held', () => {
+    expect(currentGame(stopped).matches[0].turns[0].serves).toHaveLength(2)
+  })
+
+  it('records the result it was given', () => {
+    expect(currentGame(stopped).matches[0].result).toBe('won')
+  })
+
+  it('counts the game as over, even though fewer than three matches were played', () => {
+    expect(isGameComplete(stopped)).toBe(true)
+  })
+
+  it('frees a new game to start', () => {
+    expect(rejectionReason(stopped, E.startGame('g2'))).toBeNull()
+  })
+
+  it('discards an open turn that recorded nothing', () => {
+    const state = build(roster(2), E.startGame('g1'), E.selectServer('p1'), E.endGame())
+    expect(currentGame(state).matches[0].turns).toHaveLength(0)
+  })
+
+  it('is refused when no match is in progress', () => {
+    expect(rejectionReason(build(roster(2)), E.endGame())).toBeTruthy()
+  })
+
+  it('leaves a match unrecorded rather than lost when no result is given', () => {
+    const state = build(roster(2), E.startGame('g1'), E.selectServer('p1'), E.recordServe(OUT), E.endGame())
+    expect(currentGame(state).matches[0].result).toBe('undecided')
   })
 })
