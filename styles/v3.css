@@ -52,7 +52,15 @@
 
 .game-row:active { background: var(--surface-2); }
 .game-when { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.game-who { font-size: 15px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.game-who {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .game-figures { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
 
 .result-pill {
@@ -81,14 +89,18 @@
 
 /* --- Season admin -------------------------------------------------------- */
 
+/* Two inputs across, the button beneath. Putting all three on one row pushed the button
+   off the right edge on a phone: a grid child defaults to min-width:auto, so an input
+   refuses to shrink below its own content and the row overflows instead of fitting. */
 .season-form {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-bottom: 12px;
 }
 
 .season-form input {
+  min-width: 0;
   min-height: var(--tap-min);
   padding: 10px;
   border: 1px solid var(--line);
@@ -98,6 +110,7 @@
 }
 
 .season-form button {
+  grid-column: 1 / -1;
   min-height: var(--tap-min);
   padding: 0 14px;
   border-radius: 10px;
@@ -122,6 +135,7 @@
 }
 
 .figure {
+  min-width: 0;
   padding: 8px;
   border: 1px solid var(--line);
   border-radius: 10px;
@@ -176,6 +190,7 @@
 
 .context-grid label {
   display: grid;
+  min-width: 0;
   gap: 4px;
   font-size: 11px;
   font-weight: 700;
@@ -236,9 +251,16 @@
   padding: 4px 0;
 }
 
-.serve-entry-name { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.serve-entry-name {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .serve-entry-row input {
+  min-width: 0;
   min-height: var(--tap-min);
   padding: 8px;
   border: 1px solid var(--line);
@@ -248,3 +270,23 @@
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
+
+/* --- Spacing between stacked controls ------------------------------------ */
+
+/* Two full-width buttons flush against each other read as one control. */
+.danger-zone .btn + .btn,
+.danger-zone .btn + .roster-count + .btn { margin-top: 8px; }
+.danger-zone .btn { margin-bottom: 0; }
+
+/* A heading that follows a paragraph needs room to read as a new section. */
+.danger-zone .section-title { margin-top: 22px; }
+.danger-zone > .section-title:first-child { margin-top: 4px; }
+
+/* Nothing in this app may push the page sideways (FR-050). */
+.season-form,
+.context-grid,
+.chip-grid,
+.figure-grid,
+.serve-entry-row,
+.serve-entry-head,
+.game-row { max-width: 100%; }
