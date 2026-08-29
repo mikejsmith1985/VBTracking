@@ -30,6 +30,16 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **A success was reported in the colour of a failure.** "Added 4 games." appeared in the
+  same red banner as every refusal, which makes an operator doubt something that worked.
+  The banner now carries a tone: green for what succeeded, red for what did not. The paste
+  box also stays open on failure, so a bad paste can be corrected rather than redone.
+- **The focus ring bled into the field alongside it.** It was painted outside the control's
+  box, so on a two-column row a focused field visually crossed into its neighbour and the
+  two read as overlapping. The ring is now drawn inside, and the columns sit further apart.
+- **A field could sit under the keyboard.** iOS does not shrink the viewport for the
+  keyboard in a standalone app, so the notes box ended up behind it with the operator typing
+  blind. The focused field now scrolls clear.
 - The version badge module was briefly emptied by a bad in-place edit during this change.
   The test asserting it matches the service worker cache caught it at once — which is why
   that test checks agreement rather than mere existence.
