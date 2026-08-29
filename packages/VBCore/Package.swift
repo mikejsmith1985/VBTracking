@@ -11,6 +11,7 @@ let package = Package(
     products: [
         .library(name: "VBCore", targets: ["VBCore"]),
         .library(name: "VBStore", targets: ["VBStore"]),
+        .library(name: "VBPresentation", targets: ["VBPresentation"]),
     ],
     targets: [
         .target(
@@ -22,6 +23,17 @@ let package = Package(
         // a half-written line stay testable on a machine with no device attached.
         .target(
             name: "VBStore",
+            dependencies: ["VBCore"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        // What the screens would otherwise decide for themselves.
+        //
+        // There is no Mac here, so a SwiftUI view cannot be run, let alone tested. Every
+        // decision a view would make -- what a figure reads as, how big a box is, what the
+        // dock is showing -- is made here instead, where it can be tested in a fast loop.
+        // What is left in the view is arrangement.
+        .target(
+            name: "VBPresentation",
             dependencies: ["VBCore"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
@@ -37,6 +49,11 @@ let package = Package(
         .testTarget(
             name: "VBStoreTests",
             dependencies: ["VBStore", "VBCore"],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "VBPresentationTests",
+            dependencies: ["VBPresentation", "VBCore"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]
