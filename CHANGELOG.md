@@ -30,6 +30,9 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- The version badge module was briefly emptied by a bad in-place edit during this change.
+  The test asserting it matches the service worker cache caught it at once — which is why
+  that test checks agreement rather than mere existence.
 - **The import no longer demands that two people typed a name the same way.** The roster is
   typed on a phone before a match; the file is transcribed from handwriting afterwards.
   Requiring "Layna" and "Layna Blankenship" to agree character for character is a rule the
