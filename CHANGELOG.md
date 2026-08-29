@@ -4,6 +4,29 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added
+
+- **The native app, written end to end.** Both apps now exist: the phone's tracking loop
+  with its court picker, tally board, five-serve alert, substitutions and end-of-match
+  choices; the correction screens for any past game; seasons, career, rosters, games entered
+  from paper and imported in batches; saving and restoring the whole record; and on the
+  wrist, the court itself with recording behind a deliberate swipe.
+- **`VBPresentation`**, a third package target holding every decision a screen would
+  otherwise make for itself — what a figure reads as, how big each box on the wrist is, what
+  a tap on a player means, whether the wrist is telling the truth about how current it is,
+  and how serves recorded on the wrist merge into the phone's log. There is no Mac here, so
+  a SwiftUI view cannot be run: moving those decisions somewhere testable is what makes
+  writing the screens blind an acceptable thing to do rather than a hopeful one.
+- **The on-deck box is a measured requirement, not a visual one.** `CourtLayout` works out
+  the six box sizes for the 42 mm watch, and a test asserts the on-deck box is at least one
+  and a half times the smallest by area — with an interface test on the build machine that
+  measures the real frames and asserts the same thing.
+- **Reading a batch of games from paper**, ported with the three-route name matching the
+  operator's own import needed: full name, then the jersey number the file declares, then
+  first name — refusing ambiguity rather than guessing which child a serve belonged to.
+- **Writing events back out**, held to the reader by a round-trip test over every kind of
+  event, and through the backup format the web app reads.
+
 ### Fixed
 
 - **There was no way to save a season unless a game existed.** Backup and restore lived on
