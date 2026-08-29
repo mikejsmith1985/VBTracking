@@ -10,10 +10,19 @@ let package = Package(
     name: "VBCore",
     products: [
         .library(name: "VBCore", targets: ["VBCore"]),
+        .library(name: "VBStore", targets: ["VBStore"]),
     ],
     targets: [
         .target(
             name: "VBCore",
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        // The one place that touches a disk. It is a target of its own so that `VBCore`
+        // can keep its promise of having no I/O in it at all -- and so that the rules about
+        // a half-written line stay testable on a machine with no device attached.
+        .target(
+            name: "VBStore",
+            dependencies: ["VBCore"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(
@@ -23,6 +32,11 @@ let package = Package(
             // the tests read them from there by a path derived from their own source
             // location -- a second copy inside this target is a second copy that can
             // drift, and these files are the format as shipped.
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "VBStoreTests",
+            dependencies: ["VBStore", "VBCore"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]
