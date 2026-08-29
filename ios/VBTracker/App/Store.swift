@@ -6,6 +6,7 @@
 import Foundation
 import Observation
 import VBCore
+import VBPresentation
 import VBStore
 
 /// The app's state, and the only route to changing it.
