@@ -18,6 +18,39 @@ workflows:
     triggering:
       events: [push, pull_request]
 
+  # The cheapest way to find out whether 71 files of Swift compile.
+  #
+  # No signing, no simulators, no publishing, no upload. Just: does it build? Every error
+  # this finds would otherwise have been found by a full build that spent forty minutes
+  # getting there first, and the operator is paying for those minutes.
+  compile:
+    name: Does it compile?
+    max_build_duration: 25
+    environment:
+      xcode: latest
+    scripts:
+      - name: The domain first, because it is cheapest and it holds the rules
+        script: |
+          cd packages/VBCore
+          swift test
+
+      - name: Generate the Xcode project
+        script: |
+          brew install xcodegen
+          cd ios && xcodegen generate
+
+      # `build-for-testing` rather than `build`: it compiles the test targets too, and an
+      # interface test that does not compile is a test that never runs.
+      - name: Compile the phone, the watch, and their tests
+        script: |
+          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTracker             -destination 'generic/platform=iOS Simulator'             CODE_SIGNING_ALLOWED=NO
+      - name: Compile the watch on its own
+        script: |
+          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTrackerWatch             -destination 'generic/platform=watchOS Simulator'             CODE_SIGNING_ALLOWED=NO
+
+    triggering:
+      events: []
+
   ios-watch:
     name: iPhone and Watch
     max_build_duration: 60
