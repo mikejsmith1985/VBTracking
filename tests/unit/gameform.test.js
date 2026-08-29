@@ -145,3 +145,39 @@ describe('reading the form back', () => {
     expect(readGameForm(fakeForm({}, null), []).result).toBe('undecided')
   })
 })
+
+
+describe('discarding a game from its own form', () => {
+  it('is offered for a game that exists', () => {
+    const html = gameFormView(paper, { editingGameId: 'h1' })
+    expect(html).toContain('data-action="discard-game"')
+    expect(html).toContain('data-id="h1"')
+  })
+
+  it('says what it is for, since the reason is not obvious', () => {
+    const html = gameFormView(paper, { editingGameId: 'h1' })
+    expect(html).toContain('the same game was entered twice')
+  })
+
+  it('takes two taps, and states the consequence before the second', () => {
+    const idle = gameFormView(paper, { editingGameId: 'h1' })
+    expect(idle).not.toContain('Discard this game?')
+
+    const armed = gameFormView(paper, { editingGameId: 'h1', confirmingDiscardGame: 'h1' })
+    expect(armed).toContain('Discard this game?')
+    expect(armed).toContain('rest of the season are untouched')
+  })
+
+  it('is armed per game, so arming one does not light up another', () => {
+    const other = gameFormView(paper, { editingGameId: 'h1', confirmingDiscardGame: 'somewhere-else' })
+    expect(other).not.toContain('Discard this game?')
+  })
+
+  it('is offered for a tracked game too', () => {
+    expect(gameFormView(tracked, { editingGameId: 'g1' })).toContain('data-action="discard-game"')
+  })
+
+  it('is not offered for a game that has not been created yet', () => {
+    expect(gameFormView(paper, { editingGameId: 'new-historical' })).not.toContain('data-action="discard-game"')
+  })
+})

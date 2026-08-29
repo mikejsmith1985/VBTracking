@@ -4,6 +4,20 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added
+
+- **Any game can be discarded from its own record**, not only the one in progress. A game
+  entered twice — the same match tracked live and also imported from paper — would
+  otherwise count twice in the season with no way to undo it. Two taps, and the
+  consequence is stated before the second.
+
+### Changed
+
+- Airplane-mode verification is no longer a release gate, at the stakeholder's decision: a
+  native iOS app is expected before connectivity in a gymnasium matters. The app remains
+  offline-capable — the service worker and the precache-completeness test are unchanged —
+  but offline behaviour is no longer proven on the device before shipping.
+
 ### Added — Seasons, Career Players, and Game Context (`feature/seasons-and-career`)
 
 **A player is now a person, and the number belongs to the season**

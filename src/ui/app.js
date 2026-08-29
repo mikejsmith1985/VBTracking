@@ -45,7 +45,7 @@ const ui = {
   editingGameId: null,
   confirmingRemoveId: null,
   confirmingEndMatch: false,
-  confirmingDiscardGame: false,
+  confirmingDiscardGame: null,
   confirmingImport: false,
   confirmingHistoricalImport: false,
   message: null,
@@ -152,10 +152,12 @@ const ACTIONS = {
     confirmThen('confirmingRemoveId', playerId, () =>
       dispatch(E.removeFromSeason(playerId, store.getState().activeSeasonId)))
   },
-  'discard-game': () => {
-    const game = currentGame(store.getState())
-    if (!game) return
-    confirmThen('confirmingDiscardGame', true, () => dispatch(E.discardGame(game.id)))
+  'discard-game': (element) => {
+    const gameId = element.dataset.id ?? currentGame(store.getState())?.id
+    if (!gameId) return
+    confirmThen('confirmingDiscardGame', gameId, () => {
+      if (dispatch(E.discardGame(gameId))) ui.editingGameId = null
+    })
   },
 
   'choose-lineup': (element) => { ui.lineupDraft = [...draft(), element.dataset.id] },
