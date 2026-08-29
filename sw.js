@@ -4,7 +4,7 @@
 // by a human, which is the whole reason this project ships no bundler.
 
 // Bump on every release. A new version fully replaces the old rather than serving a mix.
-const CACHE = 'vbtracking-v9'
+const CACHE = 'vbtracking-v10'
 
 const PRECACHE = [
   './',
@@ -14,6 +14,7 @@ const PRECACHE = [
   './styles/v3.css',
   './src/ui/app.js',
   './src/ui/html.js',
+  './src/ui/version.js',
   './src/ui/screens/track.js',
   './src/ui/screens/lineup.js',
   './src/ui/screens/season.js',
