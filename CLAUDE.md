@@ -9,20 +9,54 @@
 <!-- SPECKIT START -->
 ## Active Feature
 
-**Seasons, Career Players, and Game Context** - `feature/seasons-and-career`
+**Native iOS App with a watchOS Companion** - `004-native-ios-and-watch`
 
 | Artifact | Path |
 |---|---|
-| Spec | `specs/003-seasons-and-career/spec.md` |
-| Plan | `specs/003-seasons-and-career/plan.md` |
-| Research | `specs/003-seasons-and-career/research.md` |
-| Data model | `specs/003-seasons-and-career/data-model.md` |
-| Contracts | `specs/003-seasons-and-career/contracts/` |
-| Quickstart | `specs/003-seasons-and-career/quickstart.md` |
+| Spec | `specs/004-native-ios-and-watch/spec.md` |
+| Plan | `specs/004-native-ios-and-watch/plan.md` |
+| Research | `specs/004-native-ios-and-watch/research.md` |
+| Data model | `specs/004-native-ios-and-watch/data-model.md` |
+| Contracts | `specs/004-native-ios-and-watch/contracts/` |
+| Quickstart | `specs/004-native-ios-and-watch/quickstart.md` |
 
-Builds on shipped releases `001-volleyball-serve-tracker` and `002-rotation-and-subs`
-(live at https://mikejsmith1985.github.io/VBTracking/). Their constraints remain in force
-and are not restated in 003.
+Releases 001-003 shipped as a PWA and remain live at
+https://mikejsmith1985.github.io/VBTracking/ (currently v18). The web app keeps running and
+keeps deploying from `main` throughout this release - it is not withdrawn, and its files stay
+in the repository root.
+
+**Build identity** (per the global Apple rules; identifiers only, never key material):
+
+| Thing | Value |
+|---|---|
+| App bundle id | `com.mikejsmith.vbtracker` |
+| Watch app | `com.mikejsmith.vbtracker.watchapp` |
+| App Group | `group.com.mikejsmith.vbtracker` |
+| App Store Connect `APP_ID` | not yet created |
+
+**Devices and the build loop** - both are load-bearing:
+- Target devices are an **Apple Watch Series 11 at 42 mm** (374 x 446 pt) and an **iPhone 14
+  Pro**. The 42 mm screen is the design target; nothing may depend on the roomier 46 mm.
+- Minimum iOS 18 / watchOS 11 - chosen for a later public release, not for these two devices.
+- **There is no Mac.** Every build with a screen in it runs on the cloud build service, so
+  screens hold no rules, and a visual requirement is written as a measured one (an interface
+  test asserts the on-deck box is at least 1.5x the smallest box by area). Batch UI changes;
+  working in ones is the expensive habit here.
+
+**The shape of the native work** - read `plan.md` before starting any of it:
+- `packages/VBCore` is a pure Swift package with no I/O. It builds and tests on Windows,
+  which is the entire local development loop; only the screens need a Mac.
+- The port is proved by `ParityTests`, not by inspection: the committed fixtures and a real
+  season export must replay to figures identical to the JavaScript, dashes included.
+- The phone holds the truth. The watch sends events with an id made at the tap; the phone
+  ignores an id it already holds. That is what makes delivery exactly-once.
+- Every event now carries an `id`. It is additive, so a log written natively still loads in
+  the web app - which is what lets both apps read the same season during the phase gap.
+
+## The web app (releases 001-003, still shipping)
+
+Everything below still governs the files in the repository root. The native work does not
+change any of it, and a change made here still deploys to real users mid-season.
 
 **Stack**: plain ES2022 modules, no bundler, no framework, no backend. Static files served
 from the repository root. `localStorage` for persistence. Vitest and Cypress are dev-only.

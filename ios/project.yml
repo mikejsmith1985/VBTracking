@@ -1,0 +1,109 @@
+# The Xcode project, as a file a person can read.
+#
+# There is no Mac on the workstation, so a .pbxproj could not be opened here even to
+# inspect it -- let alone hand-edited safely. XcodeGen turns this into the project on the
+# build machine, which keeps the thing under version control readable and diffable.
+name: VBTracker
+
+options:
+  bundleIdPrefix: com.mikejsmith
+  deploymentTarget:
+    iOS: "18.0"
+    watchOS: "11.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Warnings are not advice. A season of real data is riding on this.
+    SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
+
+packages:
+  VBCore:
+    path: ../packages/VBCore
+
+targets:
+  # --- iPhone -----------------------------------------------------------------
+  VBTracker:
+    type: application
+    platform: iOS
+    sources:
+      - path: VBTracker
+      - path: Shared
+    dependencies:
+      - package: VBCore
+      - target: VBTrackerWatch
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mikejsmith.vbtracker
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    entitlements:
+      path: VBTracker/VBTracker.entitlements
+      properties:
+        # Derived from the bundle id, per the global naming rule. A later widget or
+        # complication reads the same log rather than keeping a second copy of it.
+        com.apple.security.application-groups:
+          - group.com.mikejsmith.vbtracker
+
+  # --- Watch ------------------------------------------------------------------
+  VBTrackerWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: VBTrackerWatch
+      - path: Shared
+    dependencies:
+      - package: VBCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mikejsmith.vbtracker.watchapp
+        INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.mikejsmith.vbtracker
+        INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
+    entitlements:
+      path: VBTrackerWatch/VBTrackerWatch.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - group.com.mikejsmith.vbtracker
+
+  # --- Tests ------------------------------------------------------------------
+  SharedTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [SharedTests]
+    dependencies:
+      - target: VBTracker
+      - package: VBCore
+
+  VBTrackerUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [VBTrackerUITests]
+    dependencies:
+      - target: VBTracker
+
+  VBTrackerWatchUITests:
+    type: bundle.ui-testing
+    platform: watchOS
+    sources: [VBTrackerWatchUITests]
+    dependencies:
+      - target: VBTrackerWatch
+
+schemes:
+  VBTracker:
+    build:
+      targets:
+        VBTracker: all
+        VBTrackerWatch: all
+    test:
+      targets: [SharedTests, VBTrackerUITests]
+  VBTrackerWatch:
+    build:
+      targets:
+        VBTrackerWatch: all
+    test:
+      targets: [VBTrackerWatchUITests]
