@@ -44,6 +44,9 @@ function transition(state, event) {
     case EVENT.SET_GAME_CONTEXT: return withGameContext(state, event)
     case EVENT.SET_GAME_NOTES: return withGameNotes(state, event)
     case EVENT.SET_MATCH_RESULT: return withMatchResultSet(state, event)
+    case EVENT.SET_TURN_SERVES: return withTurnServesSet(state, event)
+    case EVENT.REASSIGN_TURN: return withTurnReassigned(state, event)
+    case EVENT.DELETE_TURN: return withTurnDeleted(state, event)
     case EVENT.ADD_HISTORICAL_GAME: return withHistoricalGameAdded(state, event)
     case EVENT.EDIT_HISTORICAL_GAME: return withHistoricalGameEdited(state, event)
     case EVENT.SET_LINEUP: return withLineupSet(state, event)
@@ -82,6 +85,9 @@ export function rejectionReason(state, event) {
     case EVENT.SET_GAME_NOTES:
       return gameById(state, event.gameId) ? null : 'That game no longer exists.'
     case EVENT.SET_MATCH_RESULT: return setMatchResultRejection(state, event)
+    case EVENT.SET_TURN_SERVES: return turnCorrectionRejection(state, event, 'serves')
+    case EVENT.REASSIGN_TURN: return turnCorrectionRejection(state, event, 'player')
+    case EVENT.DELETE_TURN: return turnCorrectionRejection(state, event, 'delete')
     case EVENT.ADD_HISTORICAL_GAME: return historicalGameRejection(state, event, true)
     case EVENT.EDIT_HISTORICAL_GAME: return historicalGameRejection(state, event, false)
     case EVENT.SET_LINEUP: return setLineupRejection(state, event)
@@ -526,6 +532,77 @@ function withGameNotes(state, event) {
  * after the match has ended -- the same reasoning that lets the opponent and the notes be
  * fixed. Nothing about the serves is touched.
  */
+/**
+ * Corrections to a recorded turn: its serves, whose turn it was, or whether it happened.
+ *
+ * They apply to any tracked game, including one long finished, because a correction fixes
+ * the record of what happened rather than changing what was played. The rule that an ended
+ * match is immutable protects the play from being rewritten mid-game; it was never meant to
+ * make a typo permanent.
+ */
+function turnCorrectionRejection(state, event, kind) {
+  const game = gameById(state, event.gameId)
+  if (!game) return 'That game no longer exists.'
+  if (game.kind !== GAME_KIND.TRACKED) return 'That game was recorded from paper; edit its figures instead.'
+
+  const match = game.matches.find((each) => each.index === event.matchIndex)
+  if (!match) return 'That match is not part of this game.'
+  if (!match.turns.some((turn) => turn.ordinal === event.ordinal)) return 'That serve turn no longer exists.'
+
+  if (kind === 'serves') {
+    if (!Array.isArray(event.outcomes)) return 'A turn needs a list of serves.'
+    if (event.outcomes.length === 0) return 'A turn with no serves should be deleted instead.'
+    if (event.outcomes.some((outcome) => !isValidOutcome(outcome))) return 'Unrecognised serve outcome.'
+  }
+  if (kind === 'player' && !findPlayer(state, event.playerId)) return 'That player is not on the roster.'
+
+  return null
+}
+
+function withTurnServesSet(state, event) {
+  return mapTurn(state, event, (turn) => ({
+    ...turn,
+    serves: event.outcomes.map((outcome) => ({ outcome })),
+    // A turn still in progress ends if its last serve no longer wins the rally, because
+    // that is what ends a turn. It is never reopened: the serves after it in the match
+    // already happened, and handing the ball back now would rewrite them.
+    isOpen: turn.isOpen && event.outcomes.at(-1) === OUTCOME.IN_POINT,
+  }))
+}
+
+/**
+ * The turn keeps its place in the order. Only who took it changes -- a serve recorded
+ * against the wrong player is still a serve that happened, at that point in the match.
+ */
+function withTurnReassigned(state, event) {
+  return mapTurn(state, event, (turn) => ({
+    ...turn,
+    playerId: event.playerId,
+    isOffLineup: turn.lineupSnapshot ? !turn.lineupSnapshot.includes(event.playerId) : false,
+  }))
+}
+
+function withTurnDeleted(state, event) {
+  return mapMatch(state, event, (match) => ({
+    ...match,
+    turns: renumber(match.turns.filter((turn) => turn.ordinal !== event.ordinal)),
+  }))
+}
+
+function mapTurn(state, event, transform) {
+  return mapMatch(state, event, (match) => ({
+    ...match,
+    turns: match.turns.map((turn) => (turn.ordinal === event.ordinal ? transform(turn) : turn)),
+  }))
+}
+
+function mapMatch(state, event, transform) {
+  return mapGame(state, event.gameId, (game) => ({
+    ...game,
+    matches: game.matches.map((match) => (match.index === event.matchIndex ? transform(match) : match)),
+  }))
+}
+
 function withMatchResultSet(state, event) {
   return mapGame(state, event.gameId, (game) => ({
     ...game,

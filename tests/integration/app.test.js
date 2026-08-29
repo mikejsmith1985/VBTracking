@@ -7,18 +7,8 @@
 //
 // The steps run in order and share state on purpose: it is one journey through a match.
 import { describe, it, expect, beforeAll } from 'vitest'
+import { appShell } from '../helpers.js'
 
-const SHELL = `
-<div class="app">
-  <div id="banner" class="banner" hidden></div>
-  <main id="screen" class="screen"></main>
-  <div id="dock" class="dock"></div>
-  <nav class="tabbar">
-    <button class="tab" data-action="tab" data-tab="track" type="button">Track</button>
-    <button class="tab" data-action="tab" data-tab="stats" type="button">Stats</button>
-    <button class="tab" data-action="tab" data-tab="roster" type="button">Roster</button>
-  </nav>
-</div>`
 
 // Two serves cannot occur inside the app's repeat-tap guard, so the test waits it out
 // rather than defeating it -- the guard is part of what is being verified.
@@ -39,7 +29,7 @@ function addPlayer(number, name) {
 
 beforeAll(async () => {
   window.localStorage.clear()
-  document.body.innerHTML = SHELL
+  document.body.innerHTML = appShell()
   await import('../../src/ui/app.js')
 })
 

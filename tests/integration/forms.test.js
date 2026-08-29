@@ -7,19 +7,8 @@
 // silently broke every submit button in the app while 508 tests stayed green. A form is not
 // proven to work until the button a thumb lands on has been pressed.
 import { describe, it, expect, beforeAll } from 'vitest'
+import { appShell } from '../helpers.js'
 
-const SHELL = `
-<div class="app">
-  <div id="banner" class="banner" hidden></div>
-  <main id="screen" class="screen"></main>
-  <div id="dock" class="dock"></div>
-  <nav class="tabbar">
-    <button class="tab" data-action="tab" data-tab="track" type="button">Track</button>
-    <button class="tab" data-action="tab" data-tab="stats" type="button">Game</button>
-    <button class="tab" data-action="tab" data-tab="season" type="button">Season</button>
-    <button class="tab" data-action="tab" data-tab="roster" type="button">Roster</button>
-  </nav>
-</div>`
 
 const click = (selector) => document.querySelector(selector).click()
 const screenText = () => document.getElementById('screen').textContent
@@ -37,7 +26,7 @@ function fillAndPress(formId, values) {
 
 beforeAll(async () => {
   window.localStorage.clear()
-  document.body.innerHTML = SHELL
+  document.body.innerHTML = appShell()
   await import('../../src/ui/app.js')
 })
 

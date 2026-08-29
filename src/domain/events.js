@@ -23,6 +23,9 @@ export const EVENT = Object.freeze({
   SET_GAME_CONTEXT: 'SET_GAME_CONTEXT',
   SET_GAME_NOTES: 'SET_GAME_NOTES',
   SET_MATCH_RESULT: 'SET_MATCH_RESULT',
+  SET_TURN_SERVES: 'SET_TURN_SERVES',
+  REASSIGN_TURN: 'REASSIGN_TURN',
+  DELETE_TURN: 'DELETE_TURN',
   ADD_HISTORICAL_GAME: 'ADD_HISTORICAL_GAME',
   EDIT_HISTORICAL_GAME: 'EDIT_HISTORICAL_GAME',
   SET_LINEUP: 'SET_LINEUP',
@@ -154,6 +157,27 @@ export function setMatchResult(gameId, matchIndex, result) {
  */
 export function setGameNotes(gameId, notes) {
   return { t: EVENT.SET_GAME_NOTES, gameId, ...normaliseNotes(notes) }
+}
+
+/**
+ * Corrects the serves recorded in one turn.
+ *
+ * Corrections are appended like any other event rather than rewriting the log in place.
+ * Undo keeps working, replay stays deterministic, and fixing a mistake does not quietly
+ * destroy the record of what was first entered.
+ */
+export function setTurnServes(gameId, matchIndex, ordinal, outcomes) {
+  return { t: EVENT.SET_TURN_SERVES, gameId, matchIndex, ordinal, outcomes: [...outcomes] }
+}
+
+/** Corrects which player a recorded turn belongs to. */
+export function reassignTurn(gameId, matchIndex, ordinal, playerId) {
+  return { t: EVENT.REASSIGN_TURN, gameId, matchIndex, ordinal, playerId }
+}
+
+/** Removes a turn that should never have been recorded at all. */
+export function deleteTurn(gameId, matchIndex, ordinal) {
+  return { t: EVENT.DELETE_TURN, gameId, matchIndex, ordinal }
 }
 
 /** Accepts either the three-part shape or a plain string, which older events carry. */

@@ -2,6 +2,8 @@
 // rather than on the ceremony of constructing an event log.
 import { replay } from '../src/domain/reducer.js'
 import * as E from '../src/domain/events.js'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 /** Builds derived state from the events given, in order. Nested arrays are flattened. */
 export function build(...events) {
@@ -35,4 +37,19 @@ export function memoryPersistence() {
     },
     requestPersistent: async () => true,
   }
+}
+
+/**
+ * The app's own shell, read from index.html rather than copied into each test.
+ *
+ * A hand-copied shell drifts: a container added to the page for a new screen is missing
+ * here, and every UI test dies on it at once -- which says the tests are out of date, not
+ * that the app is broken. Reading the real file is the only version that cannot drift.
+ */
+export function appShell() {
+  // Resolved from the working directory: under jsdom, import.meta.url is not a file URL.
+  const html = readFileSync(join(process.cwd(), 'index.html'), 'utf8')
+  const body = html.match(/<div class="app">[\s\S]*?<\/div>\s*<script/)
+  if (!body) throw new Error('index.html no longer contains the app shell')
+  return body[0].replace(/<script$/, '')
 }

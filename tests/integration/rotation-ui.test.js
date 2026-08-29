@@ -6,20 +6,10 @@
 //
 // The steps run in order and share state on purpose: it is one journey through a match.
 import { describe, it, expect, beforeAll } from 'vitest'
+import { appShell } from '../helpers.js'
 
-const SHELL = `
-<div class="app">
-  <div id="banner" class="banner" hidden></div>
-  <main id="screen" class="screen"></main>
-  <div id="dock" class="dock"></div>
-  <nav class="tabbar">
-    <button class="tab" data-action="tab" data-tab="track" type="button">Track</button>
-    <button class="tab" data-action="tab" data-tab="stats" type="button">Stats</button>
-    <button class="tab" data-action="tab" data-tab="roster" type="button">Roster</button>
-  </nav>
-</div>`
 
-// Long enough to clear both the serve repeat guard and the double-tap window.
+// Long enough to clear the serve repeat guard.
 const PAST_GUARDS = 460
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -41,7 +31,7 @@ function addPlayer(number, name) {
 
 beforeAll(async () => {
   window.localStorage.clear()
-  document.body.innerHTML = SHELL
+  document.body.innerHTML = appShell()
   await import('../../src/ui/app.js')
 
   click('[data-tab="roster"]')
@@ -88,7 +78,6 @@ describe('the rotation serving by itself', () => {
   it('takes the first server and swaps in the outcome controls', async () => {
     order = events().find((event) => event.t === 'SET_LINEUP').playerIds
     chipFor('1').click()
-    await sleep(PAST_GUARDS) // the selection waits out the double-tap window
 
     expect(dockHtml()).toContain('data-outcome=')
     expect(dockText()).toContain('Now serving')
@@ -114,43 +103,48 @@ describe('the rotation serving by itself', () => {
   })
 })
 
-describe('substituting through the double-tap gesture', () => {
-  it('arms on a second tap of the same on-court player', async () => {
+describe('substituting: the player coming on, then the player going off', () => {
+  it('arms on a single tap of a bench player, and commits nothing yet', () => {
     click('[data-action="toggle-picker"]')
-    const onCourt = document.querySelector('.chip.is-on-court, .chip.is-serving')
-    const number = onCourt.querySelector('.chip-number').textContent.trim()
-
-    chipFor(number).click()
-    chipFor(number).click() // inside the double-tap window
-
-    expect(document.querySelector('.chip.is-armed')).toBeTruthy()
-    expect(dockText()).toContain('Now tap whoever replaces')
-    // The first tap must not have committed a selection of its own.
-    expect(events().at(-1).t).not.toBe('SELECT_SERVER')
-  })
-
-  it('refuses someone already on court, and stays armed', () => {
-    const other = [...document.querySelectorAll('.chip.is-on-court')]
-      .find((chip) => !chip.classList.contains('is-armed'))
-    other.click()
-
-    expect(document.getElementById('banner').textContent).toMatch(/already on court/i)
-    expect(document.querySelector('.chip.is-armed')).toBeTruthy()
-  })
-
-  it('completes on a bench player, who takes the exact slot', () => {
-    const armedNumber = document.querySelector('.chip.is-armed .chip-number').textContent.trim()
     const bench = [...document.querySelectorAll('.chip')]
-      .find((chip) => !chip.classList.contains('is-on-court') && !chip.classList.contains('is-armed')
-        && !chip.classList.contains('is-serving'))
-    const benchNumber = bench.querySelector('.chip-number').textContent.trim()
+      .find((chip) => !chip.classList.contains('is-on-court') && !chip.classList.contains('is-serving'))
 
     bench.click()
 
-    const sub = events().at(-1)
-    expect(sub.t).toBe('SUBSTITUTE')
+    expect(document.querySelector('.chip.is-armed')).toBeTruthy()
+    expect(dockText()).toContain('is coming on')
+    expect(events().at(-1).t).not.toBe('SELECT_SERVER')
+  })
+
+  it('re-aims at a different bench player rather than refusing', () => {
+    const armedNumber = document.querySelector('.chip.is-armed .chip-number').textContent.trim()
+    const otherBench = [...document.querySelectorAll('.chip')]
+      .find((chip) => !chip.classList.contains('is-on-court') && !chip.classList.contains('is-serving')
+        && !chip.classList.contains('is-armed'))
+
+    if (otherBench) {
+      const otherNumber = otherBench.querySelector('.chip-number').textContent.trim()
+      otherBench.click()
+      expect(document.querySelector('.chip.is-armed .chip-number').textContent.trim()).toBe(otherNumber)
+      expect(otherNumber).not.toBe(armedNumber)
+      expect(events().at(-1).t).not.toBe('SUBSTITUTE')
+    }
+  })
+
+  it('swaps on a tap of the player coming off, who gives up their exact slot', () => {
+    const armedNumber = document.querySelector('.chip.is-armed .chip-number').textContent.trim()
+    const onCourt = document.querySelector('.chip.is-on-court, .chip.is-serving')
+    const outNumber = onCourt.querySelector('.chip-number').textContent.trim()
+
+    onCourt.click()
+
+    expect(events().at(-1).t).toBe('SUBSTITUTE')
     expect(document.querySelector('.chip.is-armed')).toBeFalsy()
-    expect(armedNumber).not.toBe(benchNumber)
+    expect(armedNumber).not.toBe(outNumber)
+    // The incoming player is now in the order, in the place the outgoing player held.
+    click('[data-action="show-lineup"]')
+    expect(screenText()).toContain(armedNumber)
+    click('[data-action="close-lineup"]')
   })
 
   it('records the substitution on the stats screen', () => {
@@ -159,12 +153,24 @@ describe('substituting through the double-tap gesture', () => {
     click('[data-tab="track"]')
   })
 
+  it('serves an armed bench player instead when their chip is tapped again (FR-029)', () => {
+    click('[data-action="toggle-picker"]')
+    const bench = [...document.querySelectorAll('.chip')]
+      .find((chip) => !chip.classList.contains('is-on-court') && !chip.classList.contains('is-serving'))
+    const number = bench.querySelector('.chip-number').textContent.trim()
+
+    chipFor(number).click()
+    chipFor(number).click()
+
+    expect(events().at(-1).t).toBe('SELECT_SERVER')
+    expect(document.querySelector('.chip.is-armed')).toBeFalsy()
+  })
+
   it('abandons an armed substitution when something else is tapped (FR-032)', () => {
     click('[data-action="toggle-picker"]')
-    const onCourt = document.querySelector('.chip.is-on-court, .chip.is-serving')
-    const number = onCourt.querySelector('.chip-number').textContent.trim()
-    chipFor(number).click()
-    chipFor(number).click()
+    const bench = [...document.querySelectorAll('.chip')]
+      .find((chip) => !chip.classList.contains('is-on-court') && !chip.classList.contains('is-serving'))
+    bench.click()
     expect(document.querySelector('.chip.is-armed')).toBeTruthy()
 
     click('[data-action="undo"]')

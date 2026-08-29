@@ -4,7 +4,7 @@
 // by a human, which is the whole reason this project ships no bundler.
 
 // Bump on every release. A new version fully replaces the old rather than serving a mix.
-const CACHE = 'vbtracking-v15'
+const CACHE = 'vbtracking-v16'
 
 const PRECACHE = [
   './',
@@ -20,11 +20,13 @@ const PRECACHE = [
   './src/ui/screens/season.js',
   './src/ui/screens/career.js',
   './src/ui/screens/gameform.js',
+  './src/ui/screens/gamerecord.js',
   './src/ui/screens/roster.js',
   './src/ui/screens/stats.js',
   './src/ui/components/tally.js',
   './src/ui/components/statstable.js',
   './src/ui/components/chip.js',
+  './src/ui/components/rotate.js',
   './src/state/store.js',
   './src/state/persistence.js',
   './src/state/backup.js',

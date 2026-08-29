@@ -178,8 +178,9 @@ function picker(context, state, servingId) {
     <div class="picker">
       ${grid}
       <div class="picker-hint">${armed
-        ? `Now tap whoever replaces <strong>${esc(playerById(state.roster, armed)?.name ?? '')}</strong>`
-        : (lineup ? 'Tap to change server · double-tap to substitute' : 'Tap the next server')}</div>
+        ? `<strong>${esc(playerById(state.roster, armed)?.name ?? '')}</strong> is coming on — tap who they replace.
+           Tap them again to serve without substituting.`
+        : (lineup ? 'Tap a player in the order to serve · tap someone off it to sub them on' : 'Tap the next server')}</div>
     </div>`
 }
 

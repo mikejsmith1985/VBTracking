@@ -6,6 +6,35 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **Any game already played can be looked at serve by serve, and corrected.** Starting a
+  new game used to hide every earlier one: only the game being tracked could be seen, so a
+  figure entered wrongly stayed wrong. Every game on the Season screen now opens its own
+  serve record — every turn, in the order it happened. Tapping a serve cycles it (point,
+  in, out), a missed serve can be added, a turn can be moved to the player who actually
+  served it, and a turn recorded by mistake can be deleted.
+- **A full-screen alert when a server has taken their five.** The limit is the referee's to
+  enforce and the easiest thing on the court to lose count of, so this is the one thing in
+  the app that interrupts: it names who has finished, and who has the ball next when there
+  is an order to say. Any tap clears it, and it is raised once — a sixth serve is still
+  recorded, without a second nag.
+
+### Changed
+
+- **Substituting is now bench first: tap the player coming on, then tap who they replace.**
+  It matches the order the swap happens on the court, and it drops both the double-tap —
+  a thing to remember rather than a thing to do — and the delay that gesture forced on
+  every tap of the picker. Tapping the incoming player a second time serves them without
+  substituting, which is how an out-of-order server is still recorded.
+
+### Fixed
+
+- **Throwing a game away from the End match panel did nothing.** Arming the confirmation
+  closed the panel and took the button with it, so the second tap that would have committed
+  it had nowhere to land — it read as the app ignoring the request and returning to
+  tracking. The panel now stays open for its own controls.
+
+### Added
+
 - **An import file holding games 1–4 only**, at `import/paper-games-1-4.json`. The 29 August
   game is already tracked in the app, so importing the complete five-game transcription
   would count it twice. The full five-game file stays as the record of what the sheets said.
