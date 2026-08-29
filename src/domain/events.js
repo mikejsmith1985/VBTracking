@@ -15,6 +15,7 @@ export const EVENT = Object.freeze({
   EDIT_PLAYER: 'EDIT_PLAYER',
   REMOVE_PLAYER: 'REMOVE_PLAYER',
   START_GAME: 'START_GAME',
+  DISCARD_GAME: 'DISCARD_GAME',
   SELECT_SERVER: 'SELECT_SERVER',
   RECORD_SERVE: 'RECORD_SERVE',
   END_MATCH: 'END_MATCH',
@@ -44,6 +45,11 @@ export function removePlayer(id) {
 /** Records the start of a new game, which opens its first match. */
 export function startGame(id) {
   return { t: EVENT.START_GAME, id }
+}
+
+/** Records that a game and everything recorded in it was deliberately thrown away. */
+export function discardGame(id) {
+  return { t: EVENT.DISCARD_GAME, id }
 }
 
 /** Records that a player has taken the serving position, opening a new turn. */

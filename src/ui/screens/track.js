@@ -65,14 +65,41 @@ function matchView(context, state, match) {
     ${tallyBoard(match, state.roster)}`
 }
 
+// The dock is a thin status row over exactly one action block: the outcome controls, or
+// the player picker. Never both, and never a disabled set of either.
+//
+// A turn can only end two ways -- a serve that wins no point, or a different player being
+// chosen -- so "between servers" needs no announcement. Swapping the three large outcome
+// controls for a grid of player chips IS the signal, readable across a court, and it makes
+// recording a serve against the wrong player impossible rather than merely discouraged:
+// while no one is serving, no control exists that could record one.
 function dockView(context, state) {
   const servingId = activeServerId(state)
   const showPicker = !servingId || context.ui.pickerOpen
 
   return `
-    ${showPicker ? picker(state, servingId) : ''}
-    ${serverStrip(context, state, servingId)}
-    ${outcomes(Boolean(servingId))}`
+    <div class="dock-panel">${statusRow(context, state, servingId, showPicker)}</div>
+    ${showPicker ? picker(state, servingId) : outcomes()}`
+}
+
+function statusRow(context, state, servingId, showPicker) {
+  const canUndo = context.store.canUndo()
+
+  return `
+    <div class="status-row${servingId ? '' : ' awaiting'}">
+      <div class="who">
+        <span class="server-label">${servingId ? 'Now serving' : 'Next server'}</span>
+        <span class="server-name">${servingId ? playerLabel(playerById(state.roster, servingId)) : ''}</span>
+      </div>
+      ${servingId ? changeServerButton(showPicker) : ''}
+      <button class="btn-undo" data-action="undo" type="button" ${canUndo ? '' : 'disabled'}>Undo</button>`
+    + '</div>'
+}
+
+function changeServerButton(showPicker) {
+  return `<button class="btn-undo" data-action="toggle-picker" type="button">
+    ${showPicker ? 'Cancel' : 'Change'}
+  </button>`
 }
 
 function picker(state, servingId) {
@@ -87,33 +114,15 @@ function picker(state, servingId) {
   return `<div class="picker"><div class="picker-grid">${chips}</div></div>`
 }
 
-// The side-out state is the loudest thing on the screen: recording a serve against the
-// wrong player is exactly the failure this layout exists to prevent.
-function serverStrip(context, state, servingId) {
-  const player = playerById(state.roster, servingId)
-  const canUndo = context.store.canUndo()
-
+// Rendered only while someone is serving, so these controls are never present-but-dead.
+function outcomes() {
   return `
-    <div class="server-strip${servingId ? '' : ' side-out'}">
-      <div class="who">
-        <div class="server-label">${servingId ? 'Now serving' : 'Side out'}</div>
-        <div class="server-name">${servingId ? playerLabel(player) : 'Select the next server'}</div>
-      </div>
-      ${servingId && !context.ui.pickerOpen
-        ? '<button class="btn-undo" data-action="toggle-picker" type="button">Change</button>'
-        : ''}
-      <button class="btn-undo" data-action="undo" type="button" ${canUndo ? '' : 'disabled'}>Undo</button>
-    </div>`
-}
-
-function outcomes(isEnabled) {
-  return `
-    <div class="outcomes" data-enabled="${isEnabled}">
+    <div class="outcomes">
       <button class="outcome outcome-out" data-action="serve" data-outcome="${OUTCOME.OUT}" type="button">
-        OUT<small>side out</small>
+        OUT<small>turn ends</small>
       </button>
       <button class="outcome outcome-in" data-action="serve" data-outcome="${OUTCOME.IN_NO_POINT}" type="button">
-        IN<small>no point — side out</small>
+        IN<small>no point — turn ends</small>
       </button>
       <button class="outcome outcome-point" data-action="serve" data-outcome="${OUTCOME.IN_POINT}" type="button">
         IN — POINT<small>keep serving</small>

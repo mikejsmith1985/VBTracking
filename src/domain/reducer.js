@@ -26,6 +26,7 @@ export function applyEvent(state, event) {
     case EVENT.EDIT_PLAYER: return withPlayerEdited(state, event)
     case EVENT.REMOVE_PLAYER: return withPlayerRemoved(state, event)
     case EVENT.START_GAME: return withGameStarted(state, event)
+    case EVENT.DISCARD_GAME: return withGameDiscarded(state, event)
     case EVENT.SELECT_SERVER: return withServerSelected(state, event)
     case EVENT.RECORD_SERVE: return withServeRecorded(state, event)
     case EVENT.END_MATCH: return withMatchEnded(state)
@@ -47,6 +48,8 @@ export function rejectionReason(state, event) {
     case EVENT.EDIT_PLAYER: return editPlayerRejection(state, event)
     case EVENT.REMOVE_PLAYER: return findPlayer(state, event.id) ? null : 'That player is not on the roster.'
     case EVENT.START_GAME: return startGameRejection(state, event)
+    case EVENT.DISCARD_GAME:
+      return state.games.some((game) => game.id === event.id) ? null : 'That game no longer exists.'
     case EVENT.SELECT_SERVER: return selectServerRejection(state, event)
     case EVENT.RECORD_SERVE: return recordServeRejection(state, event)
     case EVENT.END_MATCH: return currentMatch(state) ? null : 'No match is in progress.'
@@ -156,6 +159,15 @@ function withPlayerRemoved(state, event) {
 function withGameStarted(state, event) {
   const game = { id: event.id, matches: [newMatch(0)] }
   return { ...state, games: [...state.games, game], currentGameId: event.id }
+}
+
+// Discarding a game throws away every serve recorded in it. The event stays in the log --
+// it is the record that the game was deliberately removed -- but the game itself is gone
+// from derived state, so no statistic anywhere still counts it.
+function withGameDiscarded(state, event) {
+  const games = state.games.filter((game) => game.id !== event.id)
+  const currentGameId = state.currentGameId === event.id ? null : state.currentGameId
+  return { ...state, games, currentGameId }
 }
 
 function withServerSelected(state, event) {

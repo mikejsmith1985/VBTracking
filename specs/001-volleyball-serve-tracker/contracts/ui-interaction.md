@@ -21,27 +21,30 @@ Navigation is a fixed bottom bar. No nested navigation, no back stack — the op
 ## Track screen layout (portrait, top to bottom)
 
 ```
-┌────────────────────────────┐
-│ Match 2 of 3   ·  17 pts   │  ← header: match position, points on serve,
-│                    [End]   │     target badge when ≥21, End Match
-├────────────────────────────┤
-│ #7 Rivera        ●●●●○     │  ← tally board, scrolls vertically.
-│ #3 Okafor        ●●○ │ ●●● │     one row per player who has served.
-│ #12 Bell         ●○        │     │ separates turns; colour = turn.
-│                            │
-│         (scrollable)       │
-├────────────────────────────┤
-│  NOW SERVING               │  ← server strip: current server, or the
-│  #7  RIVERA        [undo]  │     side-out prompt. Always visible.
-├────────────────────────────┤
-│  ┌────────┐  ┌──────────┐  │
-│  │  OUT   │  │ IN — no  │  │  ← outcome controls. Thumb zone.
-│  └────────┘  │  point   │  │     Disabled and dimmed when no
-│  ┌─────────────────────┐   │     server is selected.
-│  │   IN — POINT        │   │
-│  └─────────────────────┘   │
-└────────────────────────────┘
+┌────────────────────────────┐        ┌────────────────────────────┐
+│ Match 2 of 3   ·  17 pts   │        │ Match 2 of 3   ·  17 pts   │
+│                    [End]   │        │                    [End]   │
+├────────────────────────────┤        ├────────────────────────────┤
+│ #7 Rivera        ●●●●○     │        │ #7 Rivera        ●●●●○     │
+│ #3 Okafor        ●●○ │ ●●● │        │ #3 Okafor        ●●○ │ ●●● │
+│ #12 Bell         ●○        │        │ #12 Bell         ●○        │
+│         (scrollable)       │        │         (scrollable)       │
+├────────────────────────────┤        ├────────────────────────────┤
+│ NOW SERVING #7 Rivera      │        │ NEXT SERVER                │
+│              Change  Undo  │        │                      Undo  │
+├────────────────────────────┤        ├────────────────────────────┤
+│  ┌────────┐  ┌──────────┐  │        │ [1 Layna ][4 Tegan][5 Aria]│
+│  │  OUT   │  │ IN — no  │  │        │ [7 Ellis ][11 Mar ][13 Ch ]│
+│  └────────┘  │  point   │  │        │ [15 Madd ][25 Kyla][55 Au ]│
+│  ┌─────────────────────┐   │        │                            │
+│  │   IN — POINT        │   │        │                            │
+│  └─────────────────────┘   │        │                            │
+└────────────────────────────┘        └────────────────────────────┘
+          SERVING                          BETWEEN SERVERS
 ```
+
+The lower block is **either** the outcome controls **or** the picker — never both, never a
+disabled copy of either. That swap is what tells the operator which state they are in.
 
 **Why this order**: the controls the operator touches without looking are lowest and largest; the information they glance at is above. Reversing this would put the tally under the thumb and the buttons out of reach.
 
@@ -51,26 +54,39 @@ Navigation is a fixed bottom bar. No nested navigation, no back stack — the op
 
 | Operator action | System response | Source |
 |---|---|---|
-| Tap a player in the tally board or picker | That player becomes active server; a new turn opens; outcome controls enable | `FR-015`, `FR-025` |
+| Tap a player in the picker | That player becomes active server; a new turn opens; the picker is replaced by the outcome controls | `FR-015`, `FR-025` |
 | Tap a *different* player while a server is active | Previous turn closes without recording a serve; new turn opens | `FR-026` |
-| Tap **IN — POINT** | Serve recorded; **same player stays active**; controls stay enabled | `FR-020` |
-| Tap **IN — no point** | Serve recorded; turn closes; screen enters side-out state | `FR-021` |
-| Tap **OUT** | Serve recorded; turn closes; screen enters side-out state | `FR-021` |
-| Tap an outcome control in side-out state | Nothing. Controls are disabled, not merely ignored | `FR-022` |
+| Tap **IN — POINT** | Serve recorded; **same player stays active**; the outcome controls stay put | `FR-020` |
+| Tap **IN — no point** | Serve recorded; turn closes; the picker replaces the outcome controls | `FR-021` |
+| Tap **OUT** | Serve recorded; turn closes; the picker replaces the outcome controls | `FR-021` |
+| Tap **Change** while serving | The picker replaces the outcome controls; the control becomes **Cancel** | `FR-026` |
 | Tap **undo** | Last action reversed; every visible figure updates in the same frame | `FR-040` |
 | Tap **undo** with nothing to undo | Control is disabled | Edge case |
 | Tap **End Match** | Confirmation, then match freezes and match *n+1* opens | `FR-010`, `FR-012` |
 
-### Side-out state
+### Between servers
 
-The most important visual state on the screen, because recording a serve against the wrong player is the failure this design exists to prevent.
+The most important state on the screen, because recording a serve against the wrong player is the failure this design exists to prevent.
+
+A turn can only end two ways — a serve that wins no point, or a different player being chosen — so this state needs no announcement. The three large outcome controls are **replaced** by the player picker in the same place. That swap is the signal, and it is readable across a court without reading a word.
 
 | Requirement | |
 |---|---|
-| The server strip reads **SIDE OUT — select next server** | `FR-022` |
-| All three outcome controls are `disabled`, dimmed, and non-interactive | `FR-022` |
-| The state is distinguishable at arm's length without reading | `SC-002` |
-| The player picker is immediately reachable without scrolling | `SC-001` |
+| No control capable of recording a serve is present — not disabled, absent | `FR-022` |
+| The picker occupies the place the outcome controls normally hold | `FR-022` |
+| The status row label reads **Next server** and carries a colour cue | `FR-022` |
+| The picker needs no scrolling to reach any player on a 20-player roster | `SC-001` |
+| Undo remains available | `FR-040` |
+
+### The dock
+
+One thin status row over exactly one action block. The picker and the outcome controls are never shown together and never both hidden, so the dock holds close to one height and the outcome controls sit in the same place every time they exist.
+
+| State | Status row | Action block |
+|---|---|---|
+| Serving | `NOW SERVING` · player · Change · Undo | Outcome controls |
+| Between servers | `NEXT SERVER` · Undo | Player picker |
+| Serving, changing server | `NOW SERVING` · player · Cancel · Undo | Player picker |
 
 ### Tap cost
 

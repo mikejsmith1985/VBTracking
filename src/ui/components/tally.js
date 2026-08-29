@@ -72,10 +72,17 @@ function legend() {
     </div>`
 }
 
-/** Turns keyed by player, ordered by when each player first served in the match. */
+/**
+ * Turns keyed by player, ordered by when each player first served in the match.
+ *
+ * A turn that has just opened holds no serves yet. Drawing it would put an empty box and a
+ * `0 served` row on the board for someone who has not served, which reads as a mistake --
+ * and the status row is already naming them as the current server.
+ */
 function groupTurnsByPlayer(match) {
   const byPlayer = new Map()
   for (const turn of match?.turns ?? []) {
+    if (turn.serves.length === 0) continue
     if (!byPlayer.has(turn.playerId)) byPlayer.set(turn.playerId, [])
     byPlayer.get(turn.playerId).push(turn)
   }

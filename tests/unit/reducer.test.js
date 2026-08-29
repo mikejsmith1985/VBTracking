@@ -108,6 +108,65 @@ describe('game and match lifecycle', () => {
   })
 })
 
+describe('discarding a game', () => {
+  const played = [
+    roster(2), E.startGame('g1'),
+    turn('p1', 2), E.endMatch(),
+    turn('p2', 1),
+  ]
+
+  it('removes the game and every serve recorded in it', () => {
+    const state = build(played, E.discardGame('g1'))
+    expect(state.games).toHaveLength(0)
+    expect(currentGame(state)).toBeNull()
+    expect(currentMatch(state)).toBeNull()
+  })
+
+  it('keeps the roster, which is reused across games', () => {
+    const state = build(played, E.discardGame('g1'))
+    expect(state.roster).toHaveLength(2)
+  })
+
+  it('frees the operator to start a fresh game immediately', () => {
+    const state = build(played, E.discardGame('g1'), E.startGame('g2'))
+    expect(currentGame(state).id).toBe('g2')
+    expect(currentMatch(state)).toMatchObject({ index: 0, status: 'in_progress' })
+  })
+
+  it('works on a game that has already been played out in full', () => {
+    const state = build(
+      roster(1), E.startGame('g1'),
+      turn('p1', 1), E.endMatch(),
+      turn('p1', 1), E.endMatch(),
+      turn('p1', 1), E.endMatch(),
+      E.discardGame('g1'),
+    )
+    expect(state.games).toHaveLength(0)
+  })
+
+  it('leaves other games alone', () => {
+    const state = build(
+      roster(1),
+      E.startGame('g1'), turn('p1', 1), E.endMatch(), E.endMatch(), E.endMatch(),
+      E.startGame('g2'), turn('p1', 2),
+      E.discardGame('g1'),
+    )
+    expect(state.games.map((game) => game.id)).toEqual(['g2'])
+    expect(currentGame(state).id).toBe('g2')
+  })
+
+  it('refuses to discard a game that does not exist', () => {
+    const state = build(played)
+    expect(rejectionReason(state, E.discardGame('nope'))).toBeTruthy()
+    expect(build(played, E.discardGame('nope')).games).toHaveLength(1)
+  })
+
+  it('is deterministic under replay', () => {
+    const events = [...played.flat(Infinity), E.discardGame('g1'), E.startGame('g2')]
+    expect(JSON.stringify(replay(events))).toBe(JSON.stringify(replay(events)))
+  })
+})
+
 describe('serve turn boundaries', () => {
   const started = [roster(3), E.startGame('g1')]
 

@@ -71,14 +71,16 @@ describe('a match, driven through the real UI', () => {
     expect(screenText()).toContain('Match 1 of 3')
   })
 
-  it('begins in side-out state with the outcome controls disabled', () => {
-    expect(dockHtml()).toContain('data-enabled="false"')
-    expect(dockHtml()).toContain('Select the next server')
+  it('begins with the picker in place of the outcome controls', () => {
+    expect(dockHtml()).not.toContain('data-outcome=')
+    expect(dockHtml()).toContain('picker-grid')
+    expect(dockHtml()).toContain('Next server')
   })
 
-  it('enables the outcome controls once a server is chosen', () => {
+  it('swaps in the outcome controls once a server is chosen', () => {
     click('.chip')
-    expect(dockHtml()).toContain('data-enabled="true"')
+    expect(dockHtml()).toContain('data-outcome=')
+    expect(dockHtml()).not.toContain('picker-grid')
     expect(dockHtml()).toContain('Now serving')
   })
 
@@ -97,12 +99,13 @@ describe('a match, driven through the real UI', () => {
     expect(storedEvents().length - before).toBe(1)
   })
 
-  it('closes the turn and returns to side-out on a serve that wins no point', async () => {
+  it('closes the turn and brings the picker back on a serve that wins no point', async () => {
     await sleep(PAST_TAP_GUARD)
     click('[data-outcome="OUT"]')
 
-    expect(dockHtml()).toContain('data-enabled="false"')
-    expect(dockHtml()).toContain('Select the next server')
+    expect(dockHtml()).not.toContain('data-outcome=')
+    expect(dockHtml()).toContain('picker-grid')
+    expect(dockHtml()).toContain('Next server')
   })
 
   it('shows the tally with one mark per serve', () => {
@@ -138,5 +141,41 @@ describe('a match, driven through the real UI', () => {
     expect(kinds).toContain('START_GAME')
     expect(kinds).toContain('SELECT_SERVER')
     expect(kinds).toContain('RECORD_SERVE')
+  })
+
+  it('offers to discard the game, and says what that costs', () => {
+    expect(screenText()).toContain('Discard this game')
+    expect(screenText()).toContain('roster is not affected')
+  })
+
+  it('does not discard on the first tap', () => {
+    click('[data-action="discard-game"]')
+    expect(screenText()).toContain('Discard this game?')
+    expect(screenText()).toContain('Every serve in all three matches is thrown away')
+    expect(storedEvents().some((event) => event.t === 'DISCARD_GAME')).toBe(false)
+  })
+
+  it('disarms the confirmation when something else is tapped', () => {
+    click('[data-scope="game"]')
+    expect(screenText()).not.toContain('Discard this game?')
+  })
+
+  it('discards on a deliberate second tap, keeping the roster', () => {
+    click('[data-action="discard-game"]')
+    click('[data-action="discard-game"]')
+
+    expect(storedEvents().some((event) => event.t === 'DISCARD_GAME')).toBe(true)
+    expect(screenText()).toContain('Nothing to show yet')
+
+    click('[data-tab="roster"]')
+    expect(screenText()).toContain('2 of 20 players')
+  })
+
+  it('lets a fresh game start straight afterwards', () => {
+    click('[data-tab="track"]')
+    expect(screenText()).toContain('Start game')
+
+    click('[data-action="start-game"]')
+    expect(screenText()).toContain('Match 1 of 3')
   })
 })
