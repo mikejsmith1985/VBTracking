@@ -121,15 +121,38 @@ function seasonAdmin(state, season, ui) {
 
       <div class="section-title">Games from paper</div>
       <button class="btn" data-action="add-historical" type="button">Enter a game by hand</button>
-      <button class="btn" data-action="import-historical" type="button">
-        ${ui.confirmingHistoricalImport ? 'Choose a file of games?' : 'Import a batch of games'}
-      </button>
-      <div class="roster-count">
-        ${ui.confirmingHistoricalImport
-          ? 'Tap again to choose a file. Games are added to this season; nothing already recorded is replaced.'
-          : 'Adds games recorded before the app existed. Serves in and out only — that is all the paper had.'}
-      </div>
+      ${ui.pastingGames ? pasteForm() : importControls(ui)}
     </div>`
+}
+
+function importControls(ui) {
+  return `
+    <button class="btn" data-action="paste-games" type="button">Paste a batch of games</button>
+    <button class="btn" data-action="import-historical" type="button">
+      ${ui.confirmingHistoricalImport ? 'Choose a file of games?' : 'Import a batch from a file'}
+    </button>
+    <div class="roster-count">
+      ${ui.confirmingHistoricalImport
+        ? 'Tap again to choose a file. Games are added to this season; nothing already recorded is replaced.'
+        : 'Adds games recorded before the app existed. Serves in and out only — that is all the paper had. Pasting is usually easier on a phone than saving a file.'}
+    </div>`
+}
+
+/**
+ * Pasting avoids the file system altogether. On iOS, saving a JSON file from Safari lands
+ * it as ".json.txt", which is fiddly at best -- opening the file, selecting all and pasting
+ * is both shorter and harder to get wrong.
+ */
+function pasteForm() {
+  return `
+    <form id="paste-games-form" autocomplete="off">
+      <textarea name="games" rows="6" aria-label="Paste the games here"
+                placeholder="Open the games file, select all, copy, and paste it here."></textarea>
+      <div class="lineup-actions">
+        <button class="btn btn-primary" type="submit">Load these games</button>
+        <button class="btn" data-action="cancel-paste" type="button">Cancel</button>
+      </div>
+    </form>`
 }
 
 function nameOf(state, playerId) {

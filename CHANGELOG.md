@@ -16,8 +16,19 @@ All notable changes to this project are recorded here.
   otherwise count twice in the season with no way to undo it. Two taps, and the
   consequence is stated before the second.
 
+### Added
+
+- **Games can be pasted instead of imported from a file.** On iOS, saving a JSON file from
+  Safari lands it as `.json.txt`; opening it, selecting all and pasting is both shorter and
+  harder to get wrong than the file round trip.
+
 ### Fixed
 
+- **The file picker refused the file iOS had just saved.** It filtered on
+  `application/json`, and iOS names the download `.json.txt` — so the file was greyed out
+  and could not be chosen at all. The picker no longer filters by type. The parser reads the
+  contents and refuses anything that is not ours with a plain reason, so a guess at an
+  extension must never be what stands between the operator and their own data.
 - **Every submit button in the app was broken.** Save, Create, Add player and the game
   form did nothing when pressed. A click on anything without an action triggered a full
   redraw, which destroyed and rebuilt the form before the browser's own submit event could

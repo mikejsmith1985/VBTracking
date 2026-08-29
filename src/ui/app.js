@@ -185,6 +185,8 @@ const ACTIONS = {
   'open-game': (element) => { ui.editingGameId = element.dataset.id },
   'close-game': () => { ui.editingGameId = null },
   'add-historical': () => { ui.editingGameId = 'new-historical' },
+  'paste-games': () => { ui.pastingGames = true },
+  'cancel-paste': () => { ui.pastingGames = false },
   'activate-season': (element) => dispatch(E.activateSeason(element.dataset.id)),
 }
 
@@ -318,7 +320,11 @@ function downloadFallback(text, filename) {
 function chooseFile(handler) {
   const input = document.createElement('input')
   input.type = 'file'
-  input.accept = 'application/json,.json'
+  // Deliberately unrestricted. iOS saves a JSON file from Safari as ".json.txt", and an
+  // accept filter greys the file out so it cannot even be chosen. The parser validates the
+  // contents and refuses anything that is not ours with a reason, so an extension guess
+  // must never be what stands between the operator and their own data.
+  input.accept = ''
   input.addEventListener('change', () => {
     const file = input.files?.[0]
     if (file) void withFileText(file, handler)
@@ -376,6 +382,7 @@ function readHistorical(text) {
 
 const FORMS = {
   'add-player-form': submitAddPlayer,
+  'paste-games-form': submitPastedGames,
   'create-season-form': submitCreateSeason,
   'rename-season-form': submitRenameSeason,
   'game-form': submitGameForm,
@@ -389,6 +396,17 @@ function submitAddPlayer(form) {
 
   render()
   document.querySelector('[data-focus="add-number"]')?.focus()
+}
+
+/** The same path as a file import, with the text arriving from the clipboard instead. */
+function submitPastedGames(form) {
+  const text = form.querySelector('[name="games"]').value.trim()
+  if (!text) {
+    ui.message = 'Paste the contents of the games file first.'
+    return
+  }
+  readHistorical(text)
+  if (!ui.message || ui.message.startsWith('Added')) ui.pastingGames = false
 }
 
 function submitCreateSeason(form) {

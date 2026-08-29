@@ -290,3 +290,23 @@
 .serve-entry-row,
 .serve-entry-head,
 .game-row { max-width: 100%; }
+
+/* --- Pasting a batch of games -------------------------------------------- */
+
+#paste-games-form textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 140px;
+  padding: 10px;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+#paste-games-form textarea::placeholder { color: #6b7c8e; }
