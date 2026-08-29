@@ -8,10 +8,18 @@ import { build, roster, turn } from '../helpers.js'
 
 const { OUT, IN_POINT } = E.OUTCOME
 
-const baseUi = { tab: 'track', scope: 'match', pickerOpen: false, confirmingEndMatch: false, confirmingRemoveId: null }
+const baseUi = {
+  tab: 'track', scope: 'match', pickerOpen: false,
+  confirmingEndMatch: false, confirmingRemoveId: null,
+  showLineup: false, lineupDraft: null, lineupDismissedFor: 'g1:0',
+}
 
 function render(state, overrides = {}) {
-  const store = { canUndo: () => overrides.canUndo ?? true }
+  const store = {
+    canUndo: () => overrides.canUndo ?? true,
+    pendingSubstitution: () => overrides.armed ?? null,
+    clearSubstitution: () => {},
+  }
   return view({ state, store, ui: { ...baseUi, ...overrides } })
 }
 
@@ -73,7 +81,7 @@ describe('between servers', () => {
 
   it('puts the picker where the outcome controls normally are -- that is the signal', () => {
     const { dock } = render(awaiting)
-    expect(dock).toContain('picker-grid')
+    expect(dock).toContain('chip-grid')
     expect(dock).toContain('data-action="select-server"')
   })
 
@@ -108,12 +116,12 @@ describe('while a player is serving', () => {
   it('collapses the picker to a change control to keep the thumb zone clear', () => {
     const { dock } = render(serving)
     expect(dock).toContain('data-action="toggle-picker"')
-    expect(dock).not.toContain('picker-grid')
+    expect(dock).not.toContain('chip-grid')
   })
 
   it('swaps the outcome controls for the picker when changing server, never both', () => {
     const { dock } = render(serving, { pickerOpen: true })
-    expect(dock).toContain('picker-grid')
+    expect(dock).toContain('chip-grid')
     expect(dock).not.toContain('data-outcome=')
     expect(dock).toContain('Cancel')
   })

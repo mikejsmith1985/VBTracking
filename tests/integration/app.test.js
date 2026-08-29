@@ -73,14 +73,14 @@ describe('a match, driven through the real UI', () => {
 
   it('begins with the picker in place of the outcome controls', () => {
     expect(dockHtml()).not.toContain('data-outcome=')
-    expect(dockHtml()).toContain('picker-grid')
+    expect(dockHtml()).toContain('chip-grid')
     expect(dockHtml()).toContain('Next server')
   })
 
   it('swaps in the outcome controls once a server is chosen', () => {
     click('.chip')
     expect(dockHtml()).toContain('data-outcome=')
-    expect(dockHtml()).not.toContain('picker-grid')
+    expect(dockHtml()).not.toContain('chip-grid')
     expect(dockHtml()).toContain('Now serving')
   })
 
@@ -104,7 +104,7 @@ describe('a match, driven through the real UI', () => {
     click('[data-outcome="OUT"]')
 
     expect(dockHtml()).not.toContain('data-outcome=')
-    expect(dockHtml()).toContain('picker-grid')
+    expect(dockHtml()).toContain('chip-grid')
     expect(dockHtml()).toContain('Next server')
   })
 

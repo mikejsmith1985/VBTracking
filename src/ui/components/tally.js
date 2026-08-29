@@ -51,10 +51,13 @@ export function turnGroup(turn) {
   const overLimit = isOverServeLimit(turn)
   const color = colorForTurn(turn.ordinal)
 
+  const classes = ['turn', overLimit ? 'over-limit' : '', turn.isOffLineup ? 'off-lineup' : '']
+    .filter(Boolean).join(' ')
+
   return `
-    <div class="turn${overLimit ? ' over-limit' : ''}" style="--turn-color:${color}">
+    <div class="${classes}" style="--turn-color:${color}">
       <div class="marks">${turn.serves.map(mark).join('')}</div>
-      <div class="turn-meta">${overLimit ? '⚠ ' : ''}${stats.serves} · ${stats.servesIn} in</div>
+      <div class="turn-meta">${overLimit ? '⚠ ' : ''}${turn.isOffLineup ? '↯ ' : ''}${stats.serves} · ${stats.servesIn} in</div>
     </div>`
 }
 

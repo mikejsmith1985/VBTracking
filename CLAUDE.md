@@ -9,26 +9,41 @@
 <!-- SPECKIT START -->
 ## Active Feature
 
-**Volleyball Serve Tracker** — `feature/volleyball-serve-tracker`
+**Rotation, Substitutions, and Durable Data** — `feature/rotation-and-subs`
 
 | Artifact | Path |
 |---|---|
-| Spec | `specs/001-volleyball-serve-tracker/spec.md` |
-| Plan | `specs/001-volleyball-serve-tracker/plan.md` |
-| Research | `specs/001-volleyball-serve-tracker/research.md` |
-| Data model | `specs/001-volleyball-serve-tracker/data-model.md` |
-| Contracts | `specs/001-volleyball-serve-tracker/contracts/` |
-| Quickstart | `specs/001-volleyball-serve-tracker/quickstart.md` |
+| Spec | `specs/002-rotation-and-subs/spec.md` |
+| Checklist | `specs/002-rotation-and-subs/checklists/requirements.md` |
 
-**Stack**: Plain ES2022 modules, no bundler, no framework, no backend. Static files served from the repository root. `localStorage` for persistence. Vitest and Cypress are dev-only and never ship.
+Plan, research, data model, contracts, and tasks are not yet generated — run `/speckit-plan` next.
 
-**Load-bearing constraints** — read `plan.md` before changing any of these:
-- Imports point one direction only: `ui -> state -> domain`. `src/domain/` is pure — no DOM, no storage, no clock, no randomness. A rule that appears in `src/ui/` is a defect.
-- State is an append-only event log reduced by a pure function. Undo is "drop the last event and replay". Never add mutate-in-place state or per-action inverse logic.
-- Statistics are always derived on read, never stored. Game totals equal the sum of match totals structurally.
-- All asset paths are relative. GitHub Pages serves from a subpath; a root-absolute path breaks install and offline silently.
-- Zero network requests after install. The service worker is hand-written and cache-first against an explicit precache list.
+**Builds on the shipped release** `specs/001-volleyball-serve-tracker/` (live at
+https://mikejsmith1985.github.io/VBTracking/). That spec's constraints remain in force and are
+not restated in 002: phone-portrait only, offline-first, all data local, single operator.
+
+**Stack** (unchanged from 001): plain ES2022 modules, no bundler, no framework, no backend.
+Static files served from the repository root. `localStorage` for persistence. Vitest and
+Cypress are dev-only and never ship.
+
+**Load-bearing constraints** — read `specs/001-volleyball-serve-tracker/plan.md` before
+changing any of these:
+- Imports point one direction only: `ui -> state -> domain`. `src/domain/` is pure — no DOM,
+  no storage, no clock, no randomness. A rule that appears in `src/ui/` is a defect.
+- State is an append-only event log reduced by a pure function. Undo is "drop the last event
+  and replay". Never add mutate-in-place state or per-action inverse logic.
+- Statistics are always derived on read, never stored.
+- All asset paths are relative. GitHub Pages serves from a subpath; a root-absolute path
+  breaks install and offline silently.
+- Zero network requests after install. The service worker is hand-written and cache-first
+  against an explicit precache list — bump `CACHE` in `sw.js` on every release.
 - `src/state/persistence.js` is the only module permitted to touch `localStorage`.
 - Serve turns exceeding 5 serves are recorded in full and flagged. Nothing caps a count at 5.
-- Offline and install claims are proven on the device in airplane mode (`quickstart.md` V-7), never by a green test suite.
+- The dock holds a status row over exactly ONE action block — outcome controls or the player
+  picker, never both, never a dimmed copy of either.
+- Offline and install claims are proven on the device in airplane mode, never by a green
+  test suite.
+
+**Sequencing constraint for 002**: the carry-forward path (User Story 1) ships before any
+story that writes data in the new shape. Real games are already recorded on the live build.
 <!-- SPECKIT END -->

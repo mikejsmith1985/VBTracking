@@ -16,6 +16,9 @@ export const EVENT = Object.freeze({
   REMOVE_PLAYER: 'REMOVE_PLAYER',
   START_GAME: 'START_GAME',
   DISCARD_GAME: 'DISCARD_GAME',
+  SET_LINEUP: 'SET_LINEUP',
+  CLEAR_LINEUP: 'CLEAR_LINEUP',
+  SUBSTITUTE: 'SUBSTITUTE',
   SELECT_SERVER: 'SELECT_SERVER',
   RECORD_SERVE: 'RECORD_SERVE',
   END_MATCH: 'END_MATCH',
@@ -26,6 +29,9 @@ export const MAX_ROSTER = 20
 
 /** A game is exactly this many matches. */
 export const MATCHES_PER_GAME = 3
+
+/** Players on court, and therefore positions in the serving order. */
+export const LINEUP_SIZE = 6
 
 /** Records that a player joined the roster. */
 export function addPlayer(id, name, number) {
@@ -50,6 +56,21 @@ export function startGame(id) {
 /** Records that a game and everything recorded in it was deliberately thrown away. */
 export function discardGame(id) {
   return { t: EVENT.DISCARD_GAME, id }
+}
+
+/** Records the six players on court for the current match, in serving order. */
+export function setLineup(playerIds) {
+  return { t: EVENT.SET_LINEUP, playerIds }
+}
+
+/** Records that the current match reverts to picking each server by hand. */
+export function clearLineup() {
+  return { t: EVENT.CLEAR_LINEUP }
+}
+
+/** Records one player replacing another at that player's position in the serving order. */
+export function substitute(outPlayerId, inPlayerId) {
+  return { t: EVENT.SUBSTITUTE, outPlayerId, inPlayerId }
 }
 
 /** Records that a player has taken the serving position, opening a new turn. */
