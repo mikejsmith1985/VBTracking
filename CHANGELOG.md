@@ -4,6 +4,14 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added
+
+- **A serve turn missed at the time can be added.** Every point in a match where a turn
+  could have been missed now offers one: after each turn, and at the end of every match.
+  Pick who served it and the turn appears in that exact place, holding one serve, open for
+  its serves to be entered like any other correction. It takes no rotation position, so
+  adding one to a match still being played cannot change who the app says serves next.
+
 ### Changed
 
 - **The six on court are laid out as a court.** Net along the top, service position in the

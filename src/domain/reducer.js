@@ -47,6 +47,7 @@ function transition(state, event) {
     case EVENT.SET_TURN_SERVES: return withTurnServesSet(state, event)
     case EVENT.REASSIGN_TURN: return withTurnReassigned(state, event)
     case EVENT.DELETE_TURN: return withTurnDeleted(state, event)
+    case EVENT.INSERT_TURN: return withTurnInserted(state, event)
     case EVENT.ADD_HISTORICAL_GAME: return withHistoricalGameAdded(state, event)
     case EVENT.EDIT_HISTORICAL_GAME: return withHistoricalGameEdited(state, event)
     case EVENT.SET_LINEUP: return withLineupSet(state, event)
@@ -88,6 +89,7 @@ export function rejectionReason(state, event) {
     case EVENT.SET_TURN_SERVES: return turnCorrectionRejection(state, event, 'serves')
     case EVENT.REASSIGN_TURN: return turnCorrectionRejection(state, event, 'player')
     case EVENT.DELETE_TURN: return turnCorrectionRejection(state, event, 'delete')
+    case EVENT.INSERT_TURN: return insertTurnRejection(state, event)
     case EVENT.ADD_HISTORICAL_GAME: return historicalGameRejection(state, event, true)
     case EVENT.EDIT_HISTORICAL_GAME: return historicalGameRejection(state, event, false)
     case EVENT.SET_LINEUP: return setLineupRejection(state, event)
@@ -580,6 +582,52 @@ function withTurnReassigned(state, event) {
     playerId: event.playerId,
     isOffLineup: turn.lineupSnapshot ? !turn.lineupSnapshot.includes(event.playerId) : false,
   }))
+}
+
+/**
+ * A missed turn can be added anywhere in the match, including before the first turn and
+ * after the last. It is the one correction that is not made against an existing turn, so
+ * it validates the place rather than the turn.
+ */
+function insertTurnRejection(state, event) {
+  const game = gameById(state, event.gameId)
+  if (!game) return 'That game no longer exists.'
+  if (game.kind !== GAME_KIND.TRACKED) return 'That game was recorded from paper; edit its figures instead.'
+
+  const match = game.matches.find((each) => each.index === event.matchIndex)
+  if (!match) return 'That match is not part of this game.'
+  if (!findPlayer(state, event.playerId)) return 'That player is not on the roster.'
+
+  const after = event.afterOrdinal
+  if (!Number.isInteger(after) || after < -1 || after >= match.turns.length) {
+    return 'There is no such place in this match.'
+  }
+  return null
+}
+
+/**
+ * The added turn takes no rotation position: it is a record of something that happened,
+ * and giving it a position would move who the app thinks serves next in a match still
+ * being played. It copies the lineup that was on court around it, so time on court still
+ * counts for the players who were standing there.
+ */
+function withTurnInserted(state, event) {
+  return mapMatch(state, event, (match) => {
+    const neighbour = match.turns[event.afterOrdinal] ?? match.turns[0] ?? null
+    const added = {
+      playerId: event.playerId,
+      ordinal: event.afterOrdinal + 1,
+      colorIndex: 0,
+      lineupPosition: null,
+      isOffLineup: false,
+      lineupSnapshot: neighbour?.lineupSnapshot ? [...neighbour.lineupSnapshot] : null,
+      serves: [{ outcome: OUTCOME.OUT }],
+      isOpen: false,
+    }
+    const turns = [...match.turns]
+    turns.splice(event.afterOrdinal + 1, 0, added)
+    return { ...match, turns: renumber(turns) }
+  })
 }
 
 function withTurnDeleted(state, event) {

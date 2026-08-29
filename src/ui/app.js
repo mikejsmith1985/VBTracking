@@ -16,7 +16,7 @@ import * as stats from './screens/stats.js'
 import * as roster from './screens/roster.js'
 import * as season from './screens/season.js'
 import { gameFormView, readGameForm } from './screens/gameform.js'
-import { gameRecordView, nextOutcome, turnKey } from './screens/gamerecord.js'
+import { gameRecordView, nextOutcome, turnKey, insertKey } from './screens/gamerecord.js'
 
 const SCREENS = { track, stats, roster, season }
 
@@ -57,6 +57,7 @@ const ui = {
   openTurn: null,
   confirmingDeleteTurn: null,
   reassigningTurn: null,
+  insertingTurn: null,
   message: null,
 }
 
@@ -236,8 +237,12 @@ const ACTIONS = {
 
   'open-record': (element) => { ui.recordGameId = element.dataset.id; ui.openTurn = null },
   'close-record': () => closeRecord(),
-  'open-turn': (element) => { ui.openTurn = turnAt(element); ui.reassigningTurn = null },
-  'close-turn': () => { ui.openTurn = null; ui.reassigningTurn = null },
+  'open-turn': (element) => {
+    ui.openTurn = turnAt(element)
+    ui.reassigningTurn = null
+    ui.insertingTurn = null
+  },
+  'close-turn': () => { ui.openTurn = null; ui.reassigningTurn = null; ui.insertingTurn = null },
   'cycle-serve': (element) => correctServes(element, (outcomes) => {
     const index = Number.parseInt(element.dataset.index, 10)
     return outcomes.map((outcome, at) => (at === index ? nextOutcome(outcome) : outcome))
@@ -257,6 +262,21 @@ const ACTIONS = {
       ui.reassigningTurn = null
     }
   },
+  'add-turn': (element) => {
+    const key = insertKey(Number.parseInt(element.dataset.match, 10), Number.parseInt(element.dataset.after, 10))
+    ui.insertingTurn = ui.insertingTurn === key ? null : key
+  },
+  // The added turn opens straight away: it arrives holding one serve, and the serves it
+  // actually held are the reason it is being added at all.
+  'insert-for': (element) => {
+    const matchIndex = Number.parseInt(element.dataset.match, 10)
+    const afterOrdinal = Number.parseInt(element.dataset.after, 10)
+
+    if (dispatch(E.insertTurn(ui.recordGameId, matchIndex, afterOrdinal, element.dataset.id))) {
+      ui.insertingTurn = null
+      ui.openTurn = { matchIndex, ordinal: afterOrdinal + 1 }
+    }
+  },
   'delete-turn': (element) => {
     const { matchIndex, ordinal } = turnAt(element)
     confirmThen('confirmingDeleteTurn', keyOf(element), () => {
@@ -269,6 +289,7 @@ function closeRecord() {
   ui.recordGameId = null
   ui.openTurn = null
   ui.reassigningTurn = null
+  ui.insertingTurn = null
   ui.confirmingDeleteTurn = null
 }
 
