@@ -179,10 +179,13 @@
 
 /* --- Game form ----------------------------------------------------------- */
 
+/* One field per row. Two-up looked tidier, but iOS gives a date input a minimum width of
+   its own and simply overflows the column it was given -- the date ran under the court
+   field on the phone twice. A field that cannot overlap is worth more than a saved row. */
 .context-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px 10px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
   margin-bottom: 8px;
 }
 
@@ -202,6 +205,8 @@
 .context-grid input,
 #game-form textarea {
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   min-height: var(--tap-min);
   padding: 10px;
   border: 1px solid var(--line);
@@ -504,3 +509,151 @@
 
 .reassign-choice { flex: 1 1 45%; }
 .reassign-choice b { font-variant-numeric: tabular-nums; color: var(--accent); }
+
+/* --- The court ------------------------------------------------------------- */
+
+/* The six on court, arranged as the court is: net along the top, service position in the
+   bottom-right corner. The layout is the serving order, so it never has to be remembered. */
+.court {
+  position: relative;
+  padding: 12px 8px 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.05), transparent 60%);
+}
+
+/* The net. It fixes which way the court is facing at a glance -- without it the six are
+   just a block of numbers again. */
+.court-net {
+  position: absolute;
+  top: 5px;
+  left: 12px;
+  right: 12px;
+  height: 3px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(90deg, var(--line) 0 5px, transparent 5px 9px);
+}
+
+.court-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.court-cell {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  padding: 4px 3px 3px;
+  border: 1px dashed transparent;
+  border-radius: 12px;
+}
+
+/* The service corner. The one position that changes what a tap means, so it is the one
+   position that is marked. */
+.court-cell.is-service {
+  border-color: var(--accent);
+  background: rgba(34, 211, 238, 0.07);
+}
+
+.court-cell.is-next { border-color: var(--surface-3); }
+
+.court-pos {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  text-align: left;
+  padding-left: 2px;
+}
+
+.court-tag {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--accent);
+}
+
+.court-tag-next { color: var(--muted); }
+
+.court-empty {
+  display: grid;
+  place-items: center;
+  min-height: var(--tap-min);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  color: var(--muted);
+}
+
+/* --- The bench ------------------------------------------------------------- */
+
+.bench {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.bench-label {
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.bench-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+  max-height: 22vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Off the court, and shown as it: flat, outlined, and dimmer than the six who are on. */
+.chip.is-bench {
+  min-height: 38px;
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+}
+
+.chip.is-bench .chip-number { font-size: 19px; }
+.chip.is-bench:active { background: var(--surface-2); }
+
+/* Armed for substitution beats bench styling: it is the chip whose state decides what the
+   next tap does, and it is now always a bench player who is armed. */
+.chip.is-bench.is-armed {
+  border-style: solid;
+  border-color: var(--warn);
+  background: #3a1f07;
+  color: var(--text);
+  box-shadow: 0 0 0 2px var(--warn);
+}
+
+
+/* --- Which game the figures belong to -------------------------------------- */
+
+/* The Game tab used to show the live game and nothing else, so a finished game's figures
+   were unreachable. Now it follows the Season screen -- and says which game it is showing,
+   because last week's figures and tonight's look identical otherwise. */
+.viewing-game {
+  margin-bottom: 14px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.viewing-who { font-size: 17px; font-weight: 800; }
+
+.viewing-when {
+  margin-bottom: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.viewing-game .btn { width: 100%; margin-top: 6px; }

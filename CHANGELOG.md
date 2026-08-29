@@ -4,6 +4,27 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The six on court are laid out as a court.** Net along the top, service position in the
+  bottom-right corner, and the rotation running clockwise through the other five — the
+  arrangement re-lays itself around whoever has the ball, so the order never has to be held
+  in the head while watching the game. The flat grid of numbers it replaces was in roster
+  order and said nothing about who served next.
+- **The bench is shown as a bench**: below the court, under its own heading, outlined and
+  dimmed. Who is on and who is off was previously a matter of reading small corner marks.
+- **Every field on a game's record sits on its own row.** iOS gives a date input a minimum
+  width of its own and overflows whatever column it is given — the date ran under the court
+  field twice. A field that cannot overlap is worth more than a saved row.
+
+### Fixed
+
+- **The Game tab now shows the game picked on the Season screen.** It only ever showed the
+  game being tracked, so the figures for a game already finished could not be reached at
+  all. It names the game it is showing, offers one tap back to the live one, and opens that
+  game's serve record directly. A game copied from paper shows its serves with dashes for
+  the figures the paper never held.
+
 ### Added
 
 - **Any game already played can be looked at serve by serve, and corrected.** Starting a

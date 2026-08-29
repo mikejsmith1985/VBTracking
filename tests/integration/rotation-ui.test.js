@@ -66,8 +66,8 @@ describe('setting up the rotation through the real UI', () => {
     expect(screenText()).toContain('Match 1 of 3')
   })
 
-  it('shows the picker for the first server, since the rotation cannot know who starts', () => {
-    expect(dockHtml()).toContain('chip-grid')
+  it('shows the court for the first server, since the rotation cannot know who starts', () => {
+    expect(dockHtml()).toContain('court-grid')
     expect(dockText()).toContain('Next server')
   })
 })

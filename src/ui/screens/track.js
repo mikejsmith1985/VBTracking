@@ -5,11 +5,14 @@
 // the dock stays on the outcome controls through a side-out instead of swapping to the
 // picker. The picker returns only when asked for, or when there is no lineup to advance.
 import { OUTCOME, MATCHES_PER_GAME } from '../../domain/events.js'
-import { currentGame, currentMatch, isGameComplete, openTurn } from '../../domain/reducer.js'
+import {
+  currentGame, currentMatch, isGameComplete, openTurn, nextRotationPosition,
+} from '../../domain/reducer.js'
 import { matchScore, hasReachedTarget, activeServerId, gameStats, TARGET_SCORE } from '../../domain/stats.js'
 import { tallyBoard } from '../components/tally.js'
 import { statsTable } from '../components/statstable.js'
 import { chipGrid } from '../components/chip.js'
+import { courtView } from '../components/court.js'
 import { needsSetup, setupView, reviewView } from './lineup.js'
 import { esc, playerLabel, playerById } from '../html.js'
 
@@ -159,29 +162,42 @@ function changeServerButton(showPicker) {
 
 function picker(context, state, servingId) {
   const armed = context.store.pendingSubstitution()
-  const lineup = currentMatch(state)?.lineup ?? null
+  const match = currentMatch(state)
+  const lineup = match?.lineup ?? null
 
-  const grid = chipGrid(state.roster, {
-    action: 'select-server',
-    stateFor: (player) => {
-      if (player.id === armed) return 'is-armed'
-      if (player.id === servingId) return 'is-serving'
-      return lineup?.includes(player.id) ? 'is-on-court' : ''
-    },
-    positionFor: (player) => {
-      const position = lineup ? lineup.indexOf(player.id) : -1
-      return position === -1 ? null : position
-    },
-  })
+  const stateFor = (player) => {
+    if (player.id === armed) return 'is-armed'
+    if (player.id === servingId) return 'is-serving'
+    return lineup?.includes(player.id) ? 'is-on-court' : ''
+  }
 
   return `
     <div class="picker">
-      ${grid}
-      <div class="picker-hint">${armed
-        ? `<strong>${esc(playerById(state.roster, armed)?.name ?? '')}</strong> is coming on — tap who they replace.
-           Tap them again to serve without substituting.`
-        : (lineup ? 'Tap a player in the order to serve · tap someone off it to sub them on' : 'Tap the next server')}</div>
+      ${lineup
+        ? courtView(state.roster, lineup, { stateFor, servingPosition: servicePosition(match) })
+        : chipGrid(state.roster, { action: 'select-server', stateFor })}
+      <div class="picker-hint">${hint(state, armed, lineup)}</div>
     </div>`
+}
+
+/**
+ * Which lineup position is standing in the service corner, so the court can be drawn
+ * around it. The open turn's own position comes first: it is where the ball actually is,
+ * including when an off-order server took the position that was due.
+ */
+function servicePosition(match) {
+  const open = openTurn(match)
+  if (open?.lineupPosition !== null && open?.lineupPosition !== undefined) return open.lineupPosition
+  return nextRotationPosition(match) ?? 0
+}
+
+function hint(state, armed, lineup) {
+  if (armed) {
+    return `<strong>${esc(playerById(state.roster, armed)?.name ?? '')}</strong> is coming on —
+      tap who they replace. Tap them again to serve without substituting.`
+  }
+  if (lineup) return 'Serving corner is bottom right · tap a bench player to sub them on'
+  return 'Tap the next server'
 }
 
 // Rendered only while someone is serving, so these controls are never present-but-dead.

@@ -53,6 +53,7 @@ const ui = {
   confirmingHistoricalImport: false,
   rotateNotice: null,
   recordGameId: null,
+  viewingGameId: null,
   openTurn: null,
   confirmingDeleteTurn: null,
   reassigningTurn: null,
@@ -162,7 +163,10 @@ const ACTIONS = {
   },
   scope: (element) => { ui.scope = element.dataset.scope },
   'toggle-picker': () => { ui.pickerOpen = !ui.pickerOpen; store.clearSubstitution() },
-  'start-game': () => dispatch(E.startGame(newId(), store.getState().activeSeasonId)),
+  'start-game': () => {
+    ui.viewingGameId = null // the new game is the one to watch
+    dispatch(E.startGame(newId(), store.getState().activeSeasonId))
+  },
   'select-server': (element) => selectOrSubstitute(element.dataset.id),
   serve: (element) => recordServe(element.dataset.outcome),
   undo: () => { store.undo() },
@@ -216,7 +220,13 @@ const ACTIONS = {
 
   'open-career': (element) => { ui.careerPlayerId = element.dataset.id },
   'close-career': () => { ui.careerPlayerId = null },
-  'open-game': (element) => { ui.editingGameId = element.dataset.id },
+  // Choosing a game on the Season screen chooses it everywhere: the Game tab then shows
+  // that game's figures instead of only ever showing the one being tracked.
+  'open-game': (element) => {
+    ui.editingGameId = element.dataset.id
+    ui.viewingGameId = element.dataset.id
+  },
+  'view-live-game': () => { ui.viewingGameId = null },
   'close-game': () => { ui.editingGameId = null },
   'add-historical': () => { ui.editingGameId = 'new-historical' },
   'paste-games': () => { ui.pastingGames = true },

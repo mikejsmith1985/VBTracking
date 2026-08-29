@@ -178,3 +178,30 @@ describe('correcting a game that is no longer the one being tracked', () => {
     expect(screenText()).toContain('Match 1 of 3')
   })
 })
+
+describe('the Game tab follows the game chosen on the Season screen', () => {
+  it('shows the live game until another one is chosen', () => {
+    click('[data-tab="stats"]')
+    expect(screenText()).toContain('Serve record')
+  })
+
+  it('switches to the chosen game, and says it is not the live one', () => {
+    click('[data-tab="season"]')
+    document.querySelectorAll('[data-action="open-game"]')[0].click()
+    click('[data-action="close-game"]')
+    click('[data-tab="stats"]')
+
+    expect(screenText()).toContain('not the live game')
+  })
+
+  it('opens the serve record of that game straight from here', () => {
+    click('[data-action="open-record"]')
+    expect(screenText()).toContain('serve record')
+    click('[data-action="close-record"]')
+  })
+
+  it('goes back to the game being tracked in one tap', () => {
+    click('[data-action="view-live-game"]')
+    expect(screenText()).not.toContain('not the live game')
+  })
+})
