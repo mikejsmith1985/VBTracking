@@ -24,7 +24,7 @@ export function statsTable(statsByPlayer, roster, turns = null, options = {}) {
   const action = options.action ?? null
 
   const rows = [...statsByPlayer.entries()]
-    .sort(([, left], [, right]) => rank(right) - rank(left) || right.serves - left.serves)
+    .sort(([, left], [, right]) => byAccuracy(left, right))
     .map(([playerId, stats]) => row(
       playerById(roster, playerId),
       playerId,
@@ -70,9 +70,21 @@ function cell(value) {
   return `<td>${value}</td>`
 }
 
-/** Ranks by points where they exist, and by serves in where they do not. */
-function rank(stats) {
-  return stats.points ?? stats.servesIn
+/**
+ * Ranks by how often a serve landed in, then by how many were served.
+ *
+ * Ranking by points rewards volume over accuracy: ten points from a hundred serves would
+ * sit above six from ten, which is the opposite of what the figures say about serving.
+ * Volume breaks ties, so among equal percentages the player who did it more often leads.
+ *
+ * A player who has not served has no percentage at all -- they sort last, rather than
+ * being counted as nought percent, which would read as a bad record instead of no record.
+ */
+function byAccuracy(left, right) {
+  if (left.inPercentage === null && right.inPercentage === null) return right.serves - left.serves
+  if (left.inPercentage === null) return 1
+  if (right.inPercentage === null) return -1
+  return (right.inPercentage - left.inPercentage) || (right.serves - left.serves)
 }
 
 /**

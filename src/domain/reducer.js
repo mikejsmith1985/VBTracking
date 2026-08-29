@@ -52,6 +52,7 @@ function transition(state, event) {
     case EVENT.SELECT_SERVER: return withServerSelected(state, event)
     case EVENT.RECORD_SERVE: return withServeRecorded(state, event)
     case EVENT.END_MATCH: return withMatchEnded(state, event)
+    case EVENT.END_GAME: return withGameEnded(state, event)
     default: return state
   }
 }
@@ -89,6 +90,7 @@ export function rejectionReason(state, event) {
     case EVENT.SELECT_SERVER: return selectServerRejection(state, event)
     case EVENT.RECORD_SERVE: return recordServeRejection(state, event)
     case EVENT.END_MATCH: return endMatchRejection(state, event)
+    case EVENT.END_GAME: return endMatchRejection(state, event)
     default: return 'Unrecognised event.'
   }
 }
@@ -171,11 +173,15 @@ export function findPlayer(state, playerId) {
   return state.roster.find((player) => player.id === playerId) ?? null
 }
 
-/** True when the current game has played all three of its matches. */
+/**
+ * True when the current game is over: every match it holds has ended.
+ *
+ * Not "three matches have ended" -- a game stopped early has fewer, and it is still over.
+ */
 export function isGameComplete(state) {
   const game = currentGame(state)
   if (!game || game.kind !== GAME_KIND.TRACKED) return false
-  return game.matches.length === MATCHES_PER_GAME && game.matches.every((match) => match.status === 'ended')
+  return game.matches.length > 0 && game.matches.every((match) => match.status === 'ended')
 }
 
 /** The six on court for the match in progress, as it stands now, or null. */
@@ -578,6 +584,26 @@ function withMatchEnded(state, event) {
   if (ended.index < MATCHES_PER_GAME - 1) matches.push(newMatch(ended.index + 1, ended.lineup))
 
   return mapGame(state, game.id, (each) => ({ ...each, matches }))
+}
+
+/**
+ * Ends the game where it stands. The match in progress is closed and keeps every serve it
+ * holds; no further match opens, because none was played.
+ */
+function withGameEnded(state, event) {
+  const game = currentGame(state)
+  const ending = currentMatch(state)
+  const ended = {
+    ...ending,
+    status: 'ended',
+    result: event.result ?? MATCH_RESULT.UNDECIDED,
+    turns: closeOpenTurn(ending.turns),
+  }
+
+  return mapGame(state, game.id, (each) => ({
+    ...each,
+    matches: each.matches.map((match) => (match.index === ended.index ? ended : match)),
+  }))
 }
 
 // --- Lineup transitions ------------------------------------------------------

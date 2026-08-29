@@ -31,6 +31,7 @@ export const EVENT = Object.freeze({
   SELECT_SERVER: 'SELECT_SERVER',
   RECORD_SERVE: 'RECORD_SERVE',
   END_MATCH: 'END_MATCH',
+  END_GAME: 'END_GAME',
 })
 
 /** A roster may never hold more than this many players. */
@@ -237,6 +238,17 @@ export function recordServe(outcome) {
  */
 export function endMatch(result = MATCH_RESULT.UNDECIDED) {
   return { t: EVENT.END_MATCH, result }
+}
+
+/**
+ * Records that the game is over before all its matches were played.
+ *
+ * A game abandoned for time, called off, or started by mistake would otherwise have no way
+ * out but to end two more matches that never happened. The match in progress is closed and
+ * kept with whatever it holds; no further match opens.
+ */
+export function endGame(result = MATCH_RESULT.UNDECIDED) {
+  return { t: EVENT.END_GAME, result }
 }
 
 /** True when the value is a result the app recognises. */

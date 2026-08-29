@@ -80,7 +80,7 @@ function matchView(context, state, match) {
       </div>
       ${confirming ? '' : '<button class="btn-end" data-action="end-match" type="button">End match</button>'}
     </div>
-    ${confirming ? endMatchChoice() : ''}
+    ${confirming ? endMatchChoice(context, state) : ''}
     ${tallyBoard(match, state.roster)}`
 }
 
@@ -88,7 +88,10 @@ function matchView(context, state, match) {
  * Ending a match asks how it went in the same breath. The opponent's score is still not
  * tracked, so the app cannot know -- and this is the one moment the operator certainly does.
  */
-function endMatchChoice() {
+function endMatchChoice(context, state) {
+  const game = currentGame(state)
+  const confirmingDiscard = context.ui.confirmingDiscardGame === game?.id
+
   return `
     <div class="end-match-choice">
       <div class="section-title">How did that match go?</div>
@@ -97,7 +100,19 @@ function endMatchChoice() {
         <button class="btn btn-lost" data-action="end-match" data-result="lost" type="button">Lost</button>
       </div>
       <button class="btn" data-action="end-match" data-result="undecided" type="button">End without recording</button>
-      <button class="btn" data-action="cancel-end-match" type="button">Keep playing</button>
+
+      <div class="section-title">Or stop here</div>
+      <button class="btn" data-action="end-game" type="button">End the game — keep what is recorded</button>
+      <button class="btn btn-danger" data-action="discard-game" data-id="${game?.id ?? ''}" type="button">
+        ${confirmingDiscard ? 'Throw this game away?' : 'Throw this game away'}
+      </button>
+      <div class="roster-count">
+        ${confirmingDiscard
+          ? 'Tap again to discard. Every serve in this game goes with it. The roster and the rest of the season are untouched.'
+          : 'Ending keeps every serve and closes the game where it stands, however many matches were played.'}
+      </div>
+
+      <button class="btn btn-primary" data-action="cancel-end-match" type="button">Keep playing</button>
     </div>`
 }
 

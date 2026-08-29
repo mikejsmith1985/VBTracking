@@ -30,6 +30,10 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **A game can be left part-way through.** Tapping End match now also offers ending the
+  game where it stands — keeping every serve, however many matches were played — and
+  throwing the game away. Neither meant leaving the tracking screen before; the only exits
+  were ending two more matches that never happened, or hunting through another tab.
 - **A server now rotates out after their five serves.** A run of five straight points left
   the same player serving forever: a turn only ended on a serve that lost the rally, so a
   server who kept scoring never handed on and the order stood still. The turn now ends at
@@ -51,6 +55,14 @@ All notable changes to this project are recorded here.
   the app should be doing. Existing notes stay exactly where they are, in the third box.
 - The transcribed import files now carry the two lists separately, so a batch lands in the
   right boxes rather than as one blob.
+
+### Changed
+
+- **Statistics rank by how often a serve landed in, not by points scored.** Ten points from
+  a hundred serves used to sit above six from ten, which is the opposite of what those
+  figures say about serving. Volume breaks ties, so among equal percentages the player who
+  did it more often leads, and a player who has not served sorts last rather than counting
+  as nought percent.
 
 ### Fixed
 

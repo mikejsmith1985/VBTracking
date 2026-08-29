@@ -161,6 +161,10 @@ const ACTIONS = {
     dispatch(E.endMatch(result))
   },
   'cancel-end-match': () => { ui.confirmingEndMatch = false },
+  'end-game': () => {
+    ui.confirmingEndMatch = false
+    dispatch(E.endGame())
+  },
 
   'remove-player': (element) => {
     const playerId = element.dataset.id
