@@ -1,0 +1,408 @@
+{
+  "season": {
+    "name": "2026",
+    "team": "Misty’s Tigers"
+  },
+  "roster": [
+    {
+      "id": "5457a925-1163-476a-a3f4-8098340e4b9d",
+      "name": "Layna Blankenship",
+      "number": "1"
+    },
+    {
+      "id": "56f6ad42-6bea-494a-a86f-191b1cb0f4cf",
+      "name": "Tegan Jodrey",
+      "number": "4"
+    },
+    {
+      "id": "eceabe46-fcb4-46fc-9f19-35d80d3e8af7",
+      "name": "Aria Smith",
+      "number": "5"
+    },
+    {
+      "id": "c3b44932-9e75-4c15-9310-84f1c21da946",
+      "name": "Ella Cate Hatch",
+      "number": "7"
+    },
+    {
+      "id": "120ecfd7-f2ee-4ee6-85dc-b3362151512f",
+      "name": "Marilyn Kirschner",
+      "number": "11"
+    },
+    {
+      "id": "73de4053-54e3-4b59-85b4-996da4e48849",
+      "name": "Charlee Cole",
+      "number": "13"
+    },
+    {
+      "id": "90a15be8-750a-419a-8a6c-96342d29aa56",
+      "name": "Marley Bulow",
+      "number": "15"
+    },
+    {
+      "id": "45441f55-86dd-4539-b245-2f8ab9f6950b",
+      "name": "Kyla Freeman",
+      "number": "25"
+    },
+    {
+      "id": "753f9707-1cd5-4e10-8c15-3622ba7c1950",
+      "name": "Aubree Willhoff",
+      "number": "55"
+    }
+  ],
+  "record": {
+    "won": 3,
+    "lost": 2,
+    "undecided": 0
+  },
+  "coverage": {
+    "totalGames": 5,
+    "trackedGames": 1
+  },
+  "byOpponent": {
+    "Fayetteville Smith": {
+      "won": 0,
+      "lost": 1,
+      "undecided": 0
+    },
+    "Georgetown A": {
+      "won": 0,
+      "lost": 1,
+      "undecided": 0
+    },
+    "Blanchester": {
+      "won": 1,
+      "lost": 0,
+      "undecided": 0
+    },
+    "Eastern A": {
+      "won": 1,
+      "lost": 0,
+      "undecided": 0
+    },
+    "CNE": {
+      "won": 1,
+      "lost": 0,
+      "undecided": 0
+    }
+  },
+  "games": [
+    {
+      "id": "653d232d-fcb5-4a52-9828-90356417d7f3",
+      "kind": "tracked",
+      "date": "2026-08-29",
+      "opponent": "Fayetteville Smith",
+      "result": "lost",
+      "serves": 44,
+      "servesIn": 33,
+      "topScorer": "56f6ad42-6bea-494a-a86f-191b1cb0f4cf"
+    },
+    {
+      "id": "822623a7-fa57-49ef-a070-7766015b9bec",
+      "kind": "historical",
+      "date": "2026-08-08",
+      "opponent": "Georgetown A",
+      "result": "lost",
+      "serves": 52,
+      "servesIn": 37,
+      "topScorer": "56f6ad42-6bea-494a-a86f-191b1cb0f4cf"
+    },
+    {
+      "id": "6c839b50-3fb4-43d4-a039-7f92bfff724b",
+      "kind": "historical",
+      "date": "2026-08-08",
+      "opponent": "Blanchester",
+      "result": "won",
+      "serves": 57,
+      "servesIn": 42,
+      "topScorer": "90a15be8-750a-419a-8a6c-96342d29aa56"
+    },
+    {
+      "id": "19dd106c-b710-4af3-ab78-ce1cb2ccd9cd",
+      "kind": "historical",
+      "date": "2026-08-15",
+      "opponent": "Eastern A",
+      "result": "won",
+      "serves": 59,
+      "servesIn": 42,
+      "topScorer": "5457a925-1163-476a-a3f4-8098340e4b9d"
+    },
+    {
+      "id": "5484fe9d-34ae-4e4c-ad0a-a6d29f7b0844",
+      "kind": "historical",
+      "date": "2026-08-22",
+      "opponent": "CNE",
+      "result": "won",
+      "serves": 61,
+      "servesIn": 42,
+      "topScorer": "eceabe46-fcb4-46fc-9f19-35d80d3e8af7"
+    }
+  ],
+  "seasonFigures": {
+    "eceabe46-fcb4-46fc-9f19-35d80d3e8af7": {
+      "serves": 62,
+      "servesIn": 52,
+      "inPercentage": 0.8387096774193549,
+      "points": 5,
+      "turnsTaken": 3,
+      "turnsOnCourt": 0,
+      "games": 5,
+      "trackedGames": 1
+    },
+    "753f9707-1cd5-4e10-8c15-3622ba7c1950": {
+      "serves": 15,
+      "servesIn": 3,
+      "inPercentage": 0.2,
+      "points": 0,
+      "turnsTaken": 3,
+      "turnsOnCourt": 0,
+      "games": 5,
+      "trackedGames": 1
+    },
+    "90a15be8-750a-419a-8a6c-96342d29aa56": {
+      "serves": 42,
+      "servesIn": 29,
+      "inPercentage": 0.6904761904761905,
+      "points": 2,
+      "turnsTaken": 2,
+      "turnsOnCourt": 0,
+      "games": 5,
+      "trackedGames": 1
+    },
+    "c3b44932-9e75-4c15-9310-84f1c21da946": {
+      "serves": 11,
+      "servesIn": 3,
+      "inPercentage": 0.2727272727272727,
+      "points": 0,
+      "turnsTaken": 2,
+      "turnsOnCourt": 0,
+      "games": 5,
+      "trackedGames": 1
+    },
+    "56f6ad42-6bea-494a-a86f-191b1cb0f4cf": {
+      "serves": 44,
+      "servesIn": 36,
+      "inPercentage": 0.8181818181818182,
+      "points": 7,
+      "turnsTaken": 2,
+      "turnsOnCourt": 0,
+      "games": 5,
+      "trackedGames": 1
+    },
+    "73de4053-54e3-4b59-85b4-996da4e48849": {
+      "serves": 22,
+      "servesIn": 19,
+      "inPercentage": 0.8636363636363636,
+      "points": 3,
+      "turnsTaken": 3,
+      "turnsOnCourt": 0,
+      "games": 5,
+      "trackedGames": 1
+    },
+    "45441f55-86dd-4539-b245-2f8ab9f6950b": {
+      "serves": 7,
+      "servesIn": 5,
+      "inPercentage": 0.7142857142857143,
+      "points": 0,
+      "turnsTaken": 3,
+      "turnsOnCourt": 0,
+      "games": 5,
+      "trackedGames": 1
+    },
+    "120ecfd7-f2ee-4ee6-85dc-b3362151512f": {
+      "serves": 22,
+      "servesIn": 12,
+      "inPercentage": 0.5454545454545454,
+      "points": 1,
+      "turnsTaken": 2,
+      "turnsOnCourt": 0,
+      "games": 5,
+      "trackedGames": 1
+    },
+    "5457a925-1163-476a-a3f4-8098340e4b9d": {
+      "serves": 48,
+      "servesIn": 37,
+      "inPercentage": 0.7708333333333334,
+      "points": 5,
+      "turnsTaken": 3,
+      "turnsOnCourt": 0,
+      "games": 5,
+      "trackedGames": 1
+    }
+  },
+  "tracked": {
+    "id": "653d232d-fcb5-4a52-9828-90356417d7f3",
+    "matches": [
+      {
+        "index": 0,
+        "status": "ended",
+        "result": "lost",
+        "turns": 6,
+        "score": 6,
+        "lineup": null,
+        "subs": 0,
+        "byPlayer": {
+          "eceabe46-fcb4-46fc-9f19-35d80d3e8af7": {
+            "serves": 1,
+            "servesIn": 0,
+            "points": 0,
+            "turnsTaken": 1,
+            "inPercentage": 0
+          },
+          "753f9707-1cd5-4e10-8c15-3622ba7c1950": {
+            "serves": 1,
+            "servesIn": 0,
+            "points": 0,
+            "turnsTaken": 1,
+            "inPercentage": 0
+          },
+          "90a15be8-750a-419a-8a6c-96342d29aa56": {
+            "serves": 1,
+            "servesIn": 0,
+            "points": 0,
+            "turnsTaken": 1,
+            "inPercentage": 0
+          },
+          "c3b44932-9e75-4c15-9310-84f1c21da946": {
+            "serves": 1,
+            "servesIn": 0,
+            "points": 0,
+            "turnsTaken": 1,
+            "inPercentage": 0
+          },
+          "56f6ad42-6bea-494a-a86f-191b1cb0f4cf": {
+            "serves": 5,
+            "servesIn": 5,
+            "points": 5,
+            "turnsTaken": 1,
+            "inPercentage": 1
+          },
+          "73de4053-54e3-4b59-85b4-996da4e48849": {
+            "serves": 2,
+            "servesIn": 2,
+            "points": 1,
+            "turnsTaken": 1,
+            "inPercentage": 1
+          }
+        }
+      },
+      {
+        "index": 1,
+        "status": "ended",
+        "result": "won",
+        "turns": 9,
+        "score": 12,
+        "lineup": null,
+        "subs": 0,
+        "byPlayer": {
+          "45441f55-86dd-4539-b245-2f8ab9f6950b": {
+            "serves": 2,
+            "servesIn": 1,
+            "points": 0,
+            "turnsTaken": 2,
+            "inPercentage": 0.5
+          },
+          "73de4053-54e3-4b59-85b4-996da4e48849": {
+            "serves": 4,
+            "servesIn": 4,
+            "points": 2,
+            "turnsTaken": 2,
+            "inPercentage": 1
+          },
+          "eceabe46-fcb4-46fc-9f19-35d80d3e8af7": {
+            "serves": 6,
+            "servesIn": 6,
+            "points": 5,
+            "turnsTaken": 2,
+            "inPercentage": 1
+          },
+          "120ecfd7-f2ee-4ee6-85dc-b3362151512f": {
+            "serves": 1,
+            "servesIn": 1,
+            "points": 0,
+            "turnsTaken": 1,
+            "inPercentage": 1
+          },
+          "90a15be8-750a-419a-8a6c-96342d29aa56": {
+            "serves": 3,
+            "servesIn": 2,
+            "points": 2,
+            "turnsTaken": 1,
+            "inPercentage": 0.6666666666666666
+          },
+          "5457a925-1163-476a-a3f4-8098340e4b9d": {
+            "serves": 4,
+            "servesIn": 4,
+            "points": 3,
+            "turnsTaken": 1,
+            "inPercentage": 1
+          }
+        }
+      },
+      {
+        "index": 2,
+        "status": "ended",
+        "result": "lost",
+        "turns": 8,
+        "score": 5,
+        "lineup": null,
+        "subs": 0,
+        "byPlayer": {
+          "5457a925-1163-476a-a3f4-8098340e4b9d": {
+            "serves": 4,
+            "servesIn": 3,
+            "points": 2,
+            "turnsTaken": 2,
+            "inPercentage": 0.75
+          },
+          "753f9707-1cd5-4e10-8c15-3622ba7c1950": {
+            "serves": 2,
+            "servesIn": 0,
+            "points": 0,
+            "turnsTaken": 2,
+            "inPercentage": 0
+          },
+          "120ecfd7-f2ee-4ee6-85dc-b3362151512f": {
+            "serves": 2,
+            "servesIn": 1,
+            "points": 1,
+            "turnsTaken": 1,
+            "inPercentage": 0.5
+          },
+          "45441f55-86dd-4539-b245-2f8ab9f6950b": {
+            "serves": 1,
+            "servesIn": 1,
+            "points": 0,
+            "turnsTaken": 1,
+            "inPercentage": 1
+          },
+          "56f6ad42-6bea-494a-a86f-191b1cb0f4cf": {
+            "serves": 3,
+            "servesIn": 3,
+            "points": 2,
+            "turnsTaken": 1,
+            "inPercentage": 1
+          },
+          "c3b44932-9e75-4c15-9310-84f1c21da946": {
+            "serves": 1,
+            "servesIn": 0,
+            "points": 0,
+            "turnsTaken": 1,
+            "inPercentage": 0
+          }
+        }
+      }
+    ],
+    "onCourt": {
+      "5457a925-1163-476a-a3f4-8098340e4b9d": 0,
+      "56f6ad42-6bea-494a-a86f-191b1cb0f4cf": 0,
+      "eceabe46-fcb4-46fc-9f19-35d80d3e8af7": 0,
+      "c3b44932-9e75-4c15-9310-84f1c21da946": 0,
+      "120ecfd7-f2ee-4ee6-85dc-b3362151512f": 0,
+      "73de4053-54e3-4b59-85b4-996da4e48849": 0,
+      "90a15be8-750a-419a-8a6c-96342d29aa56": 0,
+      "45441f55-86dd-4539-b245-2f8ab9f6950b": 0,
+      "753f9707-1cd5-4e10-8c15-3622ba7c1950": 0
+    }
+  }
+}
