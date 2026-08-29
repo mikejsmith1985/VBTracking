@@ -78,25 +78,19 @@ function fromPaper(game, roster) {
       this game, so they are shown as dashes rather than as zero.</div>`
 }
 
-// Backup and discarding live here rather than on the track screen: both are
-// administrative, one is destructive, and neither has any business sitting near the
-// controls tapped during a rally.
+/**
+ * Discarding a game lives here, beside the game it discards -- and nowhere near the
+ * controls tapped during a rally.
+ *
+ * Backing up used to live here too, which was a mistake: this screen shows nothing at all
+ * until a game exists, so an operator with no game in progress had no way to save their
+ * season. It belongs with the season, and that is where it now is.
+ */
 function dataTools(ui, gameId) {
   // The confirmation is armed per game, so arming one elsewhere must not light this up.
   const isConfirming = ui.confirmingDiscardGame === gameId
   return `
     <div class="danger-zone">
-      <div class="section-title">Backup</div>
-      <button class="btn" data-action="export-data" type="button">Save a backup file</button>
-      <button class="btn" data-action="import-data" type="button">
-        ${ui.confirmingImport ? 'Replace everything from a file?' : 'Restore from a backup'}
-      </button>
-      <div class="roster-count">
-        ${ui.confirmingImport
-          ? 'Tap again to choose a file. Restoring replaces every roster and game currently on this device, including any match in progress.'
-          : 'A backup is a file you keep. Nothing is sent anywhere.'}
-      </div>
-
       <div class="section-title">Danger</div>
       <button class="btn btn-danger" data-action="discard-game" data-id="${gameId}" type="button">
         ${isConfirming ? 'Discard this game?' : 'Discard this game'}

@@ -4,6 +4,15 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **There was no way to save a season unless a game existed.** Backup and restore lived on
+  the Game screen, which shows nothing at all until a game is in progress or one has been
+  picked — so an operator between games could not save their record, and an operator on a
+  new phone could not restore it. Both now sit on the Season screen under **Your data**,
+  where the record lives, and the restore is offered even before a first season exists —
+  which is exactly the moment someone holding a backup and a new phone needs it.
+
 ### Added
 
 - **The rulebook now exists in Swift, and it counts the same.** `packages/VBCore` is a pure

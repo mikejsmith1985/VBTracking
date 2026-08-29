@@ -17,7 +17,14 @@ export function view(context) {
 
   const season = activeSeason(state)
   if (!season) {
-    return { screen: '<div class="empty"><strong>No season yet</strong>Add a player to start one.</div>', dock: '' }
+    // Restoring is offered here too, and that is the whole point of this branch: a new
+    // phone holding a backup has no season yet, and an operator who cannot reach the
+    // restore has lost everything they recorded.
+    return {
+      screen: '<div class="empty"><strong>No season yet</strong>Add a player to start one.</div>'
+        + `<div class="danger-zone">${backupControls(ui)}</div>`,
+      dock: '',
+    }
   }
 
   const games = gamesInSeason(state, season.id)
@@ -120,11 +127,35 @@ function seasonAdmin(state, season, ui) {
         already recorded, so their history follows them.
       </div>
 
+      ${backupControls(ui)}
+
       <div class="app-version">Version ${esc(APP_VERSION)}</div>
 
       <div class="section-title">Games from paper</div>
       <button class="btn" data-action="add-historical" type="button">Enter a game by hand</button>
       ${ui.pastingGames ? pasteForm() : importControls(ui)}
+    </div>`
+}
+
+/**
+ * Saving and restoring the whole record.
+ *
+ * It sits on the season screen because that is where the record lives, and because it must
+ * be reachable when there is no game in progress -- which is most of the time, and was
+ * exactly when it used to be unreachable. A backup is the only copy of a season that
+ * survives a lost phone, so it may never be behind a game.
+ */
+function backupControls(ui) {
+  return `
+    <div class="section-title">Your data</div>
+    <button class="btn" data-action="export-data" type="button">Save a copy of everything</button>
+    <button class="btn" data-action="import-data" type="button">
+      ${ui.confirmingImport ? 'Replace everything from a file?' : 'Restore from a saved copy'}
+    </button>
+    <div class="roster-count">
+      ${ui.confirmingImport
+        ? 'Tap again to choose a file. Restoring replaces every roster and game currently on this device, including any match in progress.'
+        : 'Every season, every game, every serve — as one file you keep. Nothing is sent anywhere.'}
     </div>`
 }
 
