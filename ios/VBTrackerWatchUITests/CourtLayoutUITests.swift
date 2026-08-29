@@ -8,6 +8,9 @@
 // screen.
 import XCTest
 
+// XCUITest drives a running app, so every one of its APIs is main-actor isolated. A test
+// class that is not says so in 123 compiler errors.
+@MainActor
 final class CourtLayoutUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -68,6 +71,7 @@ final class CourtLayoutUITests: XCTestCase {
 }
 
 /// What the wrist says when there is nothing to say.
+@MainActor
 final class CourtContentUITests: XCTestCase {
     func testAPlayerWhoHasNotServedShowsADashRatherThanZero() {
         let app = XCUIApplication()

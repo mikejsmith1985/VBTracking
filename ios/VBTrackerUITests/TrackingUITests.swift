@@ -5,6 +5,9 @@
 // screen exists.
 import XCTest
 
+// XCUITest drives a running app, so every one of its APIs is main-actor isolated. A test
+// class that is not says so in 123 compiler errors.
+@MainActor
 final class TrackingUITests: XCTestCase {
     private var app: XCUIApplication!
 
@@ -109,6 +112,7 @@ final class TrackingUITests: XCTestCase {
 }
 
 /// Saving a copy of everything, and where it can be reached from.
+@MainActor
 final class TransferUITests: XCTestCase {
     func testTheExportIsReachableWithNoGameInProgress() {
         let app = XCUIApplication()
