@@ -18,6 +18,14 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **Every submit button in the app was broken.** Save, Create, Add player and the game
+  form did nothing when pressed. A click on anything without an action triggered a full
+  redraw, which destroyed and rebuilt the form before the browser's own submit event could
+  fire. Pressing Enter in a field still worked, which is why it went unnoticed. A stray tap
+  now redraws only when it actually changed something, and never from inside a form.
+- The whole test suite missed it because every form test dispatched a `submit` event
+  directly, sailing straight past the click handler. Forms are now driven by **clicking the
+  button a thumb would land on**; with the bug reintroduced, 10 of those 13 tests fail.
 - **The Season screen no longer drifts off the right edge of a phone.** The season name,
   team and Save button sat on one row; a grid child defaults to `min-width: auto`, so the
   inputs refused to shrink below their own content and pushed Save off-screen entirely.
