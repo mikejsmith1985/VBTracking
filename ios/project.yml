@@ -50,6 +50,11 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mikejsmith.vbtracker
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # iPhone only, and portrait only. Apple demands all four orientations from anything
+        # that claims to run on an iPad -- so an app that is genuinely one-handed and
+        # portrait has to say it is not an iPad app. It never was: the whole design is a
+        # phone held in one hand at the side of a court.
+        TARGETED_DEVICE_FAMILY: "1"
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
     entitlements:
