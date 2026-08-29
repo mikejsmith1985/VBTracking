@@ -5,21 +5,23 @@
 // screen exists.
 import XCTest
 
-// XCUITest drives a running app, so every one of its APIs is main-actor isolated. A test
-// class that is not says so in 123 compiler errors.
+// XCUITest drives a running app, so every one of its APIs is main-actor isolated -- and
+// `setUp` is not, even inside a main-actor class. So there is no `setUp`: each test says
+// what it launches, which reads better anyway.
 @MainActor
 final class TrackingUITests: XCTestCase {
-    private var app: XCUIApplication!
+    private var app = XCUIApplication()
 
-    override func setUp() {
+    /// A clean container each run: a test that inherits last run's season proves nothing.
+    private func launch() {
         continueAfterFailure = false
         app = XCUIApplication()
-        // A clean container each run: a test that inherits last run's season proves nothing.
         app.launchArguments = ["-uiTestFreshStore"]
         app.launch()
     }
 
     func testAServeIsRecordedInOneTap() {
+        launch()
         addPlayers(["7": "Ella", "5": "Aria"])
         app.buttons["Track"].tap()
         app.buttons["Start game"].tap()
@@ -32,6 +34,7 @@ final class TrackingUITests: XCTestCase {
     }
 
     func testOneUndoReversesExactlyOneAction() {
+        launch()
         addPlayers(["7": "Ella", "5": "Aria"])
         app.buttons["Track"].tap()
         app.buttons["Start game"].tap()
@@ -46,6 +49,7 @@ final class TrackingUITests: XCTestCase {
     }
 
     func testTheFiveServeAlertInterrupts() {
+        launch()
         addPlayers(["7": "Ella", "5": "Aria"])
         app.buttons["Track"].tap()
         app.buttons["Start game"].tap()
@@ -61,6 +65,7 @@ final class TrackingUITests: XCTestCase {
     }
 
     func testASixthServeIsRecordedWithoutNaggingAgain() {
+        launch()
         addPlayers(["7": "Ella", "5": "Aria"])
         app.buttons["Track"].tap()
         app.buttons["Start game"].tap()
@@ -74,6 +79,7 @@ final class TrackingUITests: XCTestCase {
     }
 
     func testTheDockNeverShowsBothOutcomesAndThePicker() {
+        launch()
         addPlayers(["7": "Ella", "5": "Aria"])
         app.buttons["Track"].tap()
         app.buttons["Start game"].tap()
