@@ -61,14 +61,25 @@ workflows:
       app_store_connect: RLL_Codemagic_CI_AppManager
     environment:
       xcode: latest
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.mikejsmith.vbtracker
     scripts:
       - name: Generate the Xcode project
         script: |
           brew install xcodegen
           cd ios && xcodegen generate
+
+      # Fetch the signing files, and create them where they do not exist yet.
+      #
+      # Declaring `ios_signing` only looks for profiles that are already there, and on a
+      # brand new App ID there are none -- the first build died in under a second saying so.
+      # `--create` makes the certificate and both profiles once, and finds them every time
+      # after. Two bundle ids, because the watch app is signed as its own bundle.
+      - name: Sign, creating the profiles the first time
+        script: |
+          app-store-connect fetch-signing-files "com.mikejsmith.vbtracker"             --type IOS_APP_STORE --create
+          app-store-connect fetch-signing-files "com.mikejsmith.vbtracker.watchapp"             --type IOS_APP_STORE --create
+          keychain initialize
+          keychain add-certificates
+          xcode-project use-profiles
 
       - name: Test the domain first
         script: |
