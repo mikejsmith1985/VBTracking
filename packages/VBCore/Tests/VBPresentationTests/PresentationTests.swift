@@ -349,10 +349,20 @@ struct TapIntentTests {
         )
     }
 
-    @Test("Without an order, every tap is simply a choice of server")
-    func withoutAnOrderEveryTapServes() {
+    @Test("Without an order, a tap picks the player up so they can be placed")
+    func withoutAnOrderATapArms() {
+        // This used to serve them outright, which meant an operator building a rotation
+        // player-first started recording that player's serves on their first tap.
         let state = build(roster(3), [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: false))])
-        #expect(intent(ofTapping: "p2", state: state, armed: nil) == .serve(playerId: "p2"))
+        #expect(intent(ofTapping: "p2", state: state, armed: nil) == .armSubstitution(incomingPlayerId: "p2"))
+    }
+
+    @Test("Tapping them a second time hands them the ball, order or no order")
+    func aSecondTapStillServes() {
+        // The way out for an operator who wants no rotation at all and is simply naming
+        // whoever serves next.
+        let state = build(roster(3), [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: false))])
+        #expect(intent(ofTapping: "p2", state: state, armed: .player("p2")) == .serve(playerId: "p2"))
     }
 
     @Test("Tapping whoever is already serving does nothing")
@@ -418,15 +428,16 @@ struct PickerHintTests {
     @Test("With nothing held, the hint says where the serving corner is")
     func restingHintNamesTheCorner() {
         #expect(pickerHint(state: underWay(), armed: nil).contains("bottom right"))
-        #expect(pickerHint(state: onCourt(), armed: nil).contains("tap a spot"))
+        // Six standing and nobody serving yet: the job is to start, not to keep arranging.
+        #expect(pickerHint(state: onCourt(), armed: nil).contains("serves first"))
     }
 
     @Test("With no order at all, the hint offers both ways in")
     func noOrderHintOffersBothWaysIn() {
         let noOrder = build(roster(3), [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: false))])
         let hint = pickerHint(state: noOrder, armed: nil)
-        #expect(hint.contains("Tap a spot"))
-        #expect(hint.contains("serve"))
+        #expect(hint.contains("spot"))
+        #expect(hint.contains("player"))
     }
 
     @Test("A place in the order is spoken as a place, not a number")

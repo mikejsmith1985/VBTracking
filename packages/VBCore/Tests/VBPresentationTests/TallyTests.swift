@@ -376,3 +376,73 @@ struct PreferenceStorageTests {
         #expect(WatchPreferences(storedRotateAlert: "gentle").rotateAlert.isOn)
     }
 }
+
+@Suite("Building a rotation player-first")
+struct PlayerFirstPlacementTests {
+    private func partly(_ placed: [(String, Int)]) -> AppState {
+        var events = roster(9) + [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: true))]
+        events += placed.map { event(.placeInLineup(playerId: $0.0, lineupIndex: $0.1)) }
+        return replay(events)
+    }
+
+    @Test("With no order at all, tapping a player picks them up rather than serving them")
+    func aPlayerTapArmsWhileBuilding() {
+        // The old behaviour started recording that player's serves, which made building a
+        // rotation player-first impossible.
+        let state = partly([])
+        #expect(
+            intent(ofTapping: "p3", state: state, armed: nil) == .armSubstitution(incomingPlayerId: "p3"),
+            "the first tap should pick them up, not hand them the ball"
+        )
+    }
+
+    @Test("Half an order is still being built")
+    func stillBuildingAtThree() {
+        let state = partly([("p1", 0), ("p2", 1), ("p3", 2)])
+        #expect(intent(ofTapping: "p8", state: state, armed: nil) == .armSubstitution(incomingPlayerId: "p8"))
+    }
+
+    @Test("Player then spot puts them there")
+    func playerThenSpot() {
+        let state = partly([])
+        #expect(
+            intent(ofTappingPosition: 4, state: state, armed: .player("p3"))
+                == .place(playerId: "p3", lineupIndex: 4)
+        )
+    }
+
+    @Test("Once six are standing, a tap on a player hands them the ball")
+    func aFullOrderServes() {
+        let state = partly((0..<6).map { ("p\($0 + 1)", $0) })
+        #expect(isLineupComplete(state.currentLineup))
+        #expect(intent(ofTapping: "p1", state: state, armed: nil) == .serve(playerId: "p1"))
+    }
+
+    @Test("A half-built order is not a complete one")
+    func completenessIsCounted() {
+        #expect(isLineupComplete(nil) == false)
+        #expect(isLineupComplete([nil, nil, nil, nil, nil, nil]) == false)
+        #expect(isLineupComplete(["p1", "p2", "p3", "p4", "p5", nil]) == false)
+        #expect(isLineupComplete(["p1", "p2", "p3", "p4", "p5", "p6"]))
+    }
+
+    @Test("Once the match is under way, building is over")
+    func servingEndsTheBuilding() {
+        var state = partly((0..<6).map { ("p\($0 + 1)", $0) })
+        state = apply(state, .selectServer(playerId: "p1"))
+        state = apply(state, .recordServe(outcome: .inPoint))
+
+        #expect(state.canArrangeRotation == false)
+        #expect(
+            intent(ofTapping: "p8", state: state, armed: nil) == .armSubstitution(incomingPlayerId: "p8"),
+            "a bench tap is a substitution now, which is what it always was"
+        )
+    }
+
+    @Test("The hint tells the operator both ways round")
+    func theHintSaysBothWays() {
+        let hint = pickerHint(state: partly([]), armed: nil)
+        #expect(hint.contains("spot"))
+        #expect(hint.contains("player"))
+    }
+}

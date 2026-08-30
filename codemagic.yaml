@@ -150,13 +150,26 @@ workflows:
           brew install xcodegen
           cd ios && xcodegen generate
 
+      # `xcodebuild` directly rather than through the wrapper. The wrapper adds
+      # `-sdk iphonesimulator`, which is wrong for a scheme that embeds a watch app: the
+      # watch target cannot be built against the phone SDK, so the run died before the app
+      # compiled and reported "Executed 0 tests" -- a message that describes a broken test
+      # suite and not, as here, a build that never happened. A destination alone is enough.
+      #
+      # No signing either: a simulator needs no signature, and this workflow holds no
+      # credentials on purpose.
       - name: The phone
         script: |
-          xcode-project run-tests             --project ios/VBTracker.xcodeproj             --scheme VBTracker             --device "iPhone 17 Pro"
+          set -o pipefail
+          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTracker -destination 'platform=iOS Simulator,name=iPhone 17 Pro' CODE_SIGNING_ALLOWED=NO 2>&1 | tail -400
 
       - name: The watch, where the on-deck box is measured
         script: |
-          xcode-project run-tests             --project ios/VBTracker.xcodeproj             --scheme VBTrackerWatch             --device "Apple Watch Ultra 2 (49mm)"
+          set -o pipefail
+          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTrackerWatch -destination 'platform=watchOS Simulator,name=Apple Watch Ultra 2 (49mm)' CODE_SIGNING_ALLOWED=NO 2>&1 | tail -400
 
+    # Run by hand, before anything ships. It is the only suite that can say whether a tap
+    # does what it looks like it does, and the three bugs it was written for were every one
+    # of them invisible to the domain suite.
     triggering:
       events: []

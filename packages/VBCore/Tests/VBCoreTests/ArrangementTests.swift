@@ -185,3 +185,72 @@ struct PlayerEditTests {
         #expect(refusal(season, .editPlayer(id: "p1", name: "Ella", number: "", seasonId: "s1")) == nil, "a player without a shirt number is still a player")
     }
 }
+
+// The rotation carrying on over a gap.
+//
+// A slot can be empty: a short bench, a player removed mid-match, or an order somebody was
+// still building when the whistle went. Stopping at one froze the whole match.
+@Suite("A rotation with a gap in it")
+struct GappedRotationTests {
+    private func match(placing pairs: [(String, Int)]) -> AppState {
+        var state = build(roster(8), [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: true))])
+        for (playerId, index) in pairs {
+            state = apply(state, .placeInLineup(playerId: playerId, lineupIndex: index))
+        }
+        return state
+    }
+
+    @Test("The serve passes over an empty place to the next player standing")
+    func stepsOverAGap() {
+        // Nobody at index 1: the serve should reach p3 at index 2, not stop dead.
+        var state = match(placing: [("p1", 0), ("p3", 2)])
+        state = apply(state, .selectServer(playerId: "p1"))
+        state = apply(state, .recordServe(outcome: .out))
+
+        #expect(state.activeServerId == "p3", "a gap is not the end of the order")
+    }
+
+    @Test("A match with a gap keeps somebody serving after every turn")
+    func neverStallsMidMatch() {
+        // The failure this is here for: no turn opened, so nobody was serving, so the app
+        // asked who serves next after every single rally.
+        var state = match(placing: [("p1", 0), ("p2", 3)])
+        state = apply(state, .selectServer(playerId: "p1"))
+
+        for _ in 0..<6 {
+            state = apply(state, .recordServe(outcome: .out))
+            #expect(state.activeServerId != nil, "the court emptied itself between rallies")
+        }
+    }
+
+    @Test("The order still wraps round to the beginning")
+    func wrapsRound() {
+        var state = match(placing: [("p1", 0), ("p2", 5)])
+        state = apply(state, .selectServer(playerId: "p2"))
+        state = apply(state, .recordServe(outcome: .out))
+
+        #expect(state.activeServerId == "p1", "past the last place is the first")
+    }
+
+    @Test("A full order is unaffected")
+    func fullOrderIsUnchanged() {
+        var state = apply(
+            build(roster(8), [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: true))]),
+            .setLineup(playerIds: (1...6).map { "p\($0)" })
+        )
+        state = apply(state, .selectServer(playerId: "p1"))
+        state = apply(state, .recordServe(outcome: .out))
+
+        #expect(state.activeServerId == "p2")
+    }
+
+    @Test("An order nobody is standing in hands the ball to nobody")
+    func emptyOrderStaysEmpty() {
+        var state = match(placing: [("p1", 0)])
+        state = apply(state, .selectServer(playerId: "p1"))
+        state = apply(state, .clearLineupPosition(lineupIndex: 0))
+        state = apply(state, .recordServe(outcome: .out))
+
+        #expect(state.activeServerId == nil, "there is nobody to hand it to")
+    }
+}

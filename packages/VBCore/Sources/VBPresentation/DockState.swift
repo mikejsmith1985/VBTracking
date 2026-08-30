@@ -53,6 +53,8 @@ public struct DockState: Equatable, Sendable {
             self.content = .nothing
             return
         }
+        // Somebody holding the ball means the outcome controls, unless the operator has
+        // asked for the court. Anything else and the app is asking who serves next.
         if let serving = state.activeServerId, !isPickerRequested {
             self.content = .outcomes(servingPlayerId: serving)
         } else {
