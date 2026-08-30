@@ -101,6 +101,9 @@ platform :ios do
       # No prompt, no browser: this runs on a machine with nobody sitting at it.
       force: true,
       run_precheck_before_submit: false,
+      # The age-rating questionnaire, answered in a file. Every answer is "none": there is
+      # nothing in this app but volleyball serves.
+      app_rating_config_path: "fastlane/metadata/age_rating_config.json",
       submission_information: {
         # No encryption in the app at all, no advertising identifier, and every image in it
         # is ours.
@@ -113,8 +116,28 @@ platform :ios do
     }.merge(extra)
   end
 
+  # "Data Not Collected", declared rather than clicked.
+  #
+  # It is the truthful answer and the whole of it: the app has no networking code, so there
+  # is no route by which anything could be collected. Its own test suite fails if a shipped
+  # file so much as names a networking API.
+  def declare_no_data_collected
+    upload_app_privacy_details_to_app_store(
+      username: "",
+      team_id: "",
+      app_identifier: APP,
+      json_path: "fastlane/metadata/app_privacy_details.json",
+      api_key: connect_key,
+      skip_upload: false
+    )
+  rescue StandardError => error
+    UI.important("Could not set the privacy answers automatically: #{error.message}")
+    UI.important("That page is a one-time questionnaire and may have to be answered by hand.")
+  end
+
   desc "Fill in the listing on App Store Connect, without submitting it."
   lane :stage do
+    declare_no_data_collected
     # `verify_only` was the obvious flag and is the wrong one: it validates a binary, and
     # there is no binary here -- the build was uploaded by another workflow. It failed with
     # "no implicit conversion of nil into String", which is Ruby's way of saying it went
@@ -130,6 +153,7 @@ platform :ios do
 
   desc "Upload the listing and submit the build for review. Irreversible."
   lane :submit do
+    declare_no_data_collected
     deliver(listing(connect_key, verify_only: false, submit_for_review: true))
     UI.success("Submitted for review.")
   end
