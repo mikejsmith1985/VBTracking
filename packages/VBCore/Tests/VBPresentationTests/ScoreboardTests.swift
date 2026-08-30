@@ -285,3 +285,55 @@ struct AcknowledgementTests {
         #expect(read.acknowledgedEventIds.isEmpty, "and so confirms nothing, rather than everything")
     }
 }
+
+// MARK: - Saying thank you
+
+@Suite("The tip jar")
+struct SupportLinkTests {
+    @Test("A real page is accepted")
+    func acceptsAPage() throws {
+        let link = try #require(SupportLink("https://ko-fi.com/example"))
+        #expect(link.url.host == "ko-fi.com")
+    }
+
+    @Test("A page that goes nowhere is no tip jar at all")
+    func refusesNothing() {
+        // The screen shows no section when this is nil, so an address nobody filled in ships
+        // as an app with no tip jar rather than an app with a dead button in it.
+        #expect(SupportLink("") == nil)
+        #expect(SupportLink("   ") == nil)
+        #expect(SupportLink("ko-fi.com/example") == nil, "no scheme is not a link")
+    }
+
+    @Test("It must be https, because it is about to ask somebody for money")
+    func insistsOnHttps() {
+        #expect(SupportLink("http://ko-fi.com/example") == nil)
+        #expect(SupportLink("vbtracker://donate") == nil)
+        #expect(SupportLink("mailto:someone@example.com") == nil)
+    }
+
+    @Test("The asking is one sentence, and does not ask twice")
+    func theAskIsSmall() {
+        #expect(SupportLink.invitation.filter { $0 == "." }.count <= 2)
+        #expect(SupportLink.invitation.lowercased().contains("please") == false)
+        #expect(SupportLink.invitation.lowercased().contains("optional"))
+        #expect(SupportLink.action.hasSuffix("!") == false, "a noun, not an exclamation")
+    }
+
+    @Test("The about page says the things somebody would check before trusting it")
+    func factsCoverTheQuestions() {
+        let all = About.facts.joined(separator: " ").lowercased()
+        #expect(all.contains("free"))
+        #expect(all.contains("no adverts"))
+        #expect(all.contains("nothing locked"))
+        #expect(all.contains("no networking"))
+        #expect(About.tagline.isEmpty == false)
+    }
+
+    @Test("The build is named, however little of it is known")
+    func versionLineAlwaysSaysSomething() {
+        #expect(About.versionLine(version: "1.0", build: "12") == "Version 1.0 (12)")
+        #expect(About.versionLine(version: "1.0", build: nil) == "Version 1.0")
+        #expect(About.versionLine(version: nil, build: "12") == "Version unknown")
+    }
+}

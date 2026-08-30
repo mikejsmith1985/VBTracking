@@ -83,6 +83,13 @@ struct SeasonScreen: View {
                     Text("Every season, every game, every serve — as one file you keep. Nothing is sent anywhere.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
+
+                // Last, quietly, on a screen read between matches. It never comes to the
+                // operator; the operator has to come to it.
+                Section {
+                    NavigationLink("About this app") { AboutScreen() }
+                        .accessibilityIdentifier("about")
+                }
             }
             .navigationTitle("Season")
             .navigationDestination(item: $openGameId) { id in

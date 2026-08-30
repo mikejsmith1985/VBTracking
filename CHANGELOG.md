@@ -6,6 +6,27 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **An About page, with a tip jar on it.** One `About this app` row at the bottom of the
+  Season screen — a screen read between matches, never during one. It says what the app is
+  and the four things somebody would want to check before trusting it: free, no adverts,
+  nothing locked, no account; the season stays on the phone; the watch talks to the phone
+  directly; a copy of everything is one file away.
+
+  The asking is one sentence with no "please" in it, no figure suggested, and no mention of
+  what anything costs to run. It never appears on its own — no launch prompt, no sheet over a
+  game, no reminder, no count of what anybody has given, no badge or "supporter" tier. A gift
+  that buys something is a purchase, and a purchase in a free app belongs to Apple.
+
+  The thank-you is a link handed to the browser, which is the one lawful way a free app can
+  be paid outside Apple's system. Two tests hold that line: no shipped file may name StoreKit,
+  PassKit or a card field, and the About screen must be a `Link` with nothing on it that
+  collects anything. **The section does not render until a real https address is set** — a
+  link that goes nowhere is worse than no link, so an unset one ships as an app with no tip
+  jar rather than an app with a dead button.
+
+
+### Added
+
 - **A scoreboard on the wrist for games nobody is tracking.** Two numbers, a tap each, on
   their own watch page, with a minus under each and **New game** across the bottom. No
   roster, no season, no log — a Saturday in the park does not go in the record and now
