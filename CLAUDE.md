@@ -71,6 +71,11 @@ web app's 685 still pass and it still deploys from `main`.
   already use for the thing the event is about. It is additive, so a log written natively
   still loads in the web app, which is what lets both apps read the same season during the
   phase gap.
+- **Offline means no internet, not no radios.** The watch link is Bluetooth between two
+  paired devices. Aeroplane mode would disable it, so aeroplane mode is not the test and
+  never was a release gate - the stakeholder dropped it in release 003. What is proved
+  instead, on every test run, is that no shipped source file so much as names a networking
+  API (`OfflineTests`).
 - Screens hold no rules. Anything a view decides, a type in `VBPresentation` decides first -
   that is the only reason writing SwiftUI on a machine that cannot compile it is acceptable.
 - A visual requirement is written as a measured one. The on-deck box being biggest is

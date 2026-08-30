@@ -74,7 +74,11 @@ swift test --filter LogFileTests   # the parts with no UI
 
 ## Slice 3 — The tracking loop on the phone
 
-Track a full three-match game in aeroplane mode, keeping a paper tally alongside.
+Track a full three-match game with **Wi-Fi and cellular off, Bluetooth on** — a gym, in
+other words — keeping a paper tally alongside.
+
+Not aeroplane mode: that turns Bluetooth off too, and Bluetooth is how the watch hears the
+phone. It would prove the app works offline by breaking the one link the release is for.
 
 | Check | Expect |
 |---|---|
@@ -82,7 +86,7 @@ Track a full three-match game in aeroplane mode, keeping a paper tally alongside
 | Rotation | Advances itself on a side-out; no tap needed |
 | Undo | Reverses exactly one operator action, including the rotation advance it caused |
 | Five serves | The alert covers the screen; a sixth is still recorded and flagged |
-| Aeroplane mode | Nothing fails, nothing waits (SC-004) |
+| No internet, Bluetooth on | Nothing fails, nothing waits, and the wrist still follows (SC-004) |
 | The paper tally | Matches the app, figure for figure |
 
 ---
