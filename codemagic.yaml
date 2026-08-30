@@ -273,11 +273,30 @@ workflows:
           SUBMISSION_ID=$(app-store-connect review-submissions create "$APP_ID" --platform IOS --json             | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
           echo "Submission: $SUBMISSION_ID"
 
+          # From here on, a failure takes its own submission away with it. An abandoned
+          # draft blocks the next attempt, and asking somebody to go and delete one by hand
+          # after every failed run is a poor way to treat them.
+          set +e
           echo "--- add the version to it ---"
           app-store-connect review-submission-items create "$SUBMISSION_ID" --version-id "$VERSION_ID"
+          added=$?
+
+          if [ $added -ne 0 ]; then
+            echo "--- could not add the version; discarding the empty submission ---"
+            app-store-connect review-submissions cancel "$SUBMISSION_ID" || true
+            echo "Nothing was submitted, and nothing is left behind to delete."
+            exit 1
+          fi
 
           echo "--- confirm ---"
           app-store-connect review-submissions confirm "$SUBMISSION_ID"
+          confirmed=$?
+
+          if [ $confirmed -ne 0 ]; then
+            echo "--- could not confirm; discarding the submission ---"
+            app-store-connect review-submissions cancel "$SUBMISSION_ID" || true
+            exit 1
+          fi
           echo "Submitted for review."
 
     triggering:
