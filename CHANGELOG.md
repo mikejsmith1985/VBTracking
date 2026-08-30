@@ -4,6 +4,22 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The wrist stopped updating until the watch app was force-quit.** Courts were ordered by a
+  counter that lives in memory on the phone and starts again at zero every time that app
+  launches — and iOS relaunches a backgrounded app constantly. A watch holding sequence 47
+  from before the phone restarted then rejected every snapshot that followed as though it were
+  older, and went on showing a court from twenty minutes ago. Ordering now goes by the moment
+  the court was captured, which comes from one clock and survives as many relaunches as an
+  evening produces; the counter still breaks a tie inside the same instant, which is the only
+  thing it was ever good for.
+- **A watch app that had just come up showed nothing until the phone next changed something.**
+  The system holds the newest context but does not deliver it a second time, so the wrist now
+  reads it on activation. Between rallies, waiting for the next change is a long time for a
+  coach who has just raised their arm.
+
+
 ### Added
 
 - **A player's name and number can be corrected.** Tap them on the Roster. Until now a name

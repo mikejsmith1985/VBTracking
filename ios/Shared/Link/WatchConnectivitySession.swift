@@ -48,6 +48,13 @@ extension WatchConnectivitySession: WCSessionDelegate {
         error: (any Error)?
     ) {
         delegate?.reachabilityChanged(isReachable: session.isReachable)
+
+        // The newest context the system already holds for us, which it does not deliver a
+        // second time on its own. Without this a watch app that has just come up shows
+        // nothing until the phone next changes something -- and between rallies that can be
+        // a long wait for a coach who has just raised their wrist.
+        let waiting = session.receivedApplicationContext
+        if !waiting.isEmpty { delegate?.received(context: waiting) }
     }
 
     public func sessionReachabilityDidChange(_ session: WCSession) {
