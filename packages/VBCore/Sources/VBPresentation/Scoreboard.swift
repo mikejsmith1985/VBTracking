@@ -155,28 +155,38 @@ public enum ScoreLayout {
     ///
     /// Tall enough that the side's name sits inside the pill with the figure, rather than
     /// riding on its edge.
-    public static let scoreHeight = 92.0
+    public static let scoreHeight = 90.0
 
     /// The size of the number in it.
-    public static let scoreFontSize = 46.0
+    public static let scoreFontSize = 44.0
 
     /// The side's name above the figure, inside the same pill.
-    public static let sideFontSize = 11.0
+    public static let sideFontSize = 12.0
+
+    /// How much vertical room a line of text takes beyond its point size.
+    ///
+    /// A font asked for at 44 pt does not occupy 44 pt of a stack; it occupies its line
+    /// height. Checking a tile against raw point sizes measures the wrong thing and either
+    /// passes a tile that clips or fails one that is fine.
+    public static let lineHeightFactor = 1.25
+
+    /// What the two lines inside a score tile actually take up.
+    public static let scoreContentHeight = (sideFontSize + scoreFontSize) * lineHeightFactor
 
     /// The minus beneath, as it is drawn. Half the height it was: it is the control for
     /// fixing a mistake, and it should look like it.
-    public static let minusPillHeight = 14.0
+    public static let minusPillHeight = 20.0
 
     /// The minus beneath, as it is tapped.
     ///
     /// Bigger than it is drawn, because a control small enough to read as secondary is
     /// smaller than a thumb. The extra is invisible and costs nothing but layout.
-    public static let minusTapHeight = 22.0
+    public static let minusTapHeight = 24.0
 
     public static let minusFontSize = 10.0
 
     /// Starting again, across the bottom.
-    public static let newGameHeight = 24.0
+    public static let newGameHeight = 28.0
 
     public static let newGameFontSize = 13.0
 
@@ -187,14 +197,14 @@ public enum ScoreLayout {
     public static let spacing = 3.0
 
     /// The corner on every drawn control.
-    public static let cornerRadius = 12.0
+    public static let cornerRadius = 18.0
 
     /// How much bigger the scoring control looks than the correcting one.
     ///
     /// Adding a point happens every rally; taking one off happens when somebody made a
     /// mistake. The one under the thumb has to be the one that is right nearly every time,
     /// and this much difference is what makes that true without looking.
-    public static let minimumScoreToMinusRatio = 6.0
+    public static let minimumScoreToMinusRatio = 4.0
 
     /// The smallest a control may be tapped at, however small it is drawn.
     public static let minimumTapHeight = 20.0
@@ -215,4 +225,75 @@ public enum ScoreLayout {
     /// home indicator at the bottom. Measured generously, because being wrong here means a
     /// control pushed off the bottom of the smallest watch anybody owns.
     public static let usableHeightFraction = 0.86
+}
+
+/// What the scoreboard is painted in.
+///
+/// Solid, bright tiles with dark figures on them — not a tint at low opacity over black.
+/// The first attempt used the app's accent colour at 22% and the result was unreadable in a
+/// lit room: the numbers were the same hue as the tile they sat on, and both were nearly the
+/// colour of the screen behind. A scoreboard read at arm's length across a court has to be
+/// the brightest thing on the wrist.
+///
+/// Written as hex here, and checked, because "bright enough" is exactly the kind of judgement
+/// that cannot be made on a workstation with no watch attached to it.
+public enum ScorePalette {
+    /// The tile a side's score sits on.
+    public static func fill(for side: Side) -> String {
+        switch side {
+        case .us: "#a8d5f0"  // light blue
+        case .them: "#d5cbf5"  // light lavender
+        }
+    }
+
+    /// The figure and the side's name, on that tile. Near-black, so the tile does the
+    /// shining and the number does the reading.
+    public static let figure = "#111826"
+
+    /// The lesser controls: the minus bars and New game. Dark, so they recede behind the
+    /// two things that matter.
+    public static let controlFill = "#1b2030"
+
+    public static let controlInk = "#c9d2e8"
+
+    /// The line that says who is winning. Brighter than a caption, because at 2-2 it is the
+    /// only thing on the page that is not a number.
+    public static let statusInk = "#eef2fb"
+
+    /// Once somebody has won, or is a point away.
+    public static let alertInk = "#ffb454"
+
+    /// The smallest contrast a figure may have against the tile under it.
+    ///
+    /// WCAG calls 7:1 "AAA" for body text. A scoreboard glanced at from the far side of a
+    /// court in a lit gym has less time and worse conditions than a page of body text, so
+    /// that is the floor here rather than the target.
+    public static let minimumFigureContrast = 7.0
+
+    /// The smallest contrast anything else may have.
+    public static let minimumControlContrast = 4.5
+}
+
+/// How far apart two colours are, by the WCAG formula.
+///
+/// One number, so "is this readable" is a thing a test can answer.
+public func contrastRatio(_ first: String, _ second: String) -> Double {
+    let lighter = max(relativeLuminance(first), relativeLuminance(second))
+    let darker = min(relativeLuminance(first), relativeLuminance(second))
+    return (lighter + 0.05) / (darker + 0.05)
+}
+
+/// How bright a colour is to an eye, which is not how bright it is to a screen.
+private func relativeLuminance(_ hex: String) -> Double {
+    let digits = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
+    let value = UInt64(digits, radix: 16) ?? 0
+    let channels = [
+        Double((value >> 16) & 0xff) / 255,
+        Double((value >> 8) & 0xff) / 255,
+        Double(value & 0xff) / 255,
+    ]
+    .map { channel in
+        channel <= 0.03928 ? channel / 12.92 : pow((channel + 0.055) / 1.055, 2.4)
+    }
+    return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
 }

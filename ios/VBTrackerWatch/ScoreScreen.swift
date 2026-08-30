@@ -61,8 +61,8 @@ struct ScoreScreen: View {
             }
 
             Text(board.status)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(board.winner == nil ? Color.secondary : Color.orange)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(Color(hex: board.winner == nil ? ScorePalette.statusInk : ScorePalette.alertInk))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
                 .frame(height: ScoreLayout.statusHeight)
@@ -72,31 +72,32 @@ struct ScoreScreen: View {
         .padding(.horizontal, 2)
     }
 
-    /// One side: the number, which is the button that adds to it, and the minus beneath.
+    /// One side: a bright tile carrying the name and the figure, and a dark bar beneath it
+    /// that takes a point off.
     ///
-    /// Both are plain buttons over a shape this file draws. watchOS's bordered style has a
+    /// Both are plain buttons over shapes this file draws. watchOS's bordered style has a
     /// control height of its own and ignores a frame asked for inside it, which is what put
-    /// the side's name outside its pill and left the minus nearly as tall as the score.
+    /// the side's name outside its tile the first time.
     private func column(_ side: Side) -> some View {
         VStack(spacing: ScoreLayout.spacing) {
             Button {
                 act { keeper.board.award(to: side) }
             } label: {
-                VStack(spacing: 0) {
+                VStack(spacing: -2) {
                     Text(side.label)
-                        .font(.system(size: ScoreLayout.sideFontSize, weight: .heavy))
-                        .foregroundStyle(tint(side))
-                        .opacity(0.75)
+                        .font(.system(size: ScoreLayout.sideFontSize, weight: .bold))
                     Text("\(board.score(side))")
                         .font(.system(size: ScoreLayout.scoreFontSize, weight: .heavy, design: .rounded))
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
-                        .foregroundStyle(tint(side))
                 }
+                // Near-black on a bright tile. The tile does the shining and the number does
+                // the reading; the other way round is what made this unreadable in a lit room.
+                .foregroundStyle(Color(hex: ScorePalette.figure))
                 .frame(maxWidth: .infinity, minHeight: ScoreLayout.scoreHeight)
                 .background(
-                    RoundedRectangle(cornerRadius: ScoreLayout.cornerRadius)
-                        .fill(tint(side).opacity(0.22))
+                    RoundedRectangle(cornerRadius: ScoreLayout.cornerRadius, style: .continuous)
+                        .fill(Color(hex: ScorePalette.fill(for: side)))
                 )
             }
             .buttonStyle(.plain)
@@ -108,11 +109,11 @@ struct ScoreScreen: View {
             } label: {
                 Image(systemName: "minus")
                     .font(.system(size: ScoreLayout.minusFontSize, weight: .bold))
-                    .foregroundStyle(board.canSubtract(from: side) ? Color.secondary : Color.secondary.opacity(0.3))
+                    .foregroundStyle(Color(hex: ScorePalette.controlInk).opacity(board.canSubtract(from: side) ? 1 : 0.35))
                     .frame(maxWidth: .infinity, minHeight: ScoreLayout.minusPillHeight)
                     .background(
-                        RoundedRectangle(cornerRadius: ScoreLayout.minusPillHeight / 2)
-                            .fill(Color.white.opacity(0.10))
+                        RoundedRectangle(cornerRadius: ScoreLayout.minusPillHeight / 2, style: .continuous)
+                            .fill(Color(hex: ScorePalette.controlFill))
                     )
                     // Drawn small, tapped bigger. A control small enough to read as
                     // secondary is smaller than a thumb, and the difference is free.
@@ -124,10 +125,6 @@ struct ScoreScreen: View {
             .accessibilityIdentifier("score-minus-\(side.rawValue)")
             .accessibilityLabel("Take a point off \(side.label)")
         }
-    }
-
-    private func tint(_ side: Side) -> Color {
-        side == .us ? .cyan : Color(white: 0.75)
     }
 
     /// Starting again, across the bottom where nothing else is.
@@ -146,11 +143,11 @@ struct ScoreScreen: View {
         } label: {
             Text(isConfirmingNewGame ? "Start over?" : "New game")
                 .font(.system(size: ScoreLayout.newGameFontSize, weight: .semibold))
-                .foregroundStyle(isConfirmingNewGame ? Color.red : Color.secondary)
+                .foregroundStyle(Color(hex: isConfirmingNewGame ? ScorePalette.alertInk : ScorePalette.controlInk))
                 .frame(maxWidth: .infinity, minHeight: ScoreLayout.newGameHeight)
                 .background(
-                    RoundedRectangle(cornerRadius: ScoreLayout.cornerRadius)
-                        .fill(isConfirmingNewGame ? Color.red.opacity(0.22) : Color.white.opacity(0.10))
+                    RoundedRectangle(cornerRadius: ScoreLayout.cornerRadius, style: .continuous)
+                        .fill(Color(hex: ScorePalette.controlFill))
                 )
         }
         .buttonStyle(.plain)
@@ -166,5 +163,19 @@ struct ScoreScreen: View {
         change()
         isConfirmingNewGame = false
         WKInterfaceDevice.current().play(board.winner != nil && !wasWon ? .success : .click)
+    }
+}
+
+extension Color {
+    /// The palette is written in hex, shared with the phone and the web app.
+    init(hex: String) {
+        let digits = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
+        let value = UInt64(digits, radix: 16) ?? 0
+        self.init(
+            .sRGB,
+            red: Double((value >> 16) & 0xff) / 255,
+            green: Double((value >> 8) & 0xff) / 255,
+            blue: Double(value & 0xff) / 255
+        )
     }
 }

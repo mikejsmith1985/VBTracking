@@ -363,12 +363,12 @@ struct ScoreLayoutTests {
 
     @Test("The score pill has room for the side's name as well as the figure")
     func theNameFitsInsideThePill() {
-        // The name used to ride on the pill's edge, outside it. The pill has to hold both
-        // with room to spare, or the same thing happens again the next time a font grows.
-        let content = ScoreLayout.scoreFontSize + ScoreLayout.sideFontSize
+        // The name used to ride on the tile's edge, outside it. The tile has to hold both
+        // lines with room to spare, or the same thing happens the next time a font grows.
+        // Measured against line height, not point size: a 44 pt font does not occupy 44 pt.
         #expect(
-            ScoreLayout.scoreHeight >= content * 1.6,
-            "\(content)pt of text in a \(ScoreLayout.scoreHeight)pt pill"
+            ScoreLayout.scoreHeight >= ScoreLayout.scoreContentHeight + 12,
+            "\(ScoreLayout.scoreContentHeight)pt of text in a \(ScoreLayout.scoreHeight)pt tile"
         )
     }
 
@@ -387,5 +387,63 @@ struct ScoreLayoutTests {
         // other would lay this page out in twice the room it has.
         let smallestInPixels = CourtLayout.supportedWatchSizes[0]
         #expect(ScoreLayout.shortestScreenHeight == smallestInPixels.height / 2)
+    }
+}
+
+@Suite("Whether the scoreboard can actually be read")
+struct ScorePaletteTests {
+    @Test("The figure stands off its tile hard enough to read across a court")
+    func figuresAreLegible() {
+        for side in Side.allCases {
+            let ratio = contrastRatio(ScorePalette.figure, ScorePalette.fill(for: side))
+            #expect(
+                ratio >= ScorePalette.minimumFigureContrast,
+                "\(side.label) is \(ratio):1 — the first attempt was a tint at 22% and vanished in a lit room"
+            )
+        }
+    }
+
+    @Test("The two sides are told apart by more than their labels")
+    func theSidesAreDifferentColours() {
+        #expect(ScorePalette.fill(for: .us) != ScorePalette.fill(for: .them))
+    }
+
+    @Test("The tiles are the bright thing and the lesser controls are not")
+    func thePriorityIsInTheBrightness() {
+        // A scoreboard read at arm's length has to put its brightness where the numbers are.
+        for side in Side.allCases {
+            #expect(
+                contrastRatio(ScorePalette.fill(for: side), "#000000")
+                    > contrastRatio(ScorePalette.controlFill, "#000000") * 2,
+                "the minus bars are competing with the scores"
+            )
+        }
+    }
+
+    @Test("The lesser controls are still readable, just quieter")
+    func controlsAreReadable() {
+        #expect(
+            contrastRatio(ScorePalette.controlInk, ScorePalette.controlFill)
+                >= ScorePalette.minimumControlContrast
+        )
+        #expect(
+            contrastRatio(ScorePalette.alertInk, ScorePalette.controlFill)
+                >= ScorePalette.minimumControlContrast
+        )
+    }
+
+    @Test("The status line reads against the screen behind it")
+    func statusReadsOnBlack() {
+        #expect(contrastRatio(ScorePalette.statusInk, "#000000") >= 7)
+        #expect(contrastRatio(ScorePalette.alertInk, "#000000") >= 4.5)
+    }
+
+    @Test("Contrast is measured the way an eye sees it, not the way a screen stores it")
+    func contrastFormulaIsRight() {
+        // The known anchors of the WCAG formula. Getting this wrong would let every check
+        // above pass on colours nobody can read.
+        #expect(abs(contrastRatio("#ffffff", "#000000") - 21) < 0.01)
+        #expect(abs(contrastRatio("#ffffff", "#ffffff") - 1) < 0.01)
+        #expect(abs(contrastRatio("#767676", "#ffffff") - 4.54) < 0.05, "the classic 4.5:1 grey")
     }
 }
