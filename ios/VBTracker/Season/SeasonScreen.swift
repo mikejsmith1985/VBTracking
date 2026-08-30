@@ -176,8 +176,11 @@ struct StatsTable: View {
         .sorted { ($0.figures.inPercentage ?? -1) > ($1.figures.inPercentage ?? -1) }
     }
 
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
+            header
+
             ForEach(ordered, id: \.entry.id) { row in
                 Button {
                     onTapPlayer?(row.entry.id)
@@ -188,7 +191,8 @@ struct StatsTable: View {
                         Text(row.entry.name).font(.subheadline).lineLimit(1)
                         Spacer()
                         Text("\(row.figures.servesIn)/\(row.figures.serves)")
-                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            .font(.caption.monospacedDigit()).frame(width: 52, alignment: .trailing)
+                            .foregroundStyle(.secondary)
                         Text(text(percentage: row.figures.inPercentage))
                             .font(.caption.monospacedDigit()).frame(width: 44, alignment: .trailing)
                         Text(text(count: row.figures.points))
@@ -199,12 +203,29 @@ struct StatsTable: View {
                 .disabled(onTapPlayer == nil)
             }
 
-            if let coverage, coverage.trackedGames < coverage.totalGames {
-                Text(
-                    "Points and turns cover the \(coverage.trackedGames) game\(coverage.trackedGames == 1 ? "" : "s") tracked serve by serve. A dash means the figure was never recorded."
-                )
-                .font(.caption2).foregroundStyle(.secondary)
-            }
+            note
+        }
+    }
+
+    /// What each column is. Without it the reader is left to work out whether 19/22 is
+    /// serves in out of serves, or something else entirely.
+    private var header: some View {
+        HStack(spacing: 8) {
+            Text("").frame(width: 28)
+            Text("Player")
+            Spacer()
+            Text("In / served").frame(width: 52, alignment: .trailing)
+            Text("In %").frame(width: 44, alignment: .trailing)
+            Text(pointsHeading(coverage: coverage)).frame(width: 30, alignment: .trailing)
+        }
+        .font(.caption2.weight(.semibold))
+        .textCase(.uppercase)
+        .foregroundStyle(.tertiary)
+    }
+
+    @ViewBuilder private var note: some View {
+        if let note = coverageNote(coverage) {
+            Text(note).font(.caption2).foregroundStyle(.secondary)
         }
     }
 }

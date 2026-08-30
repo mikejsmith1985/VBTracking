@@ -3,13 +3,18 @@
 //
 // Net at the top, service corner bottom right, the rotation running clockwise. The
 // arrangement stays still and the players move through it.
+//
+// Before the first serve the boxes are also how the rotation gets set: tap an empty box
+// then the player who stands in it, or tap the player then the box. Both work, because
+// asking the operator to remember which way round it goes is asking them to look away from
+// the court to find out.
 import SwiftUI
 import VBCore
 import VBPresentation
 
 struct CourtPicker: View {
     let store: Store
-    @Binding var armedIncoming: String?
+    @Binding var armed: Armed?
     @Binding var isPickerRequested: Bool
 
     private var court: CourtView? { store.state.courtView() }
@@ -17,40 +22,58 @@ struct CourtPicker: View {
     var body: some View {
         VStack(spacing: 8) {
             if let court {
-                CourtGrid(court: court, store: store, armedIncoming: armedIncoming, onTap: tap)
-                Bench(store: store, court: court, armedIncoming: armedIncoming, onTap: tap)
+                CourtGrid(court: court, store: store, armed: armed, onTap: tap, onTapPosition: tapPosition)
+                Bench(store: store, court: court, armed: armed, onTap: tap)
             } else {
-                // No order set: every player is simply a choice of server.
-                ChipGrid(players: store.state.roster, armedIncoming: armedIncoming, servingId: store.state.activeServerId, onTap: tap)
+                // No match at all: every player is simply a choice of server.
+                ChipGrid(players: store.state.roster, armed: armed, servingId: store.state.activeServerId, onTap: tap)
             }
 
-            Text(pickerHint(state: store.state, armedIncoming: armedIncoming))
+            Text(pickerHint(state: store.state, armed: armed))
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
         }
     }
 
-    /// A tap means one of two things, and which one is decided by where the player is
-    /// standing rather than by how fast the operator taps.
+    /// A tap on a player means one of several things, and which one is decided by where
+    /// they are standing and what is already held — never by how fast the operator taps.
     private func tap(_ playerId: String) {
-        switch intent(ofTapping: playerId, state: store.state, armedIncoming: armedIncoming) {
+        apply(intent(ofTapping: playerId, state: store.state, armed: armed))
+    }
+
+    /// A tap on a place in the serving order.
+    private func tapPosition(_ lineupIndex: Int) {
+        apply(intent(ofTappingPosition: lineupIndex, state: store.state, armed: armed))
+    }
+
+    private func apply(_ decided: TapIntent) {
+        switch decided {
         case let .serve(playerId):
-            armedIncoming = nil
+            armed = nil
             if store.dispatch(.selectServer(playerId: playerId)) { isPickerRequested = false }
 
         case let .armSubstitution(incoming):
-            armedIncoming = incoming
+            armed = .player(incoming)
+
+        case let .armPosition(lineupIndex):
+            armed = .position(lineupIndex)
+
+        case let .place(playerId, lineupIndex):
+            // The picker stays open: placing one player is a sixth of the job, and closing
+            // it would cost a tap to reopen for each of the other five.
+            if store.dispatch(.placeInLineup(playerId: playerId, lineupIndex: lineupIndex)) {
+                armed = nil
+            }
 
         case let .substitute(out, incoming):
             if store.dispatch(.substitute(outPlayerId: out, inPlayerId: incoming)) {
-                armedIncoming = nil
+                armed = nil
                 isPickerRequested = false
             }
 
         case .ignore:
-            armedIncoming = nil
-            isPickerRequested = false
+            armed = nil
         }
     }
 }
@@ -60,8 +83,9 @@ struct CourtPicker: View {
 private struct CourtGrid: View {
     let court: CourtView
     let store: Store
-    let armedIncoming: String?
+    let armed: Armed?
     let onTap: (String) -> Void
+    let onTapPosition: (Int) -> Void
 
     var body: some View {
         Grid(horizontalSpacing: 6, verticalSpacing: 6) {
@@ -82,8 +106,20 @@ private struct CourtGrid: View {
         }
     }
 
+    /// Which place in the serving order this box is, right now.
+    ///
+    /// The court is drawn around whoever is serving, so the same box is a different place
+    /// in the order at different moments — which is why this is worked out rather than
+    /// stored on the slot.
+    private func lineupIndex(of slot: CourtSlot) -> Int {
+        VBCore.lineupIndex(servingPosition: court.servingPosition, offset: slot.position.offsetFromServer)
+    }
+
     private func cell(_ slot: CourtSlot) -> some View {
-        VStack(spacing: 2) {
+        let index = lineupIndex(of: slot)
+        let isHeld = armed == Armed.position(index)
+
+        return VStack(spacing: 2) {
             Text("\(slot.position.rawValue)")
                 .font(.system(size: 9, weight: .heavy))
                 .foregroundStyle(.tertiary)
@@ -94,16 +130,11 @@ private struct CourtGrid: View {
                     player: player,
                     isServing: slot.isServing,
                     isOnCourt: true,
-                    isArmed: armedIncoming == playerId,
+                    isArmed: armed == Armed.player(playerId),
                     onTap: { onTap(playerId) }
                 )
             } else {
-                // A position nobody is standing in is still a place in the order.
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4]))
-                    .foregroundStyle(.tertiary)
-                    .frame(height: 44)
-                    .overlay(Text(missingFigure).foregroundStyle(.tertiary))
+                EmptySpot(isHeld: isHeld, onTap: { onTapPosition(index) })
             }
 
             if slot.isServing {
@@ -115,11 +146,37 @@ private struct CourtGrid: View {
     }
 }
 
+/// A place in the order nobody is standing in — which is still a place, and still a target
+/// for the tap that puts someone there.
+private struct EmptySpot: View {
+    let isHeld: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(
+                    isHeld ? Color.orange : Color.secondary.opacity(0.4),
+                    style: StrokeStyle(lineWidth: isHeld ? 2 : 1, dash: isHeld ? [] : [4])
+                )
+                .frame(height: 44)
+                .overlay(
+                    Text(isHeld ? "WHO?" : missingFigure)
+                        .font(isHeld ? .caption.bold() : .body)
+                        .foregroundStyle(isHeld ? Color.orange : Color.secondary)
+                )
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("empty-spot")
+        .accessibilityLabel(isHeld ? "Empty spot, selected" : "Empty spot")
+    }
+}
+
 /// Everyone not on the court, shown as what they are.
 private struct Bench: View {
     let store: Store
     let court: CourtView
-    let armedIncoming: String?
+    let armed: Armed?
     let onTap: (String) -> Void
 
     private var bench: [RosterEntry] {
@@ -132,7 +189,7 @@ private struct Bench: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Bench").font(.system(size: 10, weight: .heavy)).textCase(.uppercase)
                     .foregroundStyle(.secondary)
-                ChipGrid(players: bench, armedIncoming: armedIncoming, servingId: nil, onTap: onTap, isBench: true)
+                ChipGrid(players: bench, armed: armed, servingId: nil, onTap: onTap, isBench: true)
             }
         }
     }
@@ -141,7 +198,7 @@ private struct Bench: View {
 /// A grid of players, used where there is no court to arrange them on.
 private struct ChipGrid: View {
     let players: [RosterEntry]
-    let armedIncoming: String?
+    let armed: Armed?
     let servingId: String?
     let onTap: (String) -> Void
     var isBench = false
@@ -153,7 +210,7 @@ private struct ChipGrid: View {
                     player: player,
                     isServing: player.id == servingId,
                     isOnCourt: !isBench,
-                    isArmed: armedIncoming == player.id,
+                    isArmed: armed == Armed.player(player.id),
                     onTap: { onTap(player.id) }
                 )
             }

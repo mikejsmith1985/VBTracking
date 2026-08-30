@@ -13,8 +13,10 @@ struct TrackScreen: View {
     /// The operator asked to change server mid-turn. Their override, nothing else's.
     @State private var isPickerRequested = false
 
-    /// The player being brought on, waiting for the tap that says who they replace.
-    @State private var armedIncoming: String?
+    /// What the operator has picked up: a player waiting for a spot, or a spot waiting for
+    /// a player. Both directions arrange the rotation, because before a match people think
+    /// in both.
+    @State private var armed: Armed?
 
     @State private var alert: ServeLimitAlert?
     @State private var isEndingMatch = false
@@ -42,7 +44,7 @@ struct TrackScreen: View {
                     Dock(
                         store: store,
                         dock: dock,
-                        armedIncoming: $armedIncoming,
+                        armed: $armed,
                         isPickerRequested: $isPickerRequested,
                         isChoosingLineup: $isChoosingLineup,
                         onServe: record

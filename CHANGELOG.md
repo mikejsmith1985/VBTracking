@@ -4,6 +4,32 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added
+
+- **The rotation can be set on the court itself, in either direction.** An empty spot is now
+  a button: tap it and then the player who stands there, or tap the player and then the
+  spot. Both orders work, because before a match people think in both, and asking the
+  operator to remember which way round it goes is asking them to look away from the court to
+  find out. Each placement is its own event, so undo takes back one tap rather than the
+  whole lineup. Before this, the only way to arrange six players was a list of names behind
+  a button that appeared *after* an order already existed — which hid it from exactly the
+  operator who had not made one yet. That button is now offered from the start.
+- **Column headings on the serving tables.** The figures were four unlabelled columns; a
+  reader had to work out for themselves whether `19/22` was serves-in over serves or
+  something else.
+
+### Changed
+
+- **The points column says when it covers only part of a season.** Serves and serves-in span
+  every game, because a paper sheet recorded them; points exist only where play was tracked
+  serve by serve. On a season that mixes the two the heading is marked and a line underneath
+  names both counts — "the 1 game of 5 tracked serve by serve" — so nobody compares two
+  players down that column without knowing what is in it.
+- **The app icon is the artwork itself, not a redrawing of it.** The silhouette the
+  stakeholder chose is traced to a mask at icon size and committed alongside the original, so
+  the icon can be recoloured or re-traced without hunting for the source file. The figure
+  built from circles and capsules that stood in for it is gone.
+
 ### Changed
 
 - **Offline is proved by reading the source, not by turning the radios off.** A test now

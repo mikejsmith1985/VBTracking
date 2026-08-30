@@ -41,6 +41,8 @@ private let everyKind: [Event.Kind] = [
     ),
     .setLineup(playerIds: ["p1", "p2", "p3", "p4", "p5", "p6"]),
     .clearLineup,
+    .placeInLineup(playerId: "p4", lineupIndex: 2),
+    .clearLineupPosition(lineupIndex: 5),
     .substitute(outPlayerId: "p3", inPlayerId: "p7"),
     .selectServer(playerId: "p1"),
     .recordServe(outcome: .inNoPoint),

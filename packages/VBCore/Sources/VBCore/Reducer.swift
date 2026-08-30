@@ -117,6 +117,20 @@ private func transition(_ state: AppState, _ event: Event) -> AppState {
             return next
         }
 
+    case let .placeInLineup(playerId, lineupIndex):
+        return withPlayerPlaced(state, playerId: playerId, lineupIndex: lineupIndex)
+
+    case let .clearLineupPosition(lineupIndex):
+        return updateCurrentMatch(state) { match, _ in
+            guard var lineup = match.lineup, lineup.indices.contains(lineupIndex) else { return match }
+            lineup[lineupIndex] = nil
+            var next = match
+            // Six empty places are no order at all, and an order nobody is in must not
+            // keep claiming a next server.
+            next.lineup = lineup.contains(where: { $0 != nil }) ? lineup : nil
+            return next
+        }
+
     case let .substitute(outPlayerId, inPlayerId):
         return withSubstitution(state, outPlayerId: outPlayerId, inPlayerId: inPlayerId)
 

@@ -77,6 +77,16 @@ extension AppState {
         currentMatch?.lineup
     }
 
+    /// True while the rotation can still be arranged: a match exists and nobody has served
+    /// in it yet.
+    ///
+    /// Once a serve is on the record the order it was served in is a fact, and the way to
+    /// change who stands where is a substitution.
+    public var canArrangeRotation: Bool {
+        guard let match = currentMatch else { return false }
+        return !match.turns.contains { !$0.serves.isEmpty }
+    }
+
     /// True when the current game is over: every match it holds has ended.
     ///
     /// Not "three matches have ended" — a game stopped early has fewer, and it is still over.
