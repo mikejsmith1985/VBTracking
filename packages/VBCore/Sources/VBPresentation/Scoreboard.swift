@@ -138,3 +138,55 @@ public struct Scoreboard: Equatable, Codable, Sendable {
     /// way to the court.
     public static let targets = [11, 15, 21, 25]
 }
+
+/// How big each control on the scoreboard is.
+///
+/// Here rather than in the view for the same reason the court's boxes are: there is no Mac
+/// on which to look at the screen, so "the score button is the big one" has to be a number
+/// something can check rather than an impression somebody has.
+public enum ScoreLayout {
+    /// The tappable height of one side's score. Also the button that adds a point.
+    public static let scoreHeight = 84.0
+
+    /// The size of the number in it.
+    public static let scoreFontSize = 48.0
+
+    /// The minus beneath. Short, but the full width of its column, so it stays an easy
+    /// target without competing with the number above it.
+    public static let minusHeight = 20.0
+
+    public static let minusFontSize = 11.0
+
+    /// Starting again, across the bottom.
+    public static let newGameHeight = 26.0
+
+    /// How much bigger the scoring control is than the correcting one.
+    ///
+    /// Adding a point happens every rally; taking one off happens when somebody made a
+    /// mistake. The one under the thumb has to be the one that is right nearly every time,
+    /// and four times the height is what makes that true without looking.
+    public static let minimumScoreToMinusRatio = 4.0
+
+    /// What the whole page needs vertically, so it can be checked against the smallest
+    /// watch rather than found not to fit on one.
+    public static let requiredHeight =
+        scoreHeight + minusHeight + newGameHeight + statusHeight + spacing * 4
+
+    /// The line that says who is winning.
+    public static let statusHeight = 13.0
+
+    /// Between every stacked element.
+    public static let spacing = 3.0
+
+    /// The shortest screen this has to fit on, in points.
+    ///
+    /// Note the unit. `CourtLayout.supportedWatchSizes` lists the 40 mm watch as 324 x 394,
+    /// which is pixels; SwiftUI lays out in points, and the same watch is 162 x 197 of
+    /// those. Mixing the two would make a page that "fits" at twice the room it has.
+    public static let shortestScreenHeight = 197.0
+
+    /// What is left after the system's own furniture — the status bar at the top and the
+    /// home indicator at the bottom. Measured generously, because being wrong here means a
+    /// control pushed off the bottom of the smallest watch anybody owns.
+    public static let usableHeightFraction = 0.86
+}

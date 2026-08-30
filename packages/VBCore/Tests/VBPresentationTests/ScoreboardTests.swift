@@ -337,3 +337,40 @@ struct SupportLinkTests {
         #expect(About.versionLine(version: nil, build: "12") == "Version unknown")
     }
 }
+
+@Suite("How big the scoreboard's controls are")
+struct ScoreLayoutTests {
+    @Test("Scoring is the big control and correcting is the small one")
+    func theScoreIsTheBigTarget() {
+        let ratio = ScoreLayout.scoreHeight / ScoreLayout.minusHeight
+        #expect(
+            ratio >= ScoreLayout.minimumScoreToMinusRatio,
+            "adding a point happens every rally; taking one off happens on a mistake"
+        )
+        #expect(ScoreLayout.scoreFontSize > ScoreLayout.minusFontSize * 3)
+    }
+
+    @Test("The minus is still a thing a thumb can hit")
+    func theMinusIsStillTappable() {
+        // Short, but the full width of its column -- which is what keeps it hittable at a
+        // height that says plainly it is the lesser control.
+        #expect(ScoreLayout.minusHeight >= 18, "below this it is a decoration, not a button")
+    }
+
+    @Test("The whole page fits on the smallest watch anybody owns")
+    func fitsTheSmallestWatch() {
+        let usable = ScoreLayout.shortestScreenHeight * ScoreLayout.usableHeightFraction
+        #expect(
+            ScoreLayout.requiredHeight <= usable,
+            "\(ScoreLayout.requiredHeight)pt of controls in \(usable)pt of screen"
+        )
+    }
+
+    @Test("The page is worked out in points, not the pixels the court list is in")
+    func usesPoints() {
+        // The 40 mm watch is 324 x 394 pixels and 162 x 197 points. Reading one as the
+        // other would lay this page out in twice the room it has.
+        let smallestInPixels = CourtLayout.supportedWatchSizes[0]
+        #expect(ScoreLayout.shortestScreenHeight == smallestInPixels.height / 2)
+    }
+}

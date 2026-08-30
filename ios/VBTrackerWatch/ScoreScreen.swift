@@ -54,7 +54,7 @@ struct ScoreScreen: View {
     private var board: Scoreboard { keeper.board }
 
     var body: some View {
-        VStack(spacing: 3) {
+        VStack(spacing: ScoreLayout.spacing) {
             HStack(spacing: 6) {
                 column(.us)
                 column(.them)
@@ -62,6 +62,7 @@ struct ScoreScreen: View {
 
             Text(board.status)
                 .font(.system(size: 10, weight: .semibold))
+                .frame(minHeight: ScoreLayout.statusHeight)
                 .foregroundStyle(board.winner == nil ? Color.secondary : Color.orange)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
@@ -77,7 +78,7 @@ struct ScoreScreen: View {
     /// and taking one off happens when somebody made a mistake, so the one under the thumb
     /// is the one that is right nearly every time.
     private func column(_ side: Side) -> some View {
-        VStack(spacing: 2) {
+        VStack(spacing: ScoreLayout.spacing) {
             Button {
                 act { keeper.board.award(to: side) }
             } label: {
@@ -86,11 +87,11 @@ struct ScoreScreen: View {
                         .font(.system(size: 9, weight: .heavy))
                         .foregroundStyle(.secondary)
                     Text("\(board.score(side))")
-                        .font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .font(.system(size: ScoreLayout.scoreFontSize, weight: .heavy, design: .rounded))
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
                 }
-                .frame(maxWidth: .infinity, minHeight: 68)
+                .frame(maxWidth: .infinity, minHeight: ScoreLayout.scoreHeight)
             }
             .buttonStyle(.bordered)
             .tint(side == .us ? .cyan : .gray)
@@ -101,8 +102,8 @@ struct ScoreScreen: View {
                 act { keeper.board.subtract(from: side) }
             } label: {
                 Image(systemName: "minus")
-                    .font(.system(size: 13, weight: .bold))
-                    .frame(maxWidth: .infinity, minHeight: 24)
+                    .font(.system(size: ScoreLayout.minusFontSize, weight: .bold))
+                    .frame(maxWidth: .infinity, minHeight: ScoreLayout.minusHeight)
             }
             .buttonStyle(.bordered)
             .tint(.secondary)
@@ -128,7 +129,7 @@ struct ScoreScreen: View {
         } label: {
             Text(isConfirmingNewGame ? "Start over?" : "New game")
                 .font(.system(size: 13, weight: .semibold))
-                .frame(maxWidth: .infinity, minHeight: 26)
+                .frame(maxWidth: .infinity, minHeight: ScoreLayout.newGameHeight)
         }
         .buttonStyle(.bordered)
         .tint(isConfirmingNewGame ? .red : .gray)

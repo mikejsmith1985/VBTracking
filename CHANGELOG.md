@@ -4,6 +4,21 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The scoreboard's numbers got bigger and its minus buttons got smaller.** The score is now
+  84 pt tall with a 48 pt figure in it; the minus under each is 20 pt. Adding a point happens
+  every rally and taking one off happens when somebody made a mistake, so the control under
+  the thumb should be the one that is right nearly every time. The sizes live in
+  `ScoreLayout` rather than in the view, and a test asserts the scoring control is at least
+  four times the height of the correcting one — the same rule the wrist court follows, for
+  the same reason: there is no Mac here to look at a screen on, so "the big one" has to be a
+  number something can check.
+- Along with it, a test that the whole page fits the shortest watch anybody owns — and one
+  that pins the unit, because `CourtLayout` lists watch sizes in pixels while SwiftUI lays
+  out in points, and reading one as the other would fit this page into twice the room it has.
+
+
 ### Added
 
 - **An About page, with a tip jar on it.** One `About this app` row at the bottom of the
