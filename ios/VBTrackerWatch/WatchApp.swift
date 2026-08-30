@@ -26,7 +26,7 @@ struct VBTrackerWatchApp: App {
                 // be looking -- and because it is the one thing here worth interrupting
                 // for, for as long as the coach wants to be interrupted.
                 if let notice = link.serveLimit, settings.preferences.shouldShow(notice) {
-                    RotateAlert(notice: notice, shouldBuzz: settings.preferences.shouldBuzz) {
+                    RotateAlert(notice: notice, style: settings.preferences.rotateAlert) {
                         link.clearServeLimit()
                     }
                 }

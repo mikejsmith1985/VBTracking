@@ -6,13 +6,14 @@ All notable changes to this project are recorded here.
 
 ### Added
 
-- **The rotate alert can be turned off, from the wrist that wears it.** A third page on the
-  watch holds two switches: whether the alert appears at all, and whether it buzzes. They are
-  separate because the two objections are different ones — a coach who finds the buzzing too
-  much still wants to see the reminder, and a coach who watches the rotation themselves wants
-  neither. Both default to on: somebody who has never opened the page has not decided
-  anything, and the safe reading of that is that the rule still applies. There is no state
-  where an invisible alert vibrates.
+- **The rotate alert has three settings, chosen on the wrist that wears it.** A third watch
+  page offers off, brief, or persistent. Off never mentions the rule. Brief buzzes once and
+  clears itself after five seconds — long enough to look down mid-rally and read two numbers,
+  gone before the next serve. Persistent buzzes on a beat until it is cleared, which is what
+  it did before. Persistent is the default, because a coach who has never opened the page has
+  not decided anything and the alert should keep behaving the way they asked for it. A value
+  stored by some later version reads as the default too, never as off: silencing an alert
+  nobody chose to silence is the one failure with nothing on screen to explain it.
 
 
 ### Added

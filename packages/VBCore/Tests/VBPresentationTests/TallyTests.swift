@@ -281,56 +281,69 @@ struct ServeLimitNoticeTests {
 
 // MARK: - The coach's own choice
 
-@Suite("What the coach has turned off")
-struct WatchPreferenceTests {
+@Suite("How hard the wrist presses about the rule")
+struct RotateAlertStyleTests {
     private let notice = ServeLimitNotice(finishedNumber: "5", nextNumber: "7", raisedAtServeCount: 5)
 
-    @Test("A coach who has chosen nothing still gets the rule they asked for")
-    func defaultsAreOn() {
+    @Test("A coach who has chosen nothing still gets the alert they asked for")
+    func defaultIsPersistent() {
         let preferences = WatchPreferences()
-        #expect(preferences.isRotateAlertOn)
-        #expect(preferences.isRotateBuzzOn)
+        #expect(preferences.rotateAlert == .persistent)
         #expect(preferences.shouldShow(notice))
-        #expect(preferences.shouldBuzz)
     }
 
-    @Test("Turning the alert off shows nothing at all")
-    func alertOffShowsNothing() {
-        let preferences = WatchPreferences(isRotateAlertOn: false)
-        #expect(preferences.shouldShow(notice) == false)
+    @Test("Off shows nothing at all")
+    func offShowsNothing() {
+        #expect(WatchPreferences(rotateAlert: .off).shouldShow(notice) == false)
+        #expect(RotateAlertStyle.off.isOn == false)
     }
 
-    @Test("Silencing it keeps the reminder and drops the buzzing")
-    func buzzOffKeepsTheAlert() {
-        let preferences = WatchPreferences(isRotateAlertOn: true, isRotateBuzzOn: false)
-        #expect(preferences.shouldShow(notice))
-        #expect(preferences.shouldBuzz == false)
+    @Test("Brief buzzes once and clears itself after five seconds")
+    func briefClearsItself() {
+        let style = RotateAlertStyle.brief
+        #expect(style.isOn)
+        #expect(style.isRepeating == false, "one buzz, not a beat")
+        #expect(style.clearsAfter == 5)
     }
 
-    @Test("There is no state where an invisible alert vibrates")
-    func noBuzzWithoutAnAlert() {
-        let preferences = WatchPreferences(isRotateAlertOn: false, isRotateBuzzOn: true)
-        #expect(preferences.shouldShow(notice) == false)
-        #expect(preferences.shouldBuzz == false, "a buzz with nothing on screen explains itself to nobody")
+    @Test("Persistent keeps buzzing and waits to be cleared")
+    func persistentWaits() {
+        let style = RotateAlertStyle.persistent
+        #expect(style.isOn)
+        #expect(style.isRepeating)
+        #expect(style.clearsAfter == nil, "it is cleared by a person, not by a clock")
     }
 
-    @Test("Nothing is shown when the rule has not fired, whatever the settings say")
+    @Test("Off neither buzzes nor waits, because it never appears")
+    func offDoesNeither() {
+        #expect(RotateAlertStyle.off.isRepeating == false)
+        #expect(RotateAlertStyle.off.clearsAfter == nil)
+    }
+
+    @Test("Nothing is shown when the rule has not fired, whatever the setting says")
     func nothingToShowWithoutANotice() {
-        #expect(WatchPreferences().shouldShow(nil) == false)
+        for style in RotateAlertStyle.allCases {
+            #expect(WatchPreferences(rotateAlert: style).shouldShow(nil) == false)
+        }
     }
 
-    @Test("The page says what has been turned off, in words")
-    func summaryReadsBack() {
-        #expect(WatchPreferences().summary.contains("buzzes"))
-        #expect(WatchPreferences(isRotateAlertOn: true, isRotateBuzzOn: false).summary.contains("silently"))
-        #expect(WatchPreferences(isRotateAlertOn: false).summary.contains("will not"))
+    @Test("Every choice has a name and says what it will do")
+    func everyChoiceReadsBack() {
+        #expect(RotateAlertStyle.allCases.count == 3)
+        for style in RotateAlertStyle.allCases {
+            #expect(!style.label.isEmpty)
+            #expect(style.detail.count > 10, "\(style.label) does not say what it does")
+        }
+        #expect(WatchPreferences(rotateAlert: .brief).summary == RotateAlertStyle.brief.detail)
     }
 
     @Test("A choice survives being written down and read back")
     func roundTrips() throws {
-        let chosen = WatchPreferences(isRotateAlertOn: true, isRotateBuzzOn: false)
-        let read = try JSONDecoder().decode(WatchPreferences.self, from: JSONEncoder().encode(chosen))
-        #expect(read == chosen)
+        for style in RotateAlertStyle.allCases {
+            let chosen = WatchPreferences(rotateAlert: style)
+            let read = try JSONDecoder().decode(WatchPreferences.self, from: JSONEncoder().encode(chosen))
+            #expect(read == chosen)
+        }
     }
 }
 
@@ -338,22 +351,28 @@ struct WatchPreferenceTests {
 struct PreferenceStorageTests {
     @Test("A key that was never written means the default, not off")
     func absenceIsTheDefault() {
-        let preferences = WatchPreferences(storedRotateAlert: nil, storedRotateBuzz: nil)
-        #expect(preferences.isRotateAlertOn, "a coach who never opened settings chose nothing")
-        #expect(preferences.isRotateBuzzOn)
+        let preferences = WatchPreferences(storedRotateAlert: nil)
+        #expect(preferences.rotateAlert == .persistent, "a coach who never opened settings chose nothing")
     }
 
-    @Test("A choice that was written is honoured, including a false one")
+    @Test("Every choice that can be written can be read back")
     func storedChoicesAreKept() {
-        let preferences = WatchPreferences(storedRotateAlert: false, storedRotateBuzz: true)
-        #expect(preferences.isRotateAlertOn == false)
-        #expect(preferences.isRotateBuzzOn)
+        for style in RotateAlertStyle.allCases {
+            #expect(WatchPreferences(storedRotateAlert: style.rawValue).rotateAlert == style)
+        }
     }
 
     @Test("Something stored that is not a choice is treated as no choice")
     func rubbishReadsAsTheDefault() {
-        let preferences = WatchPreferences(storedRotateAlert: "yes", storedRotateBuzz: 0)
-        #expect(preferences.isRotateAlertOn)
-        #expect(preferences.isRotateBuzzOn)
+        #expect(WatchPreferences(storedRotateAlert: "loud").rotateAlert == .persistent)
+        #expect(WatchPreferences(storedRotateAlert: 0).rotateAlert == .persistent)
+        #expect(WatchPreferences(storedRotateAlert: true).rotateAlert == .persistent)
+    }
+
+    @Test("A style written by a later version does not silence the alert")
+    func unknownStyleFallsBackRatherThanOff() {
+        // The failure that matters: an unrecognised value must never read as "off", because
+        // that silences an alert nobody chose to silence and nothing on screen says why.
+        #expect(WatchPreferences(storedRotateAlert: "gentle").rotateAlert.isOn)
     }
 }
