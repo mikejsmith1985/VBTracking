@@ -6,6 +6,16 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- **Offline is proved by reading the source, not by turning the radios off.** A test now
+  walks every file that ships and fails if one so much as names a networking API — there are
+  none, and no networking framework is imported anywhere. That replaces a manual
+  aeroplane-mode run which was wrong twice over: it had been dropped as a release gate back
+  in release 003, and aeroplane mode disables the Bluetooth the watch link runs on. It would
+  have demonstrated that the app works offline by breaking the one thing this release exists
+  for. The device check is now what a gym actually is: no Wi-Fi, no signal, Bluetooth on.
+
+### Changed
+
 - **The wrist court is designed for the smallest watch Apple still supports, not the
   operator's own.** The design target moves from a 42 mm screen to a 40 mm one (324 × 394
   pt), and the layout is now asserted against all seven sizes in the field — from a Series 6
