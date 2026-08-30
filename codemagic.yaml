@@ -228,19 +228,22 @@ workflows:
         script: |
           set -o pipefail
 
-          # The key as the integration supplies it. `%b` so that a value carrying
-          # escaped newlines is written with real ones.
-          printf '%b\n' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/asc.p8
+          # What the integration actually puts in this variable is a PATH to the key file,
+          # not the key. Seventy-two characters, no newlines, no PEM header -- which every
+          # earlier attempt fed to OpenSSL as though it were a key, and OpenSSL called an
+          # invalid curve. It was never a curve, and it was never even a key.
+          if [ -f "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then
+            echo 'The variable holds a path; reading the file it points at.'
+            cp "$APP_STORE_CONNECT_PRIVATE_KEY" /tmp/asc.p8
+          else
+            echo 'The variable holds the key itself.'
+            printf '%b\n' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/asc.p8
+          fi
           chmod 600 /tmp/asc.p8
 
-          # The integration hands the key over base64-encoded, which is why every
-          # earlier attempt failed: base64 is not a PEM, OpenSSL cannot parse it,
-          # and the complaint it makes is about a curve. Decode it when it does not
-          # already look like a PEM.
           if ! head -c 11 /tmp/asc.p8 | grep -q -- '-----BEGIN'; then
-            echo 'Key is not PEM; decoding base64.'
-            base64 --decode /tmp/asc.p8 > /tmp/asc_decoded.p8 2>/dev/null || base64 -D -i /tmp/asc.p8 -o /tmp/asc_decoded.p8
-            mv /tmp/asc_decoded.p8 /tmp/asc.p8
+            echo 'Still not a PEM; trying base64.'
+            base64 --decode /tmp/asc.p8 > /tmp/asc_decoded.p8 2>/dev/null && mv /tmp/asc_decoded.p8 /tmp/asc.p8
             chmod 600 /tmp/asc.p8
           fi
           echo "Key begins: $(head -1 /tmp/asc.p8)"
