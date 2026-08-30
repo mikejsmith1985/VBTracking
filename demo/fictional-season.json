@@ -508,7 +508,7 @@
       "t": "RENAME_SEASON",
       "id": "season-1",
       "name": "2026",
-      "team": "Riverside\u2019s Tigers"
+      "team": "Riverside Tigers"
     },
     {
       "t": "EDIT_PLAYER",
@@ -807,13 +807,13 @@
       "t": "RENAME_SEASON",
       "id": "season-1",
       "name": "2026",
-      "team": "Riverside\u2019s Tigers"
+      "team": "Riverside Tigers"
     },
     {
       "t": "RENAME_SEASON",
       "id": "season-1",
       "name": "2026",
-      "team": "Riverside\u2019s Tigers"
+      "team": "Riverside Tigers"
     },
     {
       "t": "EDIT_HISTORICAL_GAME",
