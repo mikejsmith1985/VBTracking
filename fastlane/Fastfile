@@ -2,56 +2,79 @@
 #
 # Everything App Store Connect needs lives in `metadata/` and `screenshots/` beside this
 # file, which means the listing is reviewable in a pull request and reproducible on the next
-# release. The key is the one Codemagic already holds and already uses to upload builds.
+# release. The key is the one Codemagic already holds and already uploads builds with.
 #
 # Two lanes on purpose. `verify` sends nothing and reports what WOULD be sent; `submit` is
 # the irreversible one. Submitting for review is public and cannot be quietly undone, so it
 # is never the default and never a side effect of running the other.
+require 'tmpdir'
 
 default_platform(:ios)
 
 APP = "com.mikejsmith.vbtracker"
 
-platform :ios do
-  # The App Store Connect key, built from what the Codemagic integration puts in the
-  # environment. Nothing here ever sees the key's contents in a log.
-  # The names Codemagic has used for the three halves of the key. More than one, because
-  # the integration has not always spelled them the same way, and a KeyError from ENV.fetch
-  # says only that something is missing -- not which thing, and not what is there instead.
-  KEY_ID_NAMES = %w[APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_KEY_ID ASC_KEY_ID].freeze
-  ISSUER_NAMES = %w[APP_STORE_CONNECT_ISSUER_ID ASC_ISSUER_ID].freeze
-  PRIVATE_KEY_NAMES = %w[APP_STORE_CONNECT_PRIVATE_KEY ASC_PRIVATE_KEY].freeze
+# The names Codemagic has used for the three halves of the key. More than one, because a
+# KeyError from ENV.fetch says only that something is missing -- not which thing.
+KEY_ID_NAMES = %w[APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_KEY_ID ASC_KEY_ID].freeze
+ISSUER_NAMES = %w[APP_STORE_CONNECT_ISSUER_ID ASC_ISSUER_ID].freeze
+PRIVATE_KEY_NAMES = %w[APP_STORE_CONNECT_PRIVATE_KEY ASC_PRIVATE_KEY].freeze
 
+platform :ios do
   # The first of these names that is actually set. Names only ever appear in a log; values
   # never do.
   def from_env(names, what)
     found = names.find { |name| !ENV[name].to_s.strip.empty? }
     unless found
       present = ENV.keys.grep(/APP_STORE|ASC_|CERTIFICATE/).sort
-      UI.user_error!("No #{what} in the environment. Looked for #{names.join(', ')}. Present: #{present.join(', ')}")
+      UI.user_error!("No #{what}. Looked for #{names.join(', ')}. Present: #{present.join(', ')}")
     end
     UI.message("Using #{found} for #{what}")
     ENV.fetch(found)
+  end
+
+  # The .p8, written out with real newlines and a PEM wrapper.
+  #
+  # Handed to fastlane as `key_content` straight from the environment, this failed with
+  # "invalid curve name": an EC key whose line breaks arrived as the two characters
+  # backslash and n is not a key OpenSSL can read, and the error says nothing about why.
+  # Writing the file here takes the guesswork out of it.
+  #
+  # Nothing about the contents is ever logged -- only its shape.
+  def key_file
+    raw = from_env(PRIVATE_KEY_NAMES, "private key").strip
+    body = raw.include?('\n') && !raw.include?("\n") ? raw.gsub('\n', "\n") : raw
+
+    unless body.start_with?("-----BEGIN")
+      wrapped = body.gsub(/\s+/, "").scan(/.{1,64}/).join("\n")
+      body = "-----BEGIN PRIVATE KEY-----\n#{wrapped}\n-----END PRIVATE KEY-----"
+    end
+    body += "\n" unless body.end_with?("\n")
+
+    UI.message("Key: #{body.lines.count} lines, header #{body.start_with?('-----BEGIN') ? 'present' : 'MISSING'}")
+
+    path = File.join(Dir.tmpdir, "asc_api_key.p8")
+    File.write(path, body)
+    File.chmod(0o600, path)
+    path
   end
 
   def connect_key
     app_store_connect_api_key(
       key_id: from_env(KEY_ID_NAMES, "key id"),
       issuer_id: from_env(ISSUER_NAMES, "issuer id"),
-      key_content: from_env(PRIVATE_KEY_NAMES, "private key"),
-      is_key_content_base64: false,
+      key_filepath: key_file,
       in_house: false
     )
   end
 
-  # Settings shared by both lanes, so a dry run cannot differ from the real thing in any
-  # way except whether it sends.
+  # Settings shared by both lanes, so a dry run cannot differ from the real thing in any way
+  # except whether it sends.
   def listing(api_key, extra)
     {
       api_key: api_key,
       app_identifier: APP,
       # The binary is already on App Store Connect: `ios-watch` uploaded it. Uploading it
-      # again here would be a second copy of the same build under a number Apple refuses.
+      # again would be a second copy under a build number Apple refuses.
       skip_binary_upload: true,
       skip_screenshots: false,
       skip_metadata: false,
@@ -63,8 +86,8 @@ platform :ios do
       force: true,
       run_precheck_before_submit: false,
       submission_information: {
-        # There is no encryption in the app at all, and no advertising identifier, and
-        # every image in it is ours.
+        # No encryption in the app at all, no advertising identifier, and every image in it
+        # is ours.
         export_compliance_uses_encryption: false,
         export_compliance_encryption_updated: false,
         add_id_info_uses_idfa: false,
