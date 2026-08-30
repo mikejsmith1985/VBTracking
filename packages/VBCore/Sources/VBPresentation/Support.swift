@@ -51,7 +51,10 @@ public enum About {
 
     /// Everything true about the app that a person might want to check before trusting it.
     public static let facts = [
-        "Free, all of it. No adverts, nothing locked, no account.",
+        // Said about this app as it stands, not as a promise about every app to come. A
+        // pledge nobody can keep is worse than no pledge, and this one would be quoted
+        // back at the first thing that ever carried a price.
+        "This app is free. No adverts, nothing locked, no account.",
         "Your season stays on your phone. The app has no networking in it at all — that is checked on every build.",
         "The watch talks to the phone directly, over the link between the two paired devices.",
         "Save a copy of everything whenever you like, as one file you keep.",
