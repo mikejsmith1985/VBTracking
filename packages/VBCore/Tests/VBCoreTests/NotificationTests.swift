@@ -1,3 +1,10 @@
+// Two things this app does not take: the coach's notifications, and anybody's money.
+//
+// Both are rules about restraint rather than about behaviour, which means nothing fails if
+// they are broken -- the app simply becomes a worse thing to have installed. So both are
+// checked by reading the source on every run, rather than remembered by whoever writes the
+// next feature.
+//
 // The coach's own notifications are not this app's to take.
 //
 // A watch app that wants to hold the screen, or buzz on a beat, is one step away from
@@ -79,3 +86,63 @@ struct NotificationTests {
     }
 }
 
+
+// MARK: - Being paid
+
+@Suite("Nothing in this app takes money")
+struct PaymentTests {
+    /// Everything that would let the app collect a payment itself.
+    ///
+    /// A free app may be thanked, but only outside itself: Apple's rules leave exactly one
+    /// lawful route, which is a link out to the browser. A payment field of our own would be
+    /// rejected, and taking card details in an app that has no networking would be a lie
+    /// twice over.
+    private static let paymentAPIs = [
+        "PKPayment", "PassKit", "StoreKit", "SKPayment", "SKProduct",
+        "Product.purchase", "AppStore.sync", "cardNumber", "creditCard",
+    ]
+
+    @Test("No shipped file so much as names a way to take a payment")
+    func namesNoPaymentAPI() throws {
+        for file in ShippedSources.files() {
+            let code = try ShippedSources.code(of: file)
+            #expect(
+                ShippedSources.isReadable(code),
+                Comment(rawValue: "nothing was read out of \(file.lastPathComponent)")
+            )
+
+            for api in Self.paymentAPIs {
+                #expect(
+                    !code.contains(api),
+                    Comment(rawValue: "\(file.lastPathComponent) names \(api)")
+                )
+            }
+        }
+    }
+
+    @Test("Nothing imports a framework that could")
+    func importsNoPaymentFramework() throws {
+        let frameworks = ["import StoreKit", "import PassKit"]
+
+        for file in ShippedSources.files() {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            for framework in frameworks {
+                #expect(
+                    !source.contains(framework),
+                    Comment(rawValue: "\(file.lastPathComponent) has \(framework)")
+                )
+            }
+        }
+    }
+
+    @Test("The thank-you is a link handed to the browser, and nothing more")
+    func theTipJarIsALink() throws {
+        let about = ShippedSources.repository
+            .appendingPathComponent("ios/VBTracker/Season/AboutScreen.swift")
+        let code = try ShippedSources.code(of: about)
+
+        #expect(code.contains("Link(destination:"), "the browser takes over from here")
+        #expect(code.contains("TextField") == false, "nothing on this screen collects anything")
+        #expect(code.contains("SecureField") == false)
+    }
+}
