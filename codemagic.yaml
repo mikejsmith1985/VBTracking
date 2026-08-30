@@ -113,7 +113,14 @@ workflows:
       # app_id field here, and the number lives in CLAUDE.md where identifiers belong.
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
+        # Uploaded, and nothing more. `submit_to_testflight` submits for EXTERNAL beta
+        # review, which demands a feedback email and a named review contact -- and fails
+        # without them, after a build that was otherwise perfect.
+        #
+        # Internal testers do not need any of that: every processed build reaches an
+        # internal group automatically. External review is a decision for the day this app
+        # goes to people outside the family, and it can be made then.
+        submit_to_testflight: false
 
     triggering:
       events: [tag]
