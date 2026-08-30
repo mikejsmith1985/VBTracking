@@ -29,36 +29,34 @@ public struct Scoreboard: Equatable, Codable, Sendable {
     public private(set) var us: Int
     public private(set) var them: Int
 
-    /// What the score was before each point, newest last.
-    ///
-    /// Kept so undo is exact rather than "take one off whoever is ahead". A point given to
-    /// the wrong side is the mistake this makes, and it has to be reversible by the person
-    /// who made it without them having to work out what they did.
-    public private(set) var history: [Score]
-
     /// Where the game is being played to.
     public var target: Int
 
-    /// One recorded state of the two numbers.
-    public struct Score: Equatable, Codable, Sendable {
-        public var us: Int
-        public var them: Int
-
-        public init(us: Int, them: Int) {
-            self.us = us
-            self.them = them
-        }
-    }
-
-    public init(us: Int = 0, them: Int = 0, history: [Score] = [], target: Int = targetScore) {
+    public init(us: Int = 0, them: Int = 0, target: Int = targetScore) {
         self.us = us
         self.them = them
-        self.history = history
         self.target = target
     }
 
-    /// The score right now.
-    public var score: Score { Score(us: us, them: them) }
+    /// Reads a board that may have been written by an earlier build.
+    ///
+    /// Leniently, for the same reason the court is: a missing key throws through the
+    /// generated decoder, and a throw here loses a game in progress that has no other copy
+    /// anywhere. A board that cannot be fully read is still better read as far as it goes.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.us = try container.decodeIfPresent(Int.self, forKey: .us) ?? 0
+        self.them = try container.decodeIfPresent(Int.self, forKey: .them) ?? 0
+        self.target = try container.decodeIfPresent(Int.self, forKey: .target) ?? targetScore
+    }
+
+    /// The score on one side.
+    public func score(_ side: Side) -> Int {
+        switch side {
+        case .us: us
+        case .them: them
+        }
+    }
 
     /// Adds a point to one side.
     ///
@@ -66,34 +64,44 @@ public struct Scoreboard: Equatable, Codable, Sendable {
     /// nobody agreed on: the scoreboard is not the authority on when to stop, the people
     /// on the court are.
     public mutating func award(to side: Side) {
-        history.append(score)
         switch side {
         case .us: us += 1
         case .them: them += 1
         }
     }
 
-    /// Takes back the last point, whichever side it went to.
-    public mutating func undo() {
-        guard let previous = history.popLast() else { return }
-        us = previous.us
-        them = previous.them
+    /// Takes a point off one side.
+    ///
+    /// Per side rather than a single undo of the last thing done. A scorekeeper who has
+    /// given a point to the wrong team knows which team; asking them to work out how many
+    /// steps back that was, in a gym, is asking for the wrong correction.
+    public mutating func subtract(from side: Side) {
+        guard canSubtract(from: side) else { return }
+        switch side {
+        case .us: us -= 1
+        case .them: them -= 1
+        }
     }
 
-    /// True when there is a point to take back.
-    public var canUndo: Bool { !history.isEmpty }
+    /// True while there is a point on that side to take off. Nothing goes below nothing.
+    public func canSubtract(from side: Side) -> Bool {
+        score(side) > 0
+    }
 
     /// Back to nothing, ready for the next game. The target is kept: it is a choice about
     /// how they are playing today, not part of the score.
     public mutating func reset() {
         us = 0
         them = 0
-        history = []
     }
+
+    /// True when there is a game here at all, so a reset that would change nothing can say
+    /// so rather than asking to be confirmed.
+    public var hasStarted: Bool { us > 0 || them > 0 }
 
     /// The side that has won, or nil while it is still a game.
     ///
-    /// To the target and two clear. Both halves matter: 21–20 is not a win, and 26–24 is,
+    /// To the target and two clear. Both halves matter: 21-20 is not a win, and 26-24 is,
     /// which is the whole reason a scoreboard is worth more than counting on fingers.
     public var winner: Side? {
         guard max(us, them) >= target, abs(us - them) >= 2 else { return nil }
