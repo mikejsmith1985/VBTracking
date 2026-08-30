@@ -101,24 +101,3 @@ for (const [name, size] of [['icon-192.png', 192], ['icon-512.png', 512], ['appl
   writeFileSync(target, encodePng(size))
   console.log(`wrote ${name} (${size}x${size})`)
 }
-
-// The native apps take the same artwork. Xcode wants a single 1024 image per app icon and
-// resizes the rest itself, so there is exactly one file each and no set of sizes to keep in
-// step with anything.
-const NATIVE_ICONS = [
-  ['../ios/VBTracker/Assets.xcassets/AppIcon.appiconset', 1024],
-  ['../ios/VBTrackerWatch/Assets.xcassets/AppIcon.appiconset', 1024],
-]
-
-const CONTENTS = (filename) => JSON.stringify({
-  images: [{ filename, idiom: 'universal', platform: 'ios', size: '1024x1024' }],
-  info: { author: 'xcode', version: 1 },
-}, null, 2) + String.fromCharCode(10)
-
-for (const [relative, size] of NATIVE_ICONS) {
-  const directory = resolve(dirname(fileURLToPath(import.meta.url)), relative)
-  mkdirSync(directory, { recursive: true })
-  writeFileSync(resolve(directory, 'icon-1024.png'), encodePng(size))
-  writeFileSync(resolve(directory, 'Contents.json'), CONTENTS('icon-1024.png'))
-  console.log(`wrote ${relative}/icon-1024.png (${size}x${size})`)
-}

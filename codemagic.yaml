@@ -93,6 +93,13 @@ workflows:
           keychain add-certificates
           xcode-project use-profiles
 
+      # App Store Connect refuses a build number it has already seen, so the number comes
+      # from the build itself rather than from a constant in the project that somebody has
+      # to remember to raise.
+      - name: Number this build
+        script: |
+          cd ios && agvtool new-version -all "$BUILD_NUMBER"
+
       - name: Test the domain first
         script: |
           cd packages/VBCore
