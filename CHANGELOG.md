@@ -4,6 +4,19 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added
+
+- **Privacy and support pages, at the two URLs the App Store will not accept a submission
+  without.** Both live beside the web app on GitHub Pages, and both are written to be read
+  rather than to satisfy a form. The privacy page says the only thing worth saying — the app
+  collects nothing, has no server, and has no networking code at all — and then explains what
+  that means for backups, for the watch link, and for a roster of children's names. The
+  support page answers the questions somebody will actually have, including why a figure
+  shows a dash instead of a zero.
+
+  Neither is precached: they are read online, and they are not part of the offline app.
+
+
 ### Fixed
 
 - **The minus bars and New game could not be seen.** They were `#1b2030` on a black screen —
