@@ -80,7 +80,7 @@ struct TurnEditor: View {
             Text("\(turn.ordinal + 1)")
                 .font(.caption.bold())
                 .frame(width: 22, height: 22)
-                .background(Circle().fill(Color(hex: colorForTurn(turn.ordinal))))
+                .background(Circle().fill(Color(hex: color(ofTurn: turn, in: match))))
                 .foregroundStyle(.black)
             Text(store.state.rosterEntry(id: turn.playerId)?.name ?? "Removed player").font(.subheadline)
             Spacer()

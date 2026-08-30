@@ -9,29 +9,6 @@ import VBCore
 
 @testable import VBPresentation
 
-// MARK: - Fixtures
-
-private func event(_ kind: Event.Kind) -> Event {
-    Event(id: UUID().uuidString, kind: kind)
-}
-
-private func roster(_ count: Int) -> [Event] {
-    (1...count).map { index in
-        event(.addPlayer(id: "p\(index)", name: "Player \(index)", number: "\(index)", seasonId: nil))
-    }
-}
-
-private let six = ["p1", "p2", "p3", "p4", "p5", "p6"]
-
-/// Nine on the roster, a game underway, six on court.
-private func onCourt(_ extra: [Event] = []) -> AppState {
-    var events = roster(9)
-    events += [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: true))]
-    events += [event(.setLineup(playerIds: six))]
-    events += extra
-    return replay(events)
-}
-
 // MARK: - Figures
 
 @Suite("How a figure reads")
@@ -619,10 +596,4 @@ struct MergeTests {
         let result = merge(incoming: [serve("b"), serve("c")], into: [serve("a")])
         #expect(result.log.compactMap { $0["eventId"]?.stringValue } == ["a", "b", "c"])
     }
-}
-
-// MARK: - Helper
-
-private func build(_ groups: [Event]...) -> AppState {
-    replay(groups.flatMap { $0 })
 }

@@ -64,7 +64,7 @@ struct ServeRecordScreen: View {
                 onClose: { openTurn = nil }
             )
         } else {
-            Button { openTurn = location } label: { TurnRow(store: store, turn: turn) }
+            Button { openTurn = location } label: { TurnRow(store: store, match: match, turn: turn) }
                 .accessibilityIdentifier("turn-\(match.index)-\(turn.ordinal)")
         }
     }
@@ -110,6 +110,7 @@ struct ServeRecordScreen: View {
 /// One turn, closed: who served it, what happened, and what it came to.
 private struct TurnRow: View {
     let store: Store
+    let match: Match
     let turn: Turn
 
     var body: some View {
@@ -117,7 +118,7 @@ private struct TurnRow: View {
             Text("\(turn.ordinal + 1)")
                 .font(.caption.bold())
                 .frame(width: 22, height: 22)
-                .background(Circle().fill(Color(hex: colorForTurn(turn.ordinal))))
+                .background(Circle().fill(Color(hex: color(ofTurn: turn, in: match))))
                 .foregroundStyle(.black)
 
             VStack(alignment: .leading, spacing: 2) {
