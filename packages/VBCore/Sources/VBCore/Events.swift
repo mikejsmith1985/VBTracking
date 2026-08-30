@@ -210,6 +210,17 @@ public struct Event: Equatable, Sendable {
 
         // The match in progress
         case setLineup(playerIds: [String])
+
+        /// Puts one player at one place in the serving order, leaving the rest alone.
+        ///
+        /// Its own event rather than a rewritten `setLineup` so that one undo takes back
+        /// one tap: an operator building the rotation six taps before the whistle needs to
+        /// step back one placement, not lose the five before it.
+        case placeInLineup(playerId: String, lineupIndex: Int)
+
+        /// Empties one place in the serving order.
+        case clearLineupPosition(lineupIndex: Int)
+
         case clearLineup
         case substitute(outPlayerId: String, inPlayerId: String)
         case selectServer(playerId: String)

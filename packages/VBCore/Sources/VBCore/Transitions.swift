@@ -266,6 +266,29 @@ func withGameEnded(_ state: AppState, result: MatchResult) -> AppState {
 
 // MARK: - The match in progress
 
+/// Puts one player at one place in the serving order, before a serve has been taken.
+///
+/// A player already standing somewhere else moves rather than appears twice: the operator
+/// who taps a player into the service corner has decided they serve first, and leaving a
+/// copy of them at their old place would build a rotation of five real people and a ghost.
+func withPlayerPlaced(_ state: AppState, playerId: String, lineupIndex: Int) -> AppState {
+    updateCurrentMatch(state) { match, _ in
+        guard (0..<lineupSize).contains(lineupIndex) else { return match }
+
+        // A match with no order yet gets an empty one to place into, rather than refusing
+        // the first tap for want of the thing that tap is creating.
+        var lineup = match.lineup ?? Array(repeating: nil, count: lineupSize)
+        while lineup.count < lineupSize { lineup.append(nil) }
+
+        lineup = lineup.map { $0 == playerId ? nil : $0 }
+        lineup[lineupIndex] = playerId
+
+        var next = match
+        next.lineup = lineup
+        return next
+    }
+}
+
 func withSubstitution(_ state: AppState, outPlayerId: String, inPlayerId: String) -> AppState {
     updateCurrentMatch(state) { match, _ in
         guard let lineup = match.lineup, let position = lineup.firstIndex(of: outPlayerId) else {

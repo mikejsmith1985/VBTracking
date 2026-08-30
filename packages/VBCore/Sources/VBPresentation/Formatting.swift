@@ -77,3 +77,36 @@ public func title(of game: Game) -> String {
 public func subtitle(of game: Game) -> String {
     game.context.date ?? "No date"
 }
+
+/// The heading over the points column, marked when the figure covers fewer games than the
+/// serve columns beside it do.
+///
+/// Serves and serves-in span every game, because a paper sheet recorded them. Points exist
+/// only where play was tracked serve by serve. On a season that mixes the two the last
+/// column answers a different question from the others, and a reader comparing two players
+/// down that column has to be told so before they draw a conclusion from it.
+public func pointsHeading(coverage: Coverage?) -> String {
+    isPointsASubset(coverage) ? "Pts*" : "Pts"
+}
+
+/// True when the points column covers fewer games than the season holds.
+public func isPointsASubset(_ coverage: Coverage?) -> Bool {
+    guard let coverage else { return false }
+    return coverage.trackedGames < coverage.totalGames
+}
+
+/// The line under the table explaining the marked column, or nothing when every game was
+/// tracked and there is nothing to explain.
+public func coverageNote(_ coverage: Coverage?) -> String? {
+    guard let coverage, isPointsASubset(coverage) else { return nil }
+    let tracked = coverage.trackedGames
+    let untracked = coverage.totalGames - tracked
+    return "* Points come from the \(tracked) \(word(games: tracked)) of \(coverage.totalGames) "
+        + "tracked serve by serve. The other \(untracked) \(word(games: untracked)) came from paper, "
+        + "which recorded serves only — so a dash there is a figure nobody wrote down, not a nought."
+}
+
+/// "game" or "games", so the sentence reads as one a person would say.
+private func word(games count: Int) -> String {
+    count == 1 ? "game" : "games"
+}

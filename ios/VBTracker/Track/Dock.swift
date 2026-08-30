@@ -10,7 +10,7 @@ import VBPresentation
 struct Dock: View {
     let store: Store
     let dock: DockState
-    @Binding var armedIncoming: String?
+    @Binding var armed: Armed?
     @Binding var isPickerRequested: Bool
     @Binding var isChoosingLineup: Bool
     let onServe: (Outcome) -> Void
@@ -28,7 +28,7 @@ struct Dock: View {
             case .outcomes:
                 OutcomeControls(onServe: onServe)
             case .picker:
-                CourtPicker(store: store, armedIncoming: $armedIncoming, isPickerRequested: $isPickerRequested)
+                CourtPicker(store: store, armed: $armed, isPickerRequested: $isPickerRequested)
             case .nothing:
                 EmptyView()
             }
@@ -66,8 +66,10 @@ private struct StatusRow: View {
             }
             Spacer()
 
-            if dock.hasLineup {
-                Button("Order") { isChoosingLineup = true }.buttonStyle(.bordered).controlSize(.small)
+            if dock.hasLineup || dock.canArrangeRotation {
+                Button("Order") { isChoosingLineup = true }
+                    .buttonStyle(.bordered).controlSize(.small)
+                    .accessibilityIdentifier("set-order")
             }
             if dock.servingPlayerId != nil {
                 Button(isPickerRequested ? "Cancel" : "Change") { isPickerRequested.toggle() }

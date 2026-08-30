@@ -73,6 +73,12 @@ public func rejectionReason(_ state: AppState, _ event: Event) -> String? {
     case .clearLineup:
         return state.currentMatch != nil ? nil : "No match is in progress."
 
+    case let .placeInLineup(playerId, lineupIndex):
+        return placeInLineupRejection(state, playerId: playerId, lineupIndex: lineupIndex)
+
+    case let .clearLineupPosition(lineupIndex):
+        return lineupPositionRejection(state, lineupIndex: lineupIndex)
+
     case let .substitute(outPlayerId, inPlayerId):
         return substituteRejection(state, outPlayerId: outPlayerId, inPlayerId: inPlayerId)
 
@@ -186,6 +192,29 @@ private func setLineupRejection(_ state: AppState, playerIds: [String]) -> Strin
     // the record disagree with what happened. A change mid-match is a substitution.
     if match.turns.contains(where: { !$0.serves.isEmpty }) {
         return "The match has started. Substitute instead of changing the lineup."
+    }
+    return nil
+}
+
+/// A placement is refused for the same reason a whole lineup is: the serves already played
+/// were served in the order that was set, and rewriting it would make the record disagree
+/// with what happened. Once the match is under way the move is a substitution.
+private func placeInLineupRejection(_ state: AppState, playerId: String, lineupIndex: Int) -> String? {
+    if let refusal = lineupPositionRejection(state, lineupIndex: lineupIndex) { return refusal }
+    guard state.rosterEntry(id: playerId) != nil else {
+        return "That player is not on the roster."
+    }
+    return nil
+}
+
+/// What both placing and clearing a position have to satisfy.
+private func lineupPositionRejection(_ state: AppState, lineupIndex: Int) -> String? {
+    guard let match = state.currentMatch else { return "No match is in progress." }
+    guard (0..<lineupSize).contains(lineupIndex) else {
+        return "A rotation has \(lineupSize) places."
+    }
+    if match.turns.contains(where: { !$0.serves.isEmpty }) {
+        return "The match has started. Substitute instead of changing the rotation."
     }
     return nil
 }

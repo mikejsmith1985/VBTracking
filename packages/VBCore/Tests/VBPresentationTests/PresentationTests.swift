@@ -276,42 +276,106 @@ struct ServeLimitAlertTests {
     }
 }
 
-// MARK: - Tapping a player
+// MARK: - What a column covers
+
+@Suite("Saying which games a column covers")
+struct CoverageWordingTests {
+    @Test("A season tracked all the way through explains nothing, because there is nothing to explain")
+    func silentWhenFullyTracked() {
+        let coverage = Coverage(totalGames: 4, trackedGames: 4)
+        #expect(isPointsASubset(coverage) == false)
+        #expect(pointsHeading(coverage: coverage) == "Pts")
+        #expect(coverageNote(coverage) == nil)
+    }
+
+    @Test("A season with games from paper marks the points column and says why")
+    func marksTheSubset() {
+        let coverage = Coverage(totalGames: 5, trackedGames: 1)
+        #expect(isPointsASubset(coverage))
+        #expect(pointsHeading(coverage: coverage) == "Pts*")
+
+        let note = coverageNote(coverage)
+        #expect(note?.contains("1 game of 5") == true, "both counts, so the reader can judge the figure")
+        #expect(note?.contains("other 4 games") == true)
+        #expect(note?.contains("dash") == true, "a dash is not a nought, and the note has to say so")
+    }
+
+    @Test("The sentence reads as one a person would say, whichever way the counts fall")
+    func pluralsRead() {
+        #expect(coverageNote(Coverage(totalGames: 2, trackedGames: 1))?.contains("other 1 game") == true)
+        #expect(coverageNote(Coverage(totalGames: 3, trackedGames: 2))?.contains("2 games of 3") == true)
+    }
+
+    @Test("A screen with no coverage to report says nothing rather than guessing")
+    func silentWithoutCoverage() {
+        #expect(isPointsASubset(nil) == false)
+        #expect(pointsHeading(coverage: nil) == "Pts")
+        #expect(coverageNote(nil) == nil)
+    }
+}
+
+// MARK: - Tapping
+
+/// The same six, once a serve is on the record — after which the order is a fact and the
+/// only way to change who stands where is a substitution.
+private func underWay() -> AppState {
+    onCourt([
+        event(.selectServer(playerId: "p1")),
+        event(.recordServe(outcome: .inPoint)),
+    ])
+}
 
 @Suite("What a tap on a player means")
 struct TapIntentTests {
     @Test("Someone in the order is simply the next server")
     func onCourtPlayerServes() {
-        #expect(intent(ofTapping: "p3", state: onCourt(), armedIncoming: nil) == .serve(playerId: "p3"))
+        #expect(intent(ofTapping: "p3", state: onCourt(), armed: nil) == .serve(playerId: "p3"))
     }
 
     @Test("Someone on the bench is the player coming on")
     func benchPlayerArms() {
-        #expect(intent(ofTapping: "p8", state: onCourt(), armedIncoming: nil) == .armSubstitution(incomingPlayerId: "p8"))
+        #expect(intent(ofTapping: "p8", state: onCourt(), armed: nil) == .armSubstitution(incomingPlayerId: "p8"))
     }
 
-    @Test("With one armed, tapping a player on court completes the swap")
+    @Test("Mid-match, tapping a player on court with one armed completes the swap")
     func completesTheSwap() {
-        let result = intent(ofTapping: "p3", state: onCourt(), armedIncoming: "p8")
+        let result = intent(ofTapping: "p3", state: underWay(), armed: .player("p8"))
         #expect(result == .substitute(outPlayerId: "p3", inPlayerId: "p8"))
+    }
+
+    @Test("Before the first serve the same two taps arrange rather than substitute")
+    func arrangesBeforeTheFirstServe() {
+        let result = intent(ofTapping: "p3", state: onCourt(), armed: .player("p8"))
+        #expect(
+            result == .place(playerId: "p8", lineupIndex: 2),
+            "a substitution nobody made would be a swap in the record that never happened"
+        )
     }
 
     @Test("Tapping a different bench player re-aims rather than refusing")
     func reAims() {
-        let result = intent(ofTapping: "p9", state: onCourt(), armedIncoming: "p8")
+        let result = intent(ofTapping: "p9", state: onCourt(), armed: .player("p8"))
         #expect(result == .armSubstitution(incomingPlayerId: "p9"))
     }
 
     @Test("Tapping the armed player again serves them without substituting")
     func servesTheArmedPlayer() {
-        let result = intent(ofTapping: "p8", state: onCourt(), armedIncoming: "p8")
+        let result = intent(ofTapping: "p8", state: onCourt(), armed: .player("p8"))
         #expect(result == .serve(playerId: "p8"))
+    }
+
+    @Test("With a spot held, the next player tapped stands in it")
+    func placesIntoTheHeldSpot() {
+        #expect(
+            intent(ofTapping: "p8", state: onCourt(), armed: .position(4))
+                == .place(playerId: "p8", lineupIndex: 4)
+        )
     }
 
     @Test("Without an order, every tap is simply a choice of server")
     func withoutAnOrderEveryTapServes() {
         let state = build(roster(3), [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: false))])
-        #expect(intent(ofTapping: "p2", state: state, armedIncoming: nil) == .serve(playerId: "p2"))
+        #expect(intent(ofTapping: "p2", state: state, armed: nil) == .serve(playerId: "p2"))
     }
 
     @Test("Tapping whoever is already serving does nothing")
@@ -320,16 +384,81 @@ struct TapIntentTests {
             roster(3),
             [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: false)), event(.selectServer(playerId: "p1"))]
         )
-        #expect(intent(ofTapping: "p1", state: state, armedIncoming: nil) == .ignore)
+        #expect(intent(ofTapping: "p1", state: state, armed: nil) == .ignore)
+    }
+}
+
+@Suite("What a tap on a place on the court means")
+struct PositionTapTests {
+    @Test("An empty spot with nothing held is picked up, waiting for a player")
+    func armsThePosition() {
+        #expect(intent(ofTappingPosition: 3, state: onCourt(), armed: nil) == .armPosition(lineupIndex: 3))
     }
 
-    @Test("The hint says what the next tap will do")
-    func hintFollowsTheState() {
-        #expect(pickerHint(state: onCourt(), armedIncoming: nil).contains("bottom right"))
-        #expect(pickerHint(state: onCourt(), armedIncoming: "p8").contains("is coming on"))
+    @Test("With a player held, the spot is where they stand")
+    func placesTheHeldPlayer() {
+        #expect(
+            intent(ofTappingPosition: 3, state: onCourt(), armed: .player("p8"))
+                == .place(playerId: "p8", lineupIndex: 3)
+        )
+    }
 
+    @Test("Tapping the held spot again puts it down")
+    func tappingTheHeldSpotCancels() {
+        #expect(intent(ofTappingPosition: 3, state: onCourt(), armed: .position(3)) == .ignore)
+    }
+
+    @Test("Tapping a different spot moves the hold to it")
+    func tappingAnotherSpotReAims() {
+        #expect(
+            intent(ofTappingPosition: 5, state: onCourt(), armed: .position(3))
+                == .armPosition(lineupIndex: 5)
+        )
+    }
+
+    @Test("There are six places, and a tap outside them does nothing")
+    func refusesAPlaceOffTheCourt() {
+        #expect(intent(ofTappingPosition: 6, state: onCourt(), armed: .player("p8")) == .ignore)
+        #expect(intent(ofTappingPosition: -1, state: onCourt(), armed: nil) == .ignore)
+    }
+}
+
+@Suite("What the hint under the picker says")
+struct PickerHintTests {
+    @Test("A held spot asks for the player who stands in it, by place in the order")
+    func heldSpotAsksWho() {
+        let hint = pickerHint(state: onCourt(), armed: .position(0))
+        #expect(hint.contains("1st"))
+        #expect(pickerHint(state: onCourt(), armed: .position(3)).contains("4th"))
+    }
+
+    @Test("A held player before the first serve offers a spot; after it, a substitution")
+    func heldPlayerReadsTheMoment() {
+        #expect(pickerHint(state: onCourt(), armed: .player("p8")).contains("tap a spot"))
+        #expect(pickerHint(state: underWay(), armed: .player("p8")).contains("is coming on"))
+    }
+
+    @Test("With nothing held, the hint says where the serving corner is")
+    func restingHintNamesTheCorner() {
+        #expect(pickerHint(state: underWay(), armed: nil).contains("bottom right"))
+        #expect(pickerHint(state: onCourt(), armed: nil).contains("tap a spot"))
+    }
+
+    @Test("With no order at all, the hint offers both ways in")
+    func noOrderHintOffersBothWaysIn() {
         let noOrder = build(roster(3), [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: false))])
-        #expect(pickerHint(state: noOrder, armedIncoming: nil) == "Tap the next server")
+        let hint = pickerHint(state: noOrder, armed: nil)
+        #expect(hint.contains("Tap a spot"))
+        #expect(hint.contains("serve"))
+    }
+
+    @Test("A place in the order is spoken as a place, not a number")
+    func ordinalsRead() {
+        #expect(ordinal(1) == "1st")
+        #expect(ordinal(2) == "2nd")
+        #expect(ordinal(3) == "3rd")
+        #expect(ordinal(4) == "4th")
+        #expect(ordinal(6) == "6th")
     }
 }
 

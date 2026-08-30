@@ -77,6 +77,22 @@ private struct MatchFigures: View {
     }
 
     var body: some View {
+        if !ordered.isEmpty {
+            // Every figure here comes from one tracked game, so no column needs a caveat --
+            // but they still need naming.
+            HStack(spacing: 8) {
+                Text("").frame(width: 28)
+                Text("Player")
+                Spacer()
+                Text("In / served").frame(width: 52, alignment: .trailing)
+                Text("In %").frame(width: 44, alignment: .trailing)
+                Text("Pts").frame(width: 26, alignment: .trailing)
+            }
+            .font(.caption2.weight(.semibold))
+            .textCase(.uppercase)
+            .foregroundStyle(.tertiary)
+        }
+
         ForEach(ordered, id: \.entry.id) { row in
             HStack(spacing: 8) {
                 Text(text(number: row.entry.number))
@@ -84,7 +100,8 @@ private struct MatchFigures: View {
                 Text(row.entry.name).font(.subheadline).lineLimit(1)
                 Spacer()
                 Text("\(row.figures.servesIn)/\(row.figures.serves)")
-                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                    .font(.caption.monospacedDigit()).frame(width: 52, alignment: .trailing)
+                    .foregroundStyle(.secondary)
                 Text(text(percentage: row.figures.inPercentage))
                     .font(.caption.monospacedDigit()).frame(width: 44, alignment: .trailing)
                 Text("\(row.figures.points)")

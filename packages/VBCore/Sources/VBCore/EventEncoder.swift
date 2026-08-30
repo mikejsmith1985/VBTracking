@@ -95,6 +95,19 @@ public enum EventEncoder {
         case .clearLineup:
             ["t": .string(EventType.clearLineup)]
 
+        case let .placeInLineup(playerId, lineupIndex):
+            [
+                "t": .string(EventType.placeInLineup),
+                "playerId": .string(playerId),
+                "lineupIndex": .number(Double(lineupIndex)),
+            ]
+
+        case let .clearLineupPosition(lineupIndex):
+            [
+                "t": .string(EventType.clearLineupPosition),
+                "lineupIndex": .number(Double(lineupIndex)),
+            ]
+
         case let .substitute(outPlayerId, inPlayerId):
             [
                 "t": .string(EventType.substitute),

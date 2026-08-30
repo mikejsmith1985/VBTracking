@@ -26,6 +26,11 @@ public struct DockState: Equatable, Sendable {
     /// True when the order is set, so the picker can be drawn as a court.
     public var hasLineup: Bool
 
+    /// True while the rotation can still be arranged — which is also when the list that
+    /// sets it whole is worth offering. Offering it only once an order existed hid it from
+    /// exactly the operator who had not made one yet.
+    public var canArrangeRotation: Bool
+
     /// Who has the ball, if anyone.
     public var servingPlayerId: String?
 
@@ -41,6 +46,7 @@ public struct DockState: Equatable, Sendable {
         self.canUndo = canUndo
         self.isPickerRequested = isPickerRequested
         self.hasLineup = state.currentMatch?.lineup != nil
+        self.canArrangeRotation = state.canArrangeRotation
         self.servingPlayerId = state.activeServerId
 
         guard state.currentMatch != nil else {
