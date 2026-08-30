@@ -6,6 +6,26 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **The minus bars and New game could not be seen.** They were `#1b2030` on a black screen —
+  receding and disappearing are not the same thing. The whole palette had rules about ink on
+  a fill and none about whether the fill itself could be found, which is exactly the check
+  that was missing. They are now a mid-slate that stands 2.1:1 off the screen behind them,
+  with a white minus at 9.9:1 on top of it, and a test that fails if a control's own
+  background ever stops being visible.
+
+### Changed
+
+- **Height moved from the score tiles to the minus bars.** The tiles lose 9% (90 to 82 pt)
+  and the minus gains 40% (20 to 28 drawn, 32 tapped), with the mark itself half again as
+  large. The score is still the bigger target — that has not changed and should not — but a
+  minus small enough to be obviously secondary turned out to be too small to hit while
+  watching a court. The required ratio moves from 4:1 to 2.5:1 to say so, and a test now
+  holds it from *both* sides: big enough to be the primary control, not so big that the
+  correction is a decoration.
+
+
+### Fixed
+
 - **The scoreboard was unreadable in a lit room.** The tiles were the app's accent colour at
   22% over black, with the figure in the *same hue* on top — so the number, the tile and the
   screen behind were all nearly the same shade, and the whole page disappeared under any

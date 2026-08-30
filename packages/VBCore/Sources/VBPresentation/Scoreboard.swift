@@ -155,10 +155,10 @@ public enum ScoreLayout {
     ///
     /// Tall enough that the side's name sits inside the pill with the figure, rather than
     /// riding on its edge.
-    public static let scoreHeight = 90.0
+    public static let scoreHeight = 82.0
 
     /// The size of the number in it.
-    public static let scoreFontSize = 44.0
+    public static let scoreFontSize = 42.0
 
     /// The side's name above the figure, inside the same pill.
     public static let sideFontSize = 12.0
@@ -175,18 +175,18 @@ public enum ScoreLayout {
 
     /// The minus beneath, as it is drawn. Half the height it was: it is the control for
     /// fixing a mistake, and it should look like it.
-    public static let minusPillHeight = 20.0
+    public static let minusPillHeight = 28.0
 
     /// The minus beneath, as it is tapped.
     ///
     /// Bigger than it is drawn, because a control small enough to read as secondary is
     /// smaller than a thumb. The extra is invisible and costs nothing but layout.
-    public static let minusTapHeight = 24.0
+    public static let minusTapHeight = 32.0
 
-    public static let minusFontSize = 10.0
+    public static let minusFontSize = 15.0
 
     /// Starting again, across the bottom.
-    public static let newGameHeight = 28.0
+    public static let newGameHeight = 26.0
 
     public static let newGameFontSize = 13.0
 
@@ -202,9 +202,11 @@ public enum ScoreLayout {
     /// How much bigger the scoring control looks than the correcting one.
     ///
     /// Adding a point happens every rally; taking one off happens when somebody made a
-    /// mistake. The one under the thumb has to be the one that is right nearly every time,
-    /// and this much difference is what makes that true without looking.
-    public static let minimumScoreToMinusRatio = 4.0
+    /// mistake, so the score stays the bigger target. The gap narrowed once the board had
+    /// been used in a gym: a minus small enough to be obviously secondary turned out to be
+    /// too small to hit while looking at a court. Still clearly the lesser control, just
+    /// not a decoration.
+    public static let minimumScoreToMinusRatio = 2.5
 
     /// The smallest a control may be tapped at, however small it is drawn.
     public static let minimumTapHeight = 20.0
@@ -250,11 +252,16 @@ public enum ScorePalette {
     /// shining and the number does the reading.
     public static let figure = "#111826"
 
-    /// The lesser controls: the minus bars and New game. Dark, so they recede behind the
-    /// two things that matter.
-    public static let controlFill = "#1b2030"
+    /// The lesser controls: the minus bars and New game.
+    ///
+    /// Dark enough to recede behind the two bright tiles, light enough to be a button. The
+    /// first attempt was near-black, which on a black screen meant the buttons could not be
+    /// seen at all -- receding and disappearing are not the same thing.
+    public static let controlFill = "#3a4358"
 
-    public static let controlInk = "#c9d2e8"
+    /// On that fill. White, because the minus is a small mark and a small mark needs all
+    /// the contrast it can get.
+    public static let controlInk = "#ffffff"
 
     /// The line that says who is winning. Brighter than a caption, because at 2-2 it is the
     /// only thing on the page that is not a number.
@@ -272,6 +279,13 @@ public enum ScorePalette {
 
     /// The smallest contrast anything else may have.
     public static let minimumControlContrast = 4.5
+
+    /// The smallest a control's own background may stand off the screen behind it.
+    ///
+    /// A button nobody can find is not a button. This is the check the first palette failed:
+    /// every contrast rule it had was about ink on a fill, and none about whether the fill
+    /// itself could be seen.
+    public static let minimumControlFillContrast = 1.8
 }
 
 /// How far apart two colours are, by the WCAG formula.

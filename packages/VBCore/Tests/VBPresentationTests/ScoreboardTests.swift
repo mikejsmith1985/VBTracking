@@ -347,7 +347,10 @@ struct ScoreLayoutTests {
             ratio >= ScoreLayout.minimumScoreToMinusRatio,
             "adding a point happens every rally; taking one off happens on a mistake"
         )
-        #expect(ScoreLayout.scoreFontSize > ScoreLayout.minusFontSize * 4)
+        // The glyph follows the same ratio as the control it sits in, rather than a
+        // tighter one of its own -- a minus drawn too faint to see is the reason the mark
+        // grew in the first place.
+        #expect(ScoreLayout.scoreFontSize >= ScoreLayout.minusFontSize * ScoreLayout.minimumScoreToMinusRatio)
     }
 
     @Test("The minus is drawn smaller than it is tapped")
@@ -445,5 +448,31 @@ struct ScorePaletteTests {
         #expect(abs(contrastRatio("#ffffff", "#000000") - 21) < 0.01)
         #expect(abs(contrastRatio("#ffffff", "#ffffff") - 1) < 0.01)
         #expect(abs(contrastRatio("#767676", "#ffffff") - 4.54) < 0.05, "the classic 4.5:1 grey")
+    }
+}
+
+@Suite("Whether the lesser controls can be found at all")
+struct ControlVisibilityTests {
+    @Test("A button's own background stands off the screen behind it")
+    func controlsAreVisibleOnBlack() {
+        // The first palette had every rule about ink on a fill and none about whether the
+        // fill could be seen. The buttons came out near-black on a black screen.
+        let ratio = contrastRatio(ScorePalette.controlFill, "#000000")
+        #expect(
+            ratio >= ScorePalette.minimumControlFillContrast,
+            "the minus bars are \(ratio):1 against the screen — a button nobody can find is not a button"
+        )
+    }
+
+    @Test("The minus mark has all the contrast a small mark needs")
+    func theMinusIsHighContrast() {
+        #expect(contrastRatio(ScorePalette.controlInk, ScorePalette.controlFill) >= 7)
+    }
+
+    @Test("The score is still the bigger target, just not by as much")
+    func theScoreStaysTheBigOne() {
+        let ratio = ScoreLayout.scoreHeight / ScoreLayout.minusPillHeight
+        #expect(ratio >= ScoreLayout.minimumScoreToMinusRatio)
+        #expect(ratio < 4, "a minus too small to hit while watching a court is no use either")
     }
 }
