@@ -207,6 +207,23 @@ workflows:
         script: |
           env | cut -d= -f1 | grep -E "APP_STORE|ASC_|CERTIFICATE" | sort || echo "(none matched)"
 
+      # fastlane 2.233 cannot read an ES256 key on Ruby 4: OpenSSL 3 rejects the P-256
+      # curve through the path fastlane's JWT gem takes, and reports it as "invalid curve
+      # name" -- which names the curve rather than the incompatibility, and reads as a
+      # broken key when the key is fine. An older Ruby has no such trouble.
+      - name: A Ruby that can read the key
+        script: |
+          rbenv versions
+          for candidate in 3.3.5 3.3.4 3.2.6 3.2.2 3.1.4; do
+            if rbenv versions --bare | grep -qx "$candidate"; then
+              rbenv global "$candidate"
+              echo "Using Ruby $candidate"
+              break
+            fi
+          done
+          ruby -v
+          gem install fastlane --no-document --conservative
+
       - name: Verify, or submit
         script: |
           set -o pipefail
