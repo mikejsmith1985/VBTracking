@@ -230,56 +230,55 @@ workflows:
       # describes the version rather than the submission and sends you looking in the wrong
       # place. Codemagic's own CLI speaks the newer submission model; this finds out what it
       # offers rather than guessing at a subcommand.
-      - name: What the App Store Connect CLI can do
-        script: |
-          for c in "review-submissions create" "review-submissions confirm" "review-submissions get" "review-submission-items create" "app-store-versions list"; do
-            echo "=================== $c ==================="
-            app-store-connect $c --help 2>&1 | sed -n '1,45p' || echo "(not available)"
-          done
-
-      - name: Verify, or submit
+      # The listing, uploaded but not submitted. fastlane is good at this part.
+      - name: Upload the listing
         script: |
           set -o pipefail
-
-          # What the integration puts in this variable is not the key. It is Codemagic's
-          # own reference to where the key was written: `@file:` followed by a path.
-          # Seventy-two characters, no newlines, no PEM header -- and every earlier attempt
-          # handed that string to OpenSSL as though it were a key, which answered "invalid
-          # curve name". Four rounds went at curves, encodings and Ruby versions. It was
-          # never a curve, and it was never even a key.
           value="$APP_STORE_CONNECT_PRIVATE_KEY"
           case "$value" in
-            @file:*)
-              echo 'The variable is an @file: reference; reading what it points at.'
-              cp "${value#@file:}" /tmp/asc.p8
-              ;;
-            *)
-              if [ -f "$value" ]; then
-                echo 'The variable is a path; reading the file.'
-                cp "$value" /tmp/asc.p8
-              else
-                echo 'The variable holds the key itself.'
-                printf '%b\n' "$value" > /tmp/asc.p8
-              fi
-              ;;
+            @file:*) cp "${value#@file:}" /tmp/asc.p8 ;;
+            *) if [ -f "$value" ]; then cp "$value" /tmp/asc.p8; else printf '%s' "$value" > /tmp/asc.p8; fi ;;
           esac
           chmod 600 /tmp/asc.p8
-          echo "Key begins: $(head -1 /tmp/asc.p8)"
+          openssl ec -in /tmp/asc.p8 -out /tmp/asc_sec1.pem 2>/dev/null && export ASC_KEY_PATH=/tmp/asc_sec1.pem
+          fastlane ios stage 2>&1 | tail -80
 
-          if openssl ec -in /tmp/asc.p8 -out /tmp/asc_sec1.pem 2>/tmp/asc_convert.log; then
-            chmod 600 /tmp/asc_sec1.pem
-            export ASC_KEY_PATH=/tmp/asc_sec1.pem
-            echo "Key converted to SEC1: $(head -1 /tmp/asc_sec1.pem)"
-          else
-            echo "Conversion failed, falling back to the key as issued:"
-            cat /tmp/asc_convert.log
+      # And the submission, which fastlane cannot do. It creates a review submission and
+      # never adds the version to it, so Apple is handed an empty one and answers
+      # "appStoreVersions is not in valid state" -- a message about the version, when the
+      # fault is the submission having nothing in it.
+      #
+      # Codemagic's own CLI speaks the newer three-step model: create the submission, add
+      # the version to it, confirm it.
+      - name: Submit for review
+        script: |
+          if [ "$SUBMIT_FOR_REVIEW" != "yes" ]; then
+            echo "SUBMIT_FOR_REVIEW is not yes. The listing is staged and nothing was submitted."
+            exit 0
           fi
+          set -e
 
-          if [ "$SUBMIT_FOR_REVIEW" = "yes" ]; then
-            fastlane ios submit 2>&1 | tail -250
-          else
-            fastlane ios stage 2>&1 | tail -250
+          APP_ID=6806672687
+
+          echo "--- the version to submit ---"
+          VERSION_ID=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null             | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(v['id'] for v in d if v['attributes']['appStoreState'] in ('PREPARE_FOR_SUBMISSION','DEVELOPER_REJECTED','REJECTED','METADATA_REJECTED')))" 2>/dev/null || true)
+          if [ -z "$VERSION_ID" ]; then
+            echo "Could not read the version id from the CLI; listing what it does return:"
+            app-store-connect apps app-store-versions "$APP_ID" --json 2>&1 | head -40
+            exit 1
           fi
+          echo "Version: $VERSION_ID"
+
+          echo "--- create the submission ---"
+          SUBMISSION_ID=$(app-store-connect review-submissions create "$APP_ID" --platform IOS --json             | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+          echo "Submission: $SUBMISSION_ID"
+
+          echo "--- add the version to it ---"
+          app-store-connect review-submission-items create "$SUBMISSION_ID" --version-id "$VERSION_ID"
+
+          echo "--- confirm ---"
+          app-store-connect review-submissions confirm "$SUBMISSION_ID"
+          echo "Submitted for review."
 
     triggering:
       events: []
