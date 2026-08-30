@@ -228,24 +228,29 @@ workflows:
         script: |
           set -o pipefail
 
-          # What the integration actually puts in this variable is a PATH to the key file,
-          # not the key. Seventy-two characters, no newlines, no PEM header -- which every
-          # earlier attempt fed to OpenSSL as though it were a key, and OpenSSL called an
-          # invalid curve. It was never a curve, and it was never even a key.
-          if [ -f "$APP_STORE_CONNECT_PRIVATE_KEY" ]; then
-            echo 'The variable holds a path; reading the file it points at.'
-            cp "$APP_STORE_CONNECT_PRIVATE_KEY" /tmp/asc.p8
-          else
-            echo 'The variable holds the key itself.'
-            printf '%b\n' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/asc.p8
-          fi
+          # What the integration puts in this variable is not the key. It is Codemagic's
+          # own reference to where the key was written: `@file:` followed by a path.
+          # Seventy-two characters, no newlines, no PEM header -- and every earlier attempt
+          # handed that string to OpenSSL as though it were a key, which answered "invalid
+          # curve name". Four rounds went at curves, encodings and Ruby versions. It was
+          # never a curve, and it was never even a key.
+          value="$APP_STORE_CONNECT_PRIVATE_KEY"
+          case "$value" in
+            @file:*)
+              echo 'The variable is an @file: reference; reading what it points at.'
+              cp "${value#@file:}" /tmp/asc.p8
+              ;;
+            *)
+              if [ -f "$value" ]; then
+                echo 'The variable is a path; reading the file.'
+                cp "$value" /tmp/asc.p8
+              else
+                echo 'The variable holds the key itself.'
+                printf '%b\n' "$value" > /tmp/asc.p8
+              fi
+              ;;
+          esac
           chmod 600 /tmp/asc.p8
-
-          if ! head -c 11 /tmp/asc.p8 | grep -q -- '-----BEGIN'; then
-            echo 'Still not a PEM; trying base64.'
-            base64 --decode /tmp/asc.p8 > /tmp/asc_decoded.p8 2>/dev/null && mv /tmp/asc_decoded.p8 /tmp/asc.p8
-            chmod 600 /tmp/asc.p8
-          fi
           echo "Key begins: $(head -1 /tmp/asc.p8)"
 
           if openssl ec -in /tmp/asc.p8 -out /tmp/asc_sec1.pem 2>/tmp/asc_convert.log; then
