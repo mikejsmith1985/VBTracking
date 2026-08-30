@@ -123,13 +123,26 @@ public struct CourtSnapshot: Equatable, Codable, Sendable {
     /// phone that sends it.
     public var serveLimit: ServeLimitNotice?
 
+    /// The identifiers of the most recent events the phone holds.
+    ///
+    /// This is how a serve recorded on the wrist stops showing as unsent. The confirmation
+    /// used to travel on its own, by `transferUserInfo` -- which is guaranteed but
+    /// opportunistic, and can take minutes. The court arrives at once, so the wrist could
+    /// sit there saying "1 serve not sent" about a serve already safely on the phone and
+    /// visible on its screen. Riding the fast channel makes the wrist honest.
+    ///
+    /// Read off the log rather than remembered, so it survives the phone app restarting,
+    /// and capped so a season does not travel to a wrist that only needs the last few.
+    public var acknowledgedEventIds: [String]
+
     public init(
         sequence: Int,
         capturedAt: Date,
         scopeLabel: String,
         hasOrder: Bool,
         slots: [SnapshotSlot],
-        serveLimit: ServeLimitNotice? = nil
+        serveLimit: ServeLimitNotice? = nil,
+        acknowledgedEventIds: [String] = []
     ) {
         self.sequence = sequence
         self.capturedAt = capturedAt
@@ -137,15 +150,45 @@ public struct CourtSnapshot: Equatable, Codable, Sendable {
         self.hasOrder = hasOrder
         self.slots = slots
         self.serveLimit = serveLimit
+        self.acknowledgedEventIds = acknowledgedEventIds
+    }
+
+    /// Reads a court that may have been written by a different build.
+    ///
+    /// Every field added after the first release is read with `decodeIfPresent`, because the
+    /// synthesised decoder does not fall back to a property's default value -- it throws on a
+    /// missing key, `decodeSnapshot` turns that into nil, and the wrist shows no court at
+    /// all. A watch and a phone are two installs that can be a version apart, and the cost
+    /// of being wrong here is the whole screen rather than one line of it.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        self.sequence = try container.decode(Int.self, forKey: .sequence)
+        self.capturedAt = try container.decode(Date.self, forKey: .capturedAt)
+        self.scopeLabel = try container.decode(String.self, forKey: .scopeLabel)
+        self.hasOrder = try container.decode(Bool.self, forKey: .hasOrder)
+        self.slots = try container.decode([SnapshotSlot].self, forKey: .slots)
+        self.serveLimit = try container.decodeIfPresent(ServeLimitNotice.self, forKey: .serveLimit)
+        // Nothing acknowledged, rather than everything: a phone that says nothing has
+        // vouched for nothing, and a serve stays marked unsent until something says it
+        // landed.
+        self.acknowledgedEventIds =
+            try container.decodeIfPresent([String].self, forKey: .acknowledgedEventIds) ?? []
     }
 
     /// Builds the snapshot the wrist should be showing.
-    public init(court: CourtView, sequence: Int, capturedAt: Date, serveLimit: ServeLimitNotice? = nil) {
+    public init(
+        court: CourtView,
+        sequence: Int,
+        capturedAt: Date,
+        serveLimit: ServeLimitNotice? = nil,
+        acknowledgedEventIds: [String] = []
+    ) {
         self.sequence = sequence
         self.capturedAt = capturedAt
         self.scopeLabel = court.scopeLabel
         self.hasOrder = court.hasOrder
         self.serveLimit = serveLimit
+        self.acknowledgedEventIds = acknowledgedEventIds
         self.slots = court.slots.map { slot in
             SnapshotSlot(
                 court: slot.position.rawValue,
@@ -159,6 +202,15 @@ public struct CourtSnapshot: Equatable, Codable, Sendable {
             )
         }
     }
+}
+
+/// The identifiers of the newest events in a log, for the wrist to check its own against.
+///
+/// Capped, because the wrist only ever has a handful of serves outstanding and a season of
+/// identifiers has no business travelling between two devices every time a court changes.
+/// Fifty is far more than a gym evening ever needs.
+public func acknowledgedIds(in log: [RawEvent], limit: Int = 50) -> [String] {
+    log.suffix(limit).compactMap { $0["eventId"]?.stringValue }
 }
 
 /// How current the wrist's picture is.

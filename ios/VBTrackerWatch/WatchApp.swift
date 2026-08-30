@@ -11,6 +11,7 @@ import VBPresentation
 struct VBTrackerWatchApp: App {
     @State private var link = WatchLink()
     @State private var settings = WatchSettings()
+    @State private var keeper = ScoreKeeper()
 
     var body: some Scene {
         WindowGroup {
@@ -18,7 +19,10 @@ struct VBTrackerWatchApp: App {
                 TabView {
                     CourtScreen(link: link)
                     RecordScreen(link: link)
-                    SettingsScreen(settings: settings)
+                    // The scratch scoreboard sits past the two pages that belong to a
+                    // tracked game, because it belongs to no game at all.
+                    ScoreScreen(keeper: keeper)
+                    SettingsScreen(settings: settings, keeper: keeper)
                 }
                 .tabViewStyle(.verticalPage)
 
@@ -106,6 +110,11 @@ extension WatchLink: ConnectivityDelegate {
     nonisolated func received(context: [String: Any]) {
         guard let incoming = LinkPayload.decodeSnapshot(context) else { return }
         Task { @MainActor in
+            // What the phone holds is true whenever it was said, so a snapshot too old to
+            // draw still settles what has landed. Confirming first is what stops a serve
+            // sitting as unsent behind an out-of-order court.
+            pending.confirm(Set(incoming.acknowledgedEventIds))
+
             // Snapshots can arrive out of order, and the older one must never win.
             guard incoming.sequence > (snapshot?.sequence ?? Int.min) else { return }
             snapshot = incoming

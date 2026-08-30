@@ -6,6 +6,32 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **A scoreboard on the wrist for games nobody is tracking.** Two numbers, a tap each, on
+  their own watch page. No roster, no season, no log — a Saturday in the park does not go in
+  the record and now cannot. It knows the rule that makes a scoreboard worth more than
+  counting on fingers: to the target and two clear, so 21–20 is still a game and 26–24 is
+  not. It says who is on game point, keeps counting past the end because the people on court
+  decide when to stop, and survives a sleeping wrist. Played to 11, 15, 21 or 25.
+
+### Fixed
+
+- **A serve recorded on the wrist stayed marked "not sent" after it had landed.** The court
+  travels on the fast channel and arrives at once; the confirmation travelled on its own by
+  `transferUserInfo`, which is guaranteed but opportunistic and can take minutes. So the
+  wrist sat saying "1 serve not sent" about a serve already safely on the phone and visible
+  on its screen. What the phone holds now rides along with the court, read off the log so it
+  survives the phone restarting and capped at fifty so a season does not travel to a wrist
+  that needs the last few. The queued confirmation stays as the backstop for when no court
+  could be sent at all.
+- **A watch a version behind the phone would have shown no court at all.** Swift's generated
+  decoder does not fall back to a property's default for a missing key — it throws, which the
+  reader turns into "no court". Fields added after the first release are now read as optional,
+  and a court from a phone that never knew about them acknowledges nothing rather than
+  everything.
+
+
+### Added
+
 - **The rotate alert has three settings, chosen on the wrist that wears it.** A third watch
   page offers off, brief, or persistent. Off never mentions the rule. Brief buzzes once and
   clears itself after five seconds — long enough to look down mid-rally and read two numbers,
