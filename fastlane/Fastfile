@@ -101,9 +101,10 @@ platform :ios do
       # No prompt, no browser: this runs on a machine with nobody sitting at it.
       force: true,
       run_precheck_before_submit: false,
-      # The age-rating questionnaire, answered in a file. Every answer is "none": there is
-      # nothing in this app but volleyball serves.
-      app_rating_config_path: "fastlane/metadata/age_rating_config.json",
+      # No age-rating config. Apple renamed the questionnaire's attributes and fastlane maps
+      # only some of the old names, so the file is rejected a key at a time -- and it is a
+      # ONE-TIME questionnaire, set once per app and never touched again. Ten more CI runs
+      # to save a click that happens once is not a trade worth making.
       submission_information: {
         # No encryption in the app at all, no advertising identifier, and every image in it
         # is ours.
