@@ -150,16 +150,23 @@ workflows:
           brew install xcodegen
           cd ios && xcodegen generate
 
+      # CODE_SIGNING_ALLOWED=NO, exactly as the compile workflow passes it. A simulator
+      # needs no signature, and without it the build reaches for a team and a profile this
+      # workflow deliberately holds no credentials for. That failed as "Executed 0 tests",
+      # which looks for all the world like a broken test suite rather than a missing flag.
       - name: The phone
         script: |
-          xcode-project run-tests             --project ios/VBTracker.xcodeproj             --scheme VBTracker             --device "iPhone 17 Pro"
+          xcode-project run-tests --project ios/VBTracker.xcodeproj --scheme VBTracker --device "iPhone 17 Pro" --test-xcargs "CODE_SIGNING_ALLOWED=NO"
 
       - name: The watch, where the on-deck box is measured
         script: |
-          xcode-project run-tests             --project ios/VBTracker.xcodeproj             --scheme VBTrackerWatch             --device "Apple Watch Ultra 2 (49mm)"
+          xcode-project run-tests --project ios/VBTracker.xcodeproj --scheme VBTrackerWatch --device "Apple Watch Ultra 2 (49mm)" --test-xcargs "CODE_SIGNING_ALLOWED=NO"
 
-    # Run by hand, and before anything ships. It is the only suite that can tell whether a
-    # tap does what it looks like it does, and the three bugs it was written for were all
-    # invisible to the domain suite.
+    artifacts:
+      - build/ios/test/*.xml
+
+    # Run by hand, before anything ships. It is the only suite that can say whether a tap
+    # does what it looks like it does, and the three bugs it was written for were every one
+    # of them invisible to the domain suite.
     triggering:
       events: []
