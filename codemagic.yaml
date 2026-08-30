@@ -201,6 +201,12 @@ workflows:
           echo "Support:   $(cat fastlane/metadata/en-US/support_url.txt)"
           echo "Privacy:   $(cat fastlane/metadata/en-US/privacy_url.txt)"
 
+      # Names only. A value here would put the App Store Connect key in a build log
+      # forever, which is the one thing this must never do.
+      - name: Which credentials the integration provided
+        script: |
+          env | cut -d= -f1 | grep -E "APP_STORE|ASC_|CERTIFICATE" | sort || echo "(none matched)"
+
       - name: Verify, or submit
         script: |
           set -o pipefail

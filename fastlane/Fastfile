@@ -15,11 +15,30 @@ APP = "com.mikejsmith.vbtracker"
 platform :ios do
   # The App Store Connect key, built from what the Codemagic integration puts in the
   # environment. Nothing here ever sees the key's contents in a log.
+  # The names Codemagic has used for the three halves of the key. More than one, because
+  # the integration has not always spelled them the same way, and a KeyError from ENV.fetch
+  # says only that something is missing -- not which thing, and not what is there instead.
+  KEY_ID_NAMES = %w[APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_KEY_ID ASC_KEY_ID].freeze
+  ISSUER_NAMES = %w[APP_STORE_CONNECT_ISSUER_ID ASC_ISSUER_ID].freeze
+  PRIVATE_KEY_NAMES = %w[APP_STORE_CONNECT_PRIVATE_KEY ASC_PRIVATE_KEY].freeze
+
+  # The first of these names that is actually set. Names only ever appear in a log; values
+  # never do.
+  def from_env(names, what)
+    found = names.find { |name| !ENV[name].to_s.strip.empty? }
+    unless found
+      present = ENV.keys.grep(/APP_STORE|ASC_|CERTIFICATE/).sort
+      UI.user_error!("No #{what} in the environment. Looked for #{names.join(', ')}. Present: #{present.join(', ')}")
+    end
+    UI.message("Using #{found} for #{what}")
+    ENV.fetch(found)
+  end
+
   def connect_key
     app_store_connect_api_key(
-      key_id: ENV.fetch("APP_STORE_CONNECT_KEY_IDENTIFIER"),
-      issuer_id: ENV.fetch("APP_STORE_CONNECT_ISSUER_ID"),
-      key_content: ENV.fetch("APP_STORE_CONNECT_PRIVATE_KEY"),
+      key_id: from_env(KEY_ID_NAMES, "key id"),
+      issuer_id: from_env(ISSUER_NAMES, "issuer id"),
+      key_content: from_env(PRIVATE_KEY_NAMES, "private key"),
       is_key_content_base64: false,
       in_house: false
     )
