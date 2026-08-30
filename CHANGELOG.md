@@ -6,6 +6,18 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **The rotate alert has three settings, chosen on the wrist that wears it.** A third watch
+  page offers off, brief, or persistent. Off never mentions the rule. Brief buzzes once and
+  clears itself after five seconds — long enough to look down mid-rally and read two numbers,
+  gone before the next serve. Persistent buzzes on a beat until it is cleared, which is what
+  it did before. Persistent is the default, because a coach who has never opened the page has
+  not decided anything and the alert should keep behaving the way they asked for it. A value
+  stored by some later version reads as the default too, never as off: silencing an alert
+  nobody chose to silence is the one failure with nothing on screen to explain it.
+
+
+### Added
+
 - **The rotate alert reaches the wrist, and keeps buzzing until it is cleared.** A single tap
   on the wrist is exactly the thing a coach misses while watching a rally, and missing it
   means the wrong player serves a sixth — so it now pulses every 1.5 seconds, over both watch
@@ -20,7 +32,8 @@ All notable changes to this project are recorded here.
 - **The offline guarantee was passing without reading anything.** The scan that proves no
   shipped file names a networking API split its input on `"
 "`, but a Windows checkout is
-  CRLF and Swift counts `"
+  CRLF and Swift counts `"
+
 "` as one character — so every file came back as a single line
   that began with its own header comment, was dropped as a comment, and left an empty string
   to search. It has read the real source since, and still finds nothing; both scans now

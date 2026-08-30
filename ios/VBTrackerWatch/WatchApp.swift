@@ -10,6 +10,7 @@ import VBPresentation
 @main
 struct VBTrackerWatchApp: App {
     @State private var link = WatchLink()
+    @State private var settings = WatchSettings()
 
     var body: some Scene {
         WindowGroup {
@@ -17,13 +18,17 @@ struct VBTrackerWatchApp: App {
                 TabView {
                     CourtScreen(link: link)
                     RecordScreen(link: link)
+                    SettingsScreen(settings: settings)
                 }
                 .tabViewStyle(.verticalPage)
 
-                // Over both pages, because the rule applies wherever the coach happens to
-                // be looking -- and because it is the one thing here worth interrupting for.
-                if let notice = link.serveLimit {
-                    RotateAlert(notice: notice) { link.clearServeLimit() }
+                // Over every page, because the rule applies wherever the coach happens to
+                // be looking -- and because it is the one thing here worth interrupting
+                // for, for as long as the coach wants to be interrupted.
+                if let notice = link.serveLimit, settings.preferences.shouldShow(notice) {
+                    RotateAlert(notice: notice, style: settings.preferences.rotateAlert) {
+                        link.clearServeLimit()
+                    }
                 }
             }
         }
