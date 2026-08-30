@@ -476,3 +476,58 @@ struct ControlVisibilityTests {
         #expect(ratio < 4, "a minus too small to hit while watching a court is no use either")
     }
 }
+
+@Suite("Which court the wrist should be showing")
+struct SnapshotOrderingTests {
+    private func court(at seconds: TimeInterval, sequence: Int) -> CourtSnapshot {
+        CourtSnapshot(
+            sequence: sequence,
+            capturedAt: Date(timeIntervalSince1970: seconds),
+            scopeLabel: "Match 1",
+            hasOrder: true,
+            slots: []
+        )
+    }
+
+    @Test("The first court to arrive is always shown")
+    func anythingBeatsNothing() {
+        #expect(isNewer(court(at: 100, sequence: 1), than: nil))
+    }
+
+    @Test("A newer court replaces an older one")
+    func newerWins() {
+        #expect(isNewer(court(at: 200, sequence: 2), than: court(at: 100, sequence: 1)))
+    }
+
+    @Test("A court that arrives late does not overwrite a newer one")
+    func olderLoses() {
+        #expect(isNewer(court(at: 100, sequence: 1), than: court(at: 200, sequence: 2)) == false)
+    }
+
+    @Test("A phone that restarted is still believed")
+    func survivesAPhoneRestart() {
+        // The regression. The sequence lives in memory on the phone and starts again at zero
+        // every launch, and iOS relaunches a backgrounded app constantly. A wrist holding 47
+        // rejected everything that followed and showed a court twenty minutes old until
+        // somebody force-quit the watch app.
+        let beforeRestart = court(at: 1000, sequence: 47)
+        let afterRestart = court(at: 1001, sequence: 1)
+
+        #expect(
+            isNewer(afterRestart, than: beforeRestart),
+            "a lower counter with a later clock is the newer court, not an older one"
+        )
+    }
+
+    @Test("Two courts captured in the same instant are separated by the counter")
+    func sequenceBreaksATie() {
+        #expect(isNewer(court(at: 500, sequence: 9), than: court(at: 500, sequence: 8)))
+        #expect(isNewer(court(at: 500, sequence: 8), than: court(at: 500, sequence: 9)) == false)
+    }
+
+    @Test("The same court arriving twice changes nothing")
+    func identicalIsNotNewer() {
+        let held = court(at: 500, sequence: 4)
+        #expect(isNewer(held, than: held) == false)
+    }
+}

@@ -116,7 +116,7 @@ extension WatchLink: ConnectivityDelegate {
             pending.confirm(Set(incoming.acknowledgedEventIds))
 
             // Snapshots can arrive out of order, and the older one must never win.
-            guard incoming.sequence > (snapshot?.sequence ?? Int.min) else { return }
+            guard isNewer(incoming, than: snapshot) else { return }
             snapshot = incoming
         }
     }

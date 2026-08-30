@@ -213,6 +213,23 @@ public func acknowledgedIds(in log: [RawEvent], limit: Int = 50) -> [String] {
     log.suffix(limit).compactMap { $0["eventId"]?.stringValue }
 }
 
+/// Whether a court that has just arrived should replace the one on screen.
+///
+/// By the moment it was captured, not by the counter beside it. The counter lives in memory
+/// on the phone and starts again at zero every time that app is launched -- and iOS relaunches
+/// a backgrounded app constantly. A wrist holding sequence 47 from before the phone restarted
+/// then rejected every snapshot that followed as though it were older, and went on showing a
+/// court from twenty minutes ago until somebody force-quit the watch app.
+///
+/// `capturedAt` comes from one clock, the phone's, so it orders correctly across as many
+/// relaunches as the evening produces. The sequence still breaks a tie inside the same
+/// instant, which is the only thing it was ever good for.
+public func isNewer(_ incoming: CourtSnapshot, than held: CourtSnapshot?) -> Bool {
+    guard let held else { return true }
+    if incoming.capturedAt != held.capturedAt { return incoming.capturedAt > held.capturedAt }
+    return incoming.sequence > held.sequence
+}
+
 /// How current the wrist's picture is.
 public struct LinkFreshness: Equatable, Sendable {
     public var secondsOld: Int
