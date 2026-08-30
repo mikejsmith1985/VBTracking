@@ -38,9 +38,10 @@ struct TrackScreen: View {
                         detail: "Add your team before the first serve."
                     )
                 } else if store.state.currentMatch == nil {
-                    // Naming it is offered straight away, while the operator is still
-                    // looking at the other team rather than at a scoresheet.
-                    BetweenGames(store: store) { isNamingGame = true }
+                    // Starting a game opens nothing. The whistle is the one moment the
+                    // app must not put a sheet in front of anybody -- naming waits on the
+                    // header, where it can be done between rallies or afterwards.
+                    BetweenGames(store: store)
                 } else {
                     MatchHeader(store: store, isEndingMatch: $isEndingMatch, isNamingGame: $isNamingGame)
                     ScrollView { TallyBoard(match: store.state.currentMatch, roster: store.state.roster) }
@@ -130,7 +131,6 @@ private struct MatchHeader: View {
 /// Between games: what was recorded, and the way into the next one.
 private struct BetweenGames: View {
     let store: Store
-    let onStarted: () -> Void
 
     /// Today, in the form the log keeps dates in.
     private func today() -> String {
@@ -163,7 +163,6 @@ private struct BetweenGames: View {
                 // Dated the moment it starts. A game being tracked is being played today,
                 // and a season full of "No date" is the cost of not saying so.
                 store.dispatch(.setGameContext(gameId: id, context: GameContext(date: today())))
-                onStarted()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
