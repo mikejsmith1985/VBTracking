@@ -113,10 +113,19 @@ platform :ios do
     }.merge(extra)
   end
 
-  desc "Report what would be sent to App Store Connect. Sends nothing."
-  lane :verify do
-    deliver(listing(connect_key, verify_only: true, submit_for_review: false))
-    UI.success("Verified. Nothing was sent.")
+  desc "Fill in the listing on App Store Connect, without submitting it."
+  lane :stage do
+    # `verify_only` was the obvious flag and is the wrong one: it validates a binary, and
+    # there is no binary here -- the build was uploaded by another workflow. It failed with
+    # "no implicit conversion of nil into String", which is Ruby's way of saying it went
+    # looking for an IPA path and found none.
+    #
+    # Uploading the listing without submitting is the better dry run anyway. Metadata and
+    # screenshots on App Store Connect are private until a submission is made, and can be
+    # changed or replaced any number of times before one is -- so this produces something
+    # somebody can actually look at, rather than a report saying it would have worked.
+    deliver(listing(connect_key, verify_only: false, submit_for_review: false))
+    UI.success("The listing is on App Store Connect. Nothing has been submitted.")
   end
 
   desc "Upload the listing and submit the build for review. Irreversible."

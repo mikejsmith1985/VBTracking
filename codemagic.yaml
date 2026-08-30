@@ -187,9 +187,10 @@ workflows:
     environment:
       xcode: latest
       vars:
-        # The one switch that makes this send anything. Left off, the run reports what it
-        # WOULD do and stops -- because submitting for review is public and cannot be
-        # quietly undone, so it must never be a side effect of running the check.
+        # The one switch that submits. Left off, the run fills in the listing on App Store
+        # Connect and stops there -- metadata and screenshots are private until a
+        # submission is made, so that is safe and inspectable. Submitting for review is
+        # public and cannot be quietly undone, so it is never a side effect of staging.
         SUBMIT_FOR_REVIEW: "no"
     scripts:
       - name: What the listing says
@@ -265,7 +266,7 @@ workflows:
           if [ "$SUBMIT_FOR_REVIEW" = "yes" ]; then
             fastlane ios submit 2>&1 | tail -250
           else
-            fastlane ios verify 2>&1 | tail -250
+            fastlane ios stage 2>&1 | tail -250
           fi
 
     triggering:
