@@ -207,30 +207,34 @@ workflows:
         script: |
           env | cut -d= -f1 | grep -E "APP_STORE|ASC_|CERTIFICATE" | sort || echo "(none matched)"
 
-      # fastlane 2.233 cannot read an ES256 key on Ruby 4: OpenSSL 3 rejects the P-256
-      # curve through the path fastlane's JWT gem takes, and reports it as "invalid curve
-      # name" -- which names the curve rather than the incompatibility, and reads as a
-      # broken key when the key is fine. An older Ruby has no such trouble.
-      - name: A Ruby that can read the key
-        script: |
-          rbenv versions
-          for candidate in 3.3.5 3.3.4 3.2.6 3.2.2 3.1.4; do
-            if rbenv versions --bare | grep -qx "$candidate"; then
-              rbenv global "$candidate"
-              echo "Using Ruby $candidate"
-              break
-            fi
-          done
-          ruby -v
-          gem install fastlane --no-document --conservative
-
+      # Apple issues the App Store Connect key as PKCS#8, and Ruby's OpenSSL 3 will not
+      # read an EC private key in that container. It says "invalid curve name", which names
+      # neither the curve nor the problem, and survives being handed the key three
+      # different ways because none of them was the issue.
+      #
+      # The `openssl` binary has no such trouble. Converting to SEC1 first is the whole fix.
       - name: Verify, or submit
         script: |
           set -o pipefail
-          if [ "$SUBMIT_FOR_REVIEW" = "yes" ]; then
-            bundle exec fastlane ios submit 2>&1 | tail -300 || fastlane ios submit 2>&1 | tail -300
+
+          # The key as the integration supplies it. `%b` so that a value carrying
+          # escaped newlines is written with real ones.
+          printf '%b\n' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/asc.p8
+          chmod 600 /tmp/asc.p8
+
+          if openssl ec -in /tmp/asc.p8 -out /tmp/asc_sec1.pem 2>/tmp/asc_convert.log; then
+            chmod 600 /tmp/asc_sec1.pem
+            export ASC_KEY_PATH=/tmp/asc_sec1.pem
+            echo "Key converted to SEC1: $(head -1 /tmp/asc_sec1.pem)"
           else
-            bundle exec fastlane ios verify 2>&1 | tail -300 || fastlane ios verify 2>&1 | tail -300
+            echo "Conversion failed, falling back to the key as issued:"
+            cat /tmp/asc_convert.log
+          fi
+
+          if [ "$SUBMIT_FOR_REVIEW" = "yes" ]; then
+            fastlane ios submit 2>&1 | tail -250
+          else
+            fastlane ios verify 2>&1 | tail -250
           fi
 
     triggering:

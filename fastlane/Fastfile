@@ -58,11 +58,27 @@ platform :ios do
     path
   end
 
+  # The key file to use: the one the workflow already converted, if it did, and otherwise
+  # one written from the environment.
+  #
+  # Apple issues the .p8 in PKCS#8, and Ruby's OpenSSL 3 will not read an EC private key in
+  # that container -- it reports "invalid curve name", which describes neither the curve nor
+  # the problem. The workflow converts it to SEC1 with the `openssl` binary first, because
+  # the binary has no such trouble.
+  def key_path
+    prepared = ENV["ASC_KEY_PATH"].to_s
+    if !prepared.empty? && File.exist?(prepared)
+      UI.message("Using the key prepared by the workflow")
+      return prepared
+    end
+    key_file
+  end
+
   def connect_key
     app_store_connect_api_key(
       key_id: from_env(KEY_ID_NAMES, "key id"),
       issuer_id: from_env(ISSUER_NAMES, "issuer id"),
-      key_filepath: key_file,
+      key_filepath: key_path,
       in_house: false
     )
   end
