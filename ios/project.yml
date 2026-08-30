@@ -55,6 +55,12 @@ targets:
         # portrait has to say it is not an iPad app. It never was: the whole design is a
         # phone held in one hand at the side of a court.
         TARGETED_DEVICE_FAMILY: "1"
+        # This app uses no encryption of any kind: no network, no accounts, nothing to
+        # encrypt and nothing to encrypt it with. Saying so here answers the export
+        # compliance question once, at build time -- otherwise every single build lands in
+        # TestFlight marked "Missing Compliance" and reaches nobody until someone answers
+        # the same question by hand again.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
     entitlements:
@@ -82,6 +88,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.mikejsmith.vbtracker.watchapp
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # A single-target watch app, the modern shape: one bundle, no extension beside it.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_WKApplication: YES
         INFOPLIST_KEY_WKCompanionAppBundleIdentifier: com.mikejsmith.vbtracker
         INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp: NO
