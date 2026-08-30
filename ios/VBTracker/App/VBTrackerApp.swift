@@ -7,7 +7,7 @@ import VBCore
 
 @main
 struct VBTrackerApp: App {
-    @State private var store = Store(directory: AppPaths.sharedContainer)
+    @State private var store = Store(directory: AppPaths.storeDirectory)
     @State private var link: PhoneLink?
     @State private var tab = Tab.track
 
@@ -50,6 +50,24 @@ struct VBTrackerApp: App {
 enum AppPaths {
     /// The App Group container, so a later widget or complication can read the same log
     /// rather than keeping a second copy of it.
+    /// Where the log lives for this launch.
+    ///
+    /// An interface test asks for a container of its own, and gets an empty one. Without
+    /// that every test inherited the season the last one left behind: the suite passed the
+    /// `-uiTestFreshStore` argument from the day it was written and nothing ever read it,
+    /// so ten tests ran against one accumulating pile of state and failed for reasons that
+    /// had nothing to do with what they were testing.
+    static var storeDirectory: URL {
+        guard ProcessInfo.processInfo.arguments.contains("-uiTestFreshStore") else {
+            return sharedContainer
+        }
+
+        let fresh = URL.temporaryDirectory.appendingPathComponent("uitest-store", isDirectory: true)
+        try? FileManager.default.removeItem(at: fresh)
+        try? FileManager.default.createDirectory(at: fresh, withIntermediateDirectories: true)
+        return fresh
+    }
+
     static var sharedContainer: URL {
         let group = "group.com.mikejsmith.vbtracker"
         if let shared = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group) {

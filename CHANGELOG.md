@@ -6,6 +6,20 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **The interface suite had never run, and could not have.** It failed three ways before a
+  single test executed: no `CODE_SIGNING_ALLOWED=NO`, so the build reached for credentials the
+  workflow deliberately holds none of; `-sdk iphonesimulator` forced onto a scheme that embeds
+  a watch app; and `-uiTestFreshStore`, passed by every test since the day they were written
+  and **read by nothing**, so ten tests ran against one accumulating pile of state and failed
+  for reasons that had nothing to do with what they were testing. Each launch with that
+  argument now gets an empty container of its own.
+- **Starting a game no longer opens anything.** The naming sheet appearing at the whistle was
+  the wrong call — that is the one moment the app must not put something in front of the
+  operator. Naming waits on the header, where it can be done between rallies or afterwards.
+
+
+### Fixed
+
 - **An empty spot on the court could only be tapped on its outline.** It was drawn as a
   stroked border with nothing inside, so the box had no middle to hit — every tap that landed
   where anybody would aim did nothing, which read as needing to tap twice to "focus" the

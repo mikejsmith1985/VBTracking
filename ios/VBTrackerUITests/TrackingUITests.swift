@@ -158,13 +158,6 @@ final class RotationUITests: XCTestCase {
         }
         app.buttons["Track"].tap()
         app.buttons["Start game"].tap()
-        dismissNamingSheet()
-    }
-
-    /// Starting a game offers to name it. Nothing here is about naming.
-    private func dismissNamingSheet() {
-        let cancel = app.buttons["Cancel"]
-        if cancel.waitForExistence(timeout: 2) { cancel.tap() }
     }
 
     private func emptySpots() -> [XCUIElement] {
