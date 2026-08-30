@@ -67,7 +67,11 @@ struct GameScreen: View {
 }
 
 /// Per-player figures for one match or game.
-private struct MatchFigures: View {
+/// Per-player figures for one match or one whole game.
+///
+/// Not private: the same table is wanted on a past game opened from the season, and a
+/// second copy of it would be a second place for a column to drift.
+struct MatchFigures: View {
     let figures: [String: Figures]
     let roster: [RosterEntry]
 

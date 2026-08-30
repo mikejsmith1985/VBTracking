@@ -165,3 +165,70 @@ struct LineupSheet: View {
         }
     }
 }
+
+/// Who the game is against, asked where the operator is standing.
+///
+/// It used to be askable only from the season screen, three taps away and usually after the
+/// fact — which is how a game ends up in the record called "Unnamed opponent".
+struct GameNameSheet: View {
+    let store: Store
+    @Binding var isPresented: Bool
+
+    @State private var context = GameContext()
+
+    private var game: Game? { store.state.currentGame }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Who, where, when") {
+                    TextField("Opposing team", text: $context.opponent)
+                        .accessibilityIdentifier("game-opponent")
+                    DatePicker("Date", selection: dateBinding, displayedComponents: .date)
+                    TextField("Location", text: $context.location)
+                    TextField("Court", text: $context.court)
+                }
+
+                Section {
+                    Text("None of it is required. A game with no opponent is still a game, and this can be filled in afterwards from the season.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle("This game")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { isPresented = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        guard let id = game?.id else { return isPresented = false }
+                        if store.dispatch(.setGameContext(gameId: id, context: context)) {
+                            isPresented = false
+                        }
+                    }
+                    .accessibilityIdentifier("save-game-name")
+                }
+            }
+            .onAppear {
+                context = game?.context ?? GameContext()
+                // A game being tracked right now was played today. Offering that rather
+                // than nothing is what stops a season filling up with "No date".
+                if context.date == nil { context.date = Self.formatter.string(from: Date()) }
+            }
+        }
+    }
+
+    private var dateBinding: Binding<Date> {
+        Binding(
+            get: { context.date.flatMap(Self.formatter.date(from:)) ?? Date() },
+            set: { context.date = Self.formatter.string(from: $0) }
+        )
+    }
+
+    private static let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter
+    }()
+}
