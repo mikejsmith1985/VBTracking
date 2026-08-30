@@ -145,4 +145,16 @@ struct PaymentTests {
         #expect(code.contains("TextField") == false, "nothing on this screen collects anything")
         #expect(code.contains("SecureField") == false)
     }
+
+    @Test("The address it points at is set, and is https")
+    func theAddressIsReal() throws {
+        // The screen hides the whole section rather than show a dead button, which means a
+        // blanked address would ship silently as an app with no tip jar. This is what
+        // notices.
+        let about = ShippedSources.repository
+            .appendingPathComponent("ios/VBTracker/Season/AboutScreen.swift")
+        let code = try ShippedSources.code(of: about)
+
+        #expect(code.contains("SupportLink(\"https://"), "an unset or plain-http address")
+    }
 }

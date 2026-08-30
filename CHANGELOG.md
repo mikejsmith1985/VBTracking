@@ -22,7 +22,13 @@ All notable changes to this project are recorded here.
   PassKit or a card field, and the About screen must be a `Link` with nothing on it that
   collects anything. **The section does not render until a real https address is set** — a
   link that goes nowhere is worse than no link, so an unset one ships as an app with no tip
-  jar rather than an app with a dead button.
+  jar rather than an app with a dead button. It now points at a real page, and a test notices
+  if that ever stops being true — a blanked address would otherwise ship silently as an app
+  with no way to say thanks.
+
+  The page says "this app is free" rather than "everything I make is free". A pledge nobody
+  can keep is worse than no pledge, and that one would be quoted back at the first thing that
+  ever carries a price.
 
 
 ### Added

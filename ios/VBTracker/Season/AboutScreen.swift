@@ -9,10 +9,9 @@ import VBPresentation
 
 /// Where a thank-you goes.
 ///
-/// Empty until there is a real page to point at, and an empty one shows no tip jar at all —
-/// a link that goes nowhere is worse than no link. Set it here, in one place, and the
-/// section appears.
-private let supportLink = SupportLink("")
+/// One place, so there is one thing to change if the page ever moves. An address that does
+/// not build shows no tip jar at all rather than a dead button.
+private let supportLink = SupportLink("https://buymeacoffee.com/mikejsmith1985")
 
 struct AboutScreen: View {
     private var version: String? {
