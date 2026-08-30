@@ -122,13 +122,16 @@ platform :ios do
   # is no route by which anything could be collected. Its own test suite fails if a shipped
   # file so much as names a networking API.
   def declare_no_data_collected
+    # No api_key here: this action does not take one. It rides the session that
+    # `app_store_connect_api_key` has already established, which is why the key has to be
+    # built before it is called rather than handed to it.
+    connect_key
     upload_app_privacy_details_to_app_store(
-      username: "",
-      team_id: "",
       app_identifier: APP,
       json_path: "fastlane/metadata/app_privacy_details.json",
-      api_key: connect_key,
-      skip_upload: false
+      skip_json_file_saving: true,
+      skip_upload: false,
+      skip_publish: false
     )
   rescue StandardError => error
     UI.important("Could not set the privacy answers automatically: #{error.message}")
