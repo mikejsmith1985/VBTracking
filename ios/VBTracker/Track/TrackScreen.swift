@@ -21,6 +21,7 @@ struct TrackScreen: View {
     @State private var alert: ServeLimitAlert?
     @State private var isEndingMatch = false
     @State private var isChoosingLineup = false
+    @State private var isNamingGame = false
 
     private var dock: DockState {
         DockState(state: store.state, isPickerRequested: isPickerRequested, canUndo: store.canUndo)
@@ -37,9 +38,11 @@ struct TrackScreen: View {
                         detail: "Add your team before the first serve."
                     )
                 } else if store.state.currentMatch == nil {
-                    BetweenGames(store: store)
+                    // Naming it is offered straight away, while the operator is still
+                    // looking at the other team rather than at a scoresheet.
+                    BetweenGames(store: store) { isNamingGame = true }
                 } else {
-                    MatchHeader(store: store, isEndingMatch: $isEndingMatch)
+                    MatchHeader(store: store, isEndingMatch: $isEndingMatch, isNamingGame: $isNamingGame)
                     ScrollView { TallyBoard(match: store.state.currentMatch, roster: store.state.roster) }
                     Dock(
                         store: store,
@@ -58,6 +61,7 @@ struct TrackScreen: View {
                 }
             }
         }
+        .sheet(isPresented: $isNamingGame) { GameNameSheet(store: store, isPresented: $isNamingGame) }
         .sheet(isPresented: $isEndingMatch) { EndMatchSheet(store: store, isPresented: $isEndingMatch) }
         .sheet(isPresented: $isChoosingLineup) { LineupSheet(store: store, isPresented: $isChoosingLineup) }
     }
@@ -74,10 +78,34 @@ struct TrackScreen: View {
 private struct MatchHeader: View {
     let store: Store
     @Binding var isEndingMatch: Bool
+    @Binding var isNamingGame: Bool
+
+    private var opponent: String? {
+        let name = store.state.currentGame?.context.opponent.trimmingCharacters(in: .whitespaces)
+        return (name?.isEmpty == false) ? name : nil
+    }
 
     var body: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
+                // Who they are playing, said here rather than only on a screen reached
+                // three taps away. A game that could not be named until afterwards is a
+                // game that ends up called "Unnamed opponent" in the season list.
+                Button {
+                    isNamingGame = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(opponent ?? "Name this game")
+                            .font(.caption.bold())
+                            .foregroundStyle(opponent == nil ? Color.cyan : Color.secondary)
+                        if opponent != nil {
+                            Image(systemName: "pencil").font(.system(size: 9)).foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("name-game")
+
                 Text("Match \((store.state.currentMatch?.index ?? 0) + 1) of \(matchesPerGame)")
                     .font(.caption).textCase(.uppercase).foregroundStyle(.secondary)
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
@@ -102,6 +130,14 @@ private struct MatchHeader: View {
 /// Between games: what was recorded, and the way into the next one.
 private struct BetweenGames: View {
     let store: Store
+    let onStarted: () -> Void
+
+    /// Today, in the form the log keeps dates in.
+    private func today() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: Date())
+    }
 
     var body: some View {
         VStack(spacing: 16) {
@@ -114,13 +150,20 @@ private struct BetweenGames: View {
             Button("Start game") {
                 // The rule is written into the event, never read from the code: a game
                 // recorded before the rule existed must replay as it always did.
-                store.dispatch(
+                let id = UUID().uuidString
+                guard store.dispatch(
                     .startGame(
-                        id: UUID().uuidString,
+                        id: id,
                         seasonId: store.state.activeSeasonId,
                         rotatesAtServeLimit: true
                     )
-                )
+                ) else {
+                    return
+                }
+                // Dated the moment it starts. A game being tracked is being played today,
+                // and a season full of "No date" is the cost of not saying so.
+                store.dispatch(.setGameContext(gameId: id, context: GameContext(date: today())))
+                onStarted()
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)

@@ -4,6 +4,21 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added
+
+- **A game can be named while it is being played.** The Track screen carries the opponent
+  above the match, and tapping it opens who / where / when. It was only askable from the
+  season screen before — three taps away and usually after the fact, which is how a game ends
+  up in the record called "Unnamed opponent". Starting a game now also dates it today, because
+  a game being tracked is being played today and a season full of "No date" is the cost of not
+  saying so.
+- **A past game shows its figures.** Opening a tracked game from the season gave its context,
+  its results, its notes and a serve-by-serve record — but never what those serves came to.
+  The same per-player table the Game tab draws now sits there too, whole-game or match by
+  match. Read against the roster of *that* season, not today's: a player who left the squad
+  still served the serves they served.
+
+
 ### Fixed
 
 - **The wrist stopped updating until the watch app was force-quit.** Courts were ordered by a

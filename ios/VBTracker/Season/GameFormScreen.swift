@@ -15,9 +15,22 @@ struct GameFormScreen: View {
     @State private var notes = GameNotes()
     @State private var isConfirmingDiscard = false
     @State private var isShowingRecord = false
+    @State private var scope = Scope.game
+
+    /// Whether the figures cover the whole game or are broken out match by match.
+    private enum Scope: String, CaseIterable { case game, match }
     @Environment(\.dismiss) private var dismiss
 
     private var game: Game? { store.state.game(id: gameId) }
+
+    /// Who was on the roster for the season this game belongs to.
+    ///
+    /// Not today's roster: a player who left the squad still served the serves they served,
+    /// and reading a past game against the present roster would drop them from its figures.
+    private func seasonRoster(of game: Game) -> [RosterEntry] {
+        let members = store.state.members(ofSeason: game.seasonId)
+        return members.isEmpty ? store.state.roster : members
+    }
 
     var body: some View {
         Form {
@@ -30,6 +43,33 @@ struct GameFormScreen: View {
                         .accessibilityIdentifier("open-record")
                         Text("See every turn, and correct anything mis-entered.")
                             .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+
+                if game.kind == .tracked, !game.matches.isEmpty {
+                    // The figures, on the screen somebody opens when they tap a game. They
+                    // were only ever shown for the game being tracked right now, so a game
+                    // from three weeks ago could be corrected serve by serve without ever
+                    // showing what those serves came to.
+                    Section {
+                        Picker("Scope", selection: $scope) {
+                            Text("Game").tag(Scope.game)
+                            Text("Match").tag(Scope.match)
+                        }
+                        .pickerStyle(.segmented)
+                        .accessibilityIdentifier("figures-scope")
+                    }
+
+                    if scope == .game {
+                        Section("Game totals") {
+                            MatchFigures(figures: game.statistics, roster: seasonRoster(of: game))
+                        }
+                    } else {
+                        ForEach(game.matches, id: \.index) { match in
+                            Section("Match \(match.index + 1) · \(match.score) pts") {
+                                MatchFigures(figures: match.statistics, roster: seasonRoster(of: game))
+                            }
+                        }
                     }
                 }
 
