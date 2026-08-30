@@ -173,3 +173,42 @@ workflows:
     # of them invisible to the domain suite.
     triggering:
       events: []
+
+  # The listing, and the submission that follows it.
+  #
+  # Separate from the workflow that builds the app on purpose: a listing changes far more
+  # often than a binary does, and a typo in a description should never mean waiting on an
+  # archive. It uses the same App Store Connect key `ios-watch` already publishes with.
+  store-listing:
+    name: The App Store listing
+    max_build_duration: 30
+    integrations:
+      app_store_connect: RLL_Codemagic_CI_AppManager
+    environment:
+      xcode: latest
+      vars:
+        # The one switch that makes this send anything. Left off, the run reports what it
+        # WOULD do and stops -- because submitting for review is public and cannot be
+        # quietly undone, so it must never be a side effect of running the check.
+        SUBMIT_FOR_REVIEW: "no"
+    scripts:
+      - name: What the listing says
+        script: |
+          echo "Screenshots:"
+          ls -la fastlane/screenshots/en-US
+          echo
+          echo "Keywords:  $(cat fastlane/metadata/en-US/keywords.txt)"
+          echo "Support:   $(cat fastlane/metadata/en-US/support_url.txt)"
+          echo "Privacy:   $(cat fastlane/metadata/en-US/privacy_url.txt)"
+
+      - name: Verify, or submit
+        script: |
+          set -o pipefail
+          if [ "$SUBMIT_FOR_REVIEW" = "yes" ]; then
+            bundle exec fastlane ios submit 2>&1 | tail -300 || fastlane ios submit 2>&1 | tail -300
+          else
+            bundle exec fastlane ios verify 2>&1 | tail -300 || fastlane ios verify 2>&1 | tail -300
+          fi
+
+    triggering:
+      events: []

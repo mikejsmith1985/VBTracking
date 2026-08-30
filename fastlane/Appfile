@@ -1,0 +1,3 @@
+# Which app the listing belongs to. The numeric App Store Connect id stays in CLAUDE.md,
+# where identifiers belong; fastlane resolves it from the bundle id.
+app_identifier("com.mikejsmith.vbtracker")
