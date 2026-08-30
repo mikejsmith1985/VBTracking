@@ -207,6 +207,15 @@ workflows:
         script: |
           env | cut -d= -f1 | grep -E "APP_STORE|ASC_|CERTIFICATE" | sort || echo "(none matched)"
 
+          # Shape, never content. A length of zero would say the integration named
+          # the variable and put nothing in it, which looks identical to a key that
+          # cannot be parsed once it reaches OpenSSL.
+          for name in APP_STORE_CONNECT_PRIVATE_KEY APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_ISSUER_ID; do
+            value=$(eval echo "\$$name")
+            printf '%s: %s chars, %s lines, BEGIN=%s
+' \n              "$name" "$(printf '%s' "$value" | wc -c | tr -d ' ')" \n              "$(printf '%s' "$value" | wc -l | tr -d ' ')" \n              "$(printf '%s' "$value" | grep -c 'BEGIN' || true)"
+          done
+
       # Apple issues the App Store Connect key as PKCS#8, and Ruby's OpenSSL 3 will not
       # read an EC private key in that container. It says "invalid curve name", which names
       # neither the curve nor the problem, and survives being handed the key three
