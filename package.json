@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:ux": "cypress run",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "app-icon": "node scripts/generate-app-icon.mjs"
   },
   "devDependencies": {
     "jsdom": "^25.0.1",
