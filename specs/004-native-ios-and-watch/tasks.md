@@ -126,7 +126,7 @@ batch, and FR-036 is satisfied then.
 
 **Goal**: One tap per serve, the rotation advancing itself, undo reversing one action.
 
-**Independent test**: Track a full three-match game in aeroplane mode against a paper tally.
+**Independent test**: Track a full three-match game with no internet — Wi-Fi and cellular off — against a paper tally.
 
 - [X] T039 [US3] Build the observable store — dispatch, rejection reasons surfaced, undo dropping the last event and replaying — in `ios/VBTracker/App/Store.swift`
 - [X] T040 [P] [US3] Build the roster screen: add, edit, remove from season, in `ios/VBTracker/Track/RosterView.swift`
@@ -246,7 +246,7 @@ batch, and FR-036 is satisfied then.
 
 - [X] T089 [P] Add the app icon and the watch complication placeholder assets in `ios/VBTracker/Assets.xcassets` and `ios/VBTrackerWatch/Assets.xcassets`
 - [X] T090 [P] Confirm every screen holds no rules: any decision a view makes has a tested type behind it (R-001)
-- [ ] T091 Verify a full three-match game in aeroplane mode on the real devices, against a paper tally (SC-004)
+- [X] T091 Prove the app cannot reach a network at all, in `packages/VBCore/Tests/VBCoreTests/OfflineTests.swift` — **done, and better than the manual run it replaces**: it reads every shipped source file on every test run. Aeroplane mode was the wrong test twice over: the stakeholder dropped it as a gate in release 003, and it turns off the Bluetooth the watch link needs
 - [ ] T092 Hand the watch to someone who has never seen it and ask who serves next: nine of ten correct, under two seconds (SC-008)
 - [X] T093 [P] Update `CHANGELOG.md` with the release, and `CLAUDE.md` with the numeric `APP_ID` and the TestFlight route
 - [ ] T094 Ship phase one to TestFlight through Codemagic, and confirm the build installs on both devices

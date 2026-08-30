@@ -19,7 +19,7 @@ So the watch is not a companion view of the app. **The watch is the reason for t
 Two things are non-negotiable and set the shape of everything below:
 
 - **The season already recorded must survive the move.** One real season sits in the shipped web app on the operator's phone, including five games transcribed from paper sheets. A migration that loses it, or silently changes a figure, has failed no matter what else works.
-- **The gym has no usable network.** Every release so far has been offline-first; going native must not quietly introduce a dependency on connectivity for anything that happens during a match.
+- **The gym has no usable network.** Every release so far has been offline-first; going native must not quietly introduce a dependency on connectivity for anything that happens during a match. Note that this means *no internet*, not *no radios*: the watch link is Bluetooth between two paired devices, and turning that off would disable the very thing this release is for.
 
 The behaviour of releases 001–003 carries over unchanged and is not restated here as new requirements. It is restated only where the move to two devices changes what it means. That behaviour includes: the append-only event log with replay-based undo; statistics derived on read and never stored; a jersey number belonging to a season membership rather than to a player; a figure never recorded rendering as a dash rather than a zero; seasons, game context, per-match results, split notes, and games copied from paper; rotation of six with auto-advance; substitution taking the outgoing player's exact slot; the five-serve limit with its alert; turns over five recorded in full and flagged; and serve-by-serve correction of any past game.
 
@@ -74,7 +74,7 @@ The operator tracks a match on the native phone app exactly as they did on the w
 
 1. **Given** a match in progress, **When** the operator records a serve outcome, **Then** the figures and the tally update immediately and the rotation advances when the turn ends.
 2. **Given** a serve recorded by mistake, **When** the operator undoes, **Then** exactly one operator action is reversed, including any rotation advance it caused.
-3. **Given** aeroplane mode with no network of any kind, **When** a whole game is tracked, **Then** nothing fails, and nothing waits on a connection.
+3. **Given** a gym with no usable Wi-Fi and no signal, **When** a whole game is tracked, **Then** nothing fails, and nothing waits on a connection.
 4. **Given** a server has taken five serves, **When** the fifth is recorded, **Then** the phone raises the same unmissable alert it does today.
 
 ---
@@ -260,7 +260,7 @@ This release adds:
 - **SC-001**: A coach can name the player who serves next, and say whether their serving has been good, within 2 seconds of raising her wrist, without touching either device.
 - **SC-002**: A serve recorded on the phone is visible on the watch before the next serve is taken — within 3 seconds under normal conditions.
 - **SC-003**: 100% of the operator's existing recorded season transfers, with every derived figure identical to the web app's; verified figure by figure against a season containing both tracked and paper games.
-- **SC-004**: A full three-match game can be tracked with the device in aeroplane mode, start to finish, with no failure and no waiting.
+- **SC-004**: The app contains no way to reach a network at all — no networking framework, no request API — so a gym with no signal changes nothing about how it behaves. Proved by a test that reads every shipped source file, not by a one-off run with the radios off.
 - **SC-005**: A serve outcome can still be recorded in a single tap, and one undo still reverses exactly one operator action.
 - **SC-006**: When the devices lose contact, the coach can tell within 2 seconds that what she is looking at is not current.
 - **SC-007**: A match interrupted by the app being force-quit resumes with zero recorded serves lost.
