@@ -225,6 +225,17 @@ workflows:
       # different ways because none of them was the issue.
       #
       # The `openssl` binary has no such trouble. Converting to SEC1 first is the whole fix.
+      # fastlane 2.233 creates a review submission and never adds the version to it, so
+      # Apple is handed an empty submission and answers "not in valid state" -- which
+      # describes the version rather than the submission and sends you looking in the wrong
+      # place. Codemagic's own CLI speaks the newer submission model; this finds out what it
+      # offers rather than guessing at a subcommand.
+      - name: What the App Store Connect CLI can do
+        script: |
+          app-store-connect --help 2>&1 | sed -n '1,80p' || true
+          echo "--- review submissions ---"
+          app-store-connect review-submissions --help 2>&1 | sed -n '1,60p' || echo "(no review-submissions command)"
+
       - name: Verify, or submit
         script: |
           set -o pipefail
