@@ -232,9 +232,10 @@ workflows:
       # offers rather than guessing at a subcommand.
       - name: What the App Store Connect CLI can do
         script: |
-          app-store-connect --help 2>&1 | sed -n '1,80p' || true
-          echo "--- review submissions ---"
-          app-store-connect review-submissions --help 2>&1 | sed -n '1,60p' || echo "(no review-submissions command)"
+          for c in "review-submissions create" "review-submissions confirm" "review-submissions get" "review-submission-items create" "app-store-versions list"; do
+            echo "=================== $c ==================="
+            app-store-connect $c --help 2>&1 | sed -n '1,45p' || echo "(not available)"
+          done
 
       - name: Verify, or submit
         script: |
