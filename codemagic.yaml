@@ -222,6 +222,18 @@ workflows:
           printf '%b\n' "$APP_STORE_CONNECT_PRIVATE_KEY" > /tmp/asc.p8
           chmod 600 /tmp/asc.p8
 
+          # The integration hands the key over base64-encoded, which is why every
+          # earlier attempt failed: base64 is not a PEM, OpenSSL cannot parse it,
+          # and the complaint it makes is about a curve. Decode it when it does not
+          # already look like a PEM.
+          if ! head -c 11 /tmp/asc.p8 | grep -q -- '-----BEGIN'; then
+            echo 'Key is not PEM; decoding base64.'
+            base64 --decode /tmp/asc.p8 > /tmp/asc_decoded.p8 2>/dev/null || base64 -D -i /tmp/asc.p8 -o /tmp/asc_decoded.p8
+            mv /tmp/asc_decoded.p8 /tmp/asc.p8
+            chmod 600 /tmp/asc.p8
+          fi
+          echo "Key begins: $(head -1 /tmp/asc.p8)"
+
           if openssl ec -in /tmp/asc.p8 -out /tmp/asc_sec1.pem 2>/tmp/asc_convert.log; then
             chmod 600 /tmp/asc_sec1.pem
             export ASC_KEY_PATH=/tmp/asc_sec1.pem
