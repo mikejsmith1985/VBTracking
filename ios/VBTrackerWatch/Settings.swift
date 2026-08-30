@@ -39,6 +39,7 @@ final class WatchSettings {
 /// The third page: how hard the wrist presses about the five-serve rule.
 struct SettingsScreen: View {
     let settings: WatchSettings
+    let keeper: ScoreKeeper
 
     var body: some View {
         ScrollView {
@@ -52,6 +53,29 @@ struct SettingsScreen: View {
                 // is not a tappable thing, and each choice needs a line saying what it does.
                 ForEach(RotateAlertStyle.allCases, id: \.self) { style in
                     choice(style)
+                }
+
+                Divider().padding(.vertical, 2)
+
+                Text("Scratch game")
+                    .font(.system(size: 12, weight: .heavy))
+                    .textCase(.uppercase)
+                    .foregroundStyle(.secondary)
+                Text("Played to")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+
+                // Whatever was agreed on the way to the court. Win-by-two is not a choice:
+                // it is how the game is played.
+                HStack(spacing: 4) {
+                    ForEach(Scoreboard.targets, id: \.self) { target in
+                        Button("\(target)") { keeper.board.target = target }
+                            .font(.system(size: 13, weight: .semibold))
+                            .buttonStyle(.bordered)
+                            .controlSize(.mini)
+                            .tint(keeper.board.target == target ? .cyan : .gray)
+                            .accessibilityIdentifier("score-target-\(target)")
+                    }
                 }
             }
             .padding(.horizontal, 4)

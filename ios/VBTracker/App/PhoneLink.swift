@@ -37,7 +37,10 @@ final class PhoneLink {
             capturedAt: Date(),
             // The wrist cannot count a turn -- the record is here -- so the rule is read
             // off the state and sent with the court it applies to.
-            serveLimit: ServeLimitNotice.raised(by: state)
+            serveLimit: ServeLimitNotice.raised(by: state),
+            // And what the phone holds, so a serve recorded on the wrist stops showing as
+            // unsent the moment the court that includes it arrives.
+            acknowledgedEventIds: store.acknowledgedEventIds
         )
         session.send(context: LinkPayload.encode(snapshot: snapshot))
     }
@@ -55,7 +58,9 @@ extension PhoneLink: ConnectivityDelegate {
         Task { @MainActor in
             let accepted = store.accept(fromWatch: events)
             guard !accepted.isEmpty else { return }
-            // Tell the wrist what landed, so it can stop showing those serves as unsent.
+            // Accepting changed the state, so the court has already gone back carrying
+            // these identifiers on the fast channel. This is the backstop: guaranteed
+            // delivery for the case where the court could not be sent at all.
             session?.transfer(userInfo: LinkPayload.encode(confirmed: accepted))
         }
     }

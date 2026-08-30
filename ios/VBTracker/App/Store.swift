@@ -27,6 +27,11 @@ public final class Store {
 
     private var log: LogFile
     private var events: [RawEvent] = []
+
+    /// The identifiers of the newest events on the record, for the wrist to check its own
+    /// against. The log itself stays private; this is the only part of it anybody outside
+    /// needs to see.
+    var acknowledgedEventIds: [String] { acknowledgedIds(in: events) }
     private let ledger: ImportLedger
     private let now: () -> Date
 
