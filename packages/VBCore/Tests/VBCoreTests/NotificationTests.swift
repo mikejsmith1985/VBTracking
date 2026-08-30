@@ -158,3 +158,21 @@ struct PaymentTests {
         #expect(code.contains("SupportLink(\"https://"), "an unset or plain-http address")
     }
 }
+
+@Suite("The scoreboard draws its own controls")
+struct ScoreScreenStyleTests {
+    @Test("Nothing on the scoreboard is left to the bordered style's own height")
+    func nothingIsBordered() throws {
+        // watchOS's bordered style has a control height of its own and ignores a frame asked
+        // for inside it. That is what put the side's name outside its pill and left the
+        // minus nearly as tall as the score, and a number in ScoreLayout cannot govern a
+        // shape somebody else is sizing.
+        let screen = ShippedSources.repository
+            .appendingPathComponent("ios/VBTrackerWatch/ScoreScreen.swift")
+        let code = try ShippedSources.code(of: screen)
+
+        #expect(ShippedSources.isReadable(code))
+        #expect(code.contains(".buttonStyle(.bordered)") == false, "the sizes stop being ours")
+        #expect(code.contains("ScoreLayout."), "the sizes come from one place")
+    }
+}

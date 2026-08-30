@@ -4,19 +4,25 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The scoreboard's sizes were never the scoreboard's to set.** Every control used
+  watchOS's bordered button style, which has a control height of its own and ignores a frame
+  asked for inside it — so US and THEM rode on the edge of their pills instead of sitting
+  inside them, and the minus buttons came out very nearly as tall as the scores whatever
+  numbers were written down. The page now draws its own shapes, which is what makes
+  `ScoreLayout` govern anything at all. A test forbids the bordered style on that screen.
+
 ### Changed
 
-- **The scoreboard's numbers got bigger and its minus buttons got smaller.** The score is now
-  84 pt tall with a 48 pt figure in it; the minus under each is 20 pt. Adding a point happens
-  every rally and taking one off happens when somebody made a mistake, so the control under
-  the thumb should be the one that is right nearly every time. The sizes live in
-  `ScoreLayout` rather than in the view, and a test asserts the scoring control is at least
-  four times the height of the correcting one — the same rule the wrist court follows, for
-  the same reason: there is no Mac here to look at a screen on, so "the big one" has to be a
-  number something can check.
-- Along with it, a test that the whole page fits the shortest watch anybody owns — and one
-  that pins the unit, because `CourtLayout` lists watch sizes in pixels while SwiftUI lays
-  out in points, and reading one as the other would fit this page into twice the room it has.
+- **Bigger scores, much smaller minus buttons.** The score pill is 92 pt with a 46 pt figure
+  and the side's name inside it; the minus is drawn at 14 pt — a seventh of the score — and
+  tapped at 22, because a control small enough to read as secondary is smaller than a thumb
+  and the difference is invisible and free. Adding a point happens every rally; taking one
+  off happens when somebody made a mistake, and the control under the thumb should be the one
+  that is right nearly every time. Tests hold the ratio, the tap size, that the pill has room
+  for the name as well as the figure, and that the whole page still fits the shortest watch
+  anybody owns.
 
 
 ### Added
