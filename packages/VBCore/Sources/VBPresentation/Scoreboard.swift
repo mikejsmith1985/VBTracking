@@ -144,39 +144,65 @@ public struct Scoreboard: Equatable, Codable, Sendable {
 /// Here rather than in the view for the same reason the court's boxes are: there is no Mac
 /// on which to look at the screen, so "the score button is the big one" has to be a number
 /// something can check rather than an impression somebody has.
+///
+/// These are drawn by the view itself rather than handed to `.bordered`. watchOS's bordered
+/// style imposes its own control height and ignores a frame asked for inside it, which put
+/// the US and THEM labels outside the pill they belonged in and made the minus buttons very
+/// nearly as tall as the scores. A shape this file decides the size of is a shape these
+/// numbers actually govern.
 public enum ScoreLayout {
     /// The tappable height of one side's score. Also the button that adds a point.
-    public static let scoreHeight = 84.0
+    ///
+    /// Tall enough that the side's name sits inside the pill with the figure, rather than
+    /// riding on its edge.
+    public static let scoreHeight = 92.0
 
     /// The size of the number in it.
-    public static let scoreFontSize = 48.0
+    public static let scoreFontSize = 46.0
 
-    /// The minus beneath. Short, but the full width of its column, so it stays an easy
-    /// target without competing with the number above it.
-    public static let minusHeight = 20.0
+    /// The side's name above the figure, inside the same pill.
+    public static let sideFontSize = 11.0
 
-    public static let minusFontSize = 11.0
+    /// The minus beneath, as it is drawn. Half the height it was: it is the control for
+    /// fixing a mistake, and it should look like it.
+    public static let minusPillHeight = 14.0
+
+    /// The minus beneath, as it is tapped.
+    ///
+    /// Bigger than it is drawn, because a control small enough to read as secondary is
+    /// smaller than a thumb. The extra is invisible and costs nothing but layout.
+    public static let minusTapHeight = 22.0
+
+    public static let minusFontSize = 10.0
 
     /// Starting again, across the bottom.
-    public static let newGameHeight = 26.0
+    public static let newGameHeight = 24.0
 
-    /// How much bigger the scoring control is than the correcting one.
+    public static let newGameFontSize = 13.0
+
+    /// The line that says who is winning.
+    public static let statusHeight = 12.0
+
+    /// Between every stacked element.
+    public static let spacing = 3.0
+
+    /// The corner on every drawn control.
+    public static let cornerRadius = 12.0
+
+    /// How much bigger the scoring control looks than the correcting one.
     ///
     /// Adding a point happens every rally; taking one off happens when somebody made a
     /// mistake. The one under the thumb has to be the one that is right nearly every time,
-    /// and four times the height is what makes that true without looking.
-    public static let minimumScoreToMinusRatio = 4.0
+    /// and this much difference is what makes that true without looking.
+    public static let minimumScoreToMinusRatio = 6.0
+
+    /// The smallest a control may be tapped at, however small it is drawn.
+    public static let minimumTapHeight = 20.0
 
     /// What the whole page needs vertically, so it can be checked against the smallest
     /// watch rather than found not to fit on one.
     public static let requiredHeight =
-        scoreHeight + minusHeight + newGameHeight + statusHeight + spacing * 4
-
-    /// The line that says who is winning.
-    public static let statusHeight = 13.0
-
-    /// Between every stacked element.
-    public static let spacing = 3.0
+        scoreHeight + minusTapHeight + newGameHeight + statusHeight + spacing * 4
 
     /// The shortest screen this has to fit on, in points.
     ///

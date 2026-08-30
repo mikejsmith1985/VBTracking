@@ -342,19 +342,34 @@ struct SupportLinkTests {
 struct ScoreLayoutTests {
     @Test("Scoring is the big control and correcting is the small one")
     func theScoreIsTheBigTarget() {
-        let ratio = ScoreLayout.scoreHeight / ScoreLayout.minusHeight
+        let ratio = ScoreLayout.scoreHeight / ScoreLayout.minusPillHeight
         #expect(
             ratio >= ScoreLayout.minimumScoreToMinusRatio,
             "adding a point happens every rally; taking one off happens on a mistake"
         )
-        #expect(ScoreLayout.scoreFontSize > ScoreLayout.minusFontSize * 3)
+        #expect(ScoreLayout.scoreFontSize > ScoreLayout.minusFontSize * 4)
     }
 
-    @Test("The minus is still a thing a thumb can hit")
-    func theMinusIsStillTappable() {
-        // Short, but the full width of its column -- which is what keeps it hittable at a
-        // height that says plainly it is the lesser control.
-        #expect(ScoreLayout.minusHeight >= 18, "below this it is a decoration, not a button")
+    @Test("The minus is drawn smaller than it is tapped")
+    func drawnSmallTappedBigger() {
+        // A control small enough to read as secondary is smaller than a thumb, so the two
+        // are allowed to differ -- and the tap area is the one that has to be big enough.
+        #expect(ScoreLayout.minusTapHeight > ScoreLayout.minusPillHeight)
+        #expect(
+            ScoreLayout.minusTapHeight >= ScoreLayout.minimumTapHeight,
+            "below this it is a decoration, not a button"
+        )
+    }
+
+    @Test("The score pill has room for the side's name as well as the figure")
+    func theNameFitsInsideThePill() {
+        // The name used to ride on the pill's edge, outside it. The pill has to hold both
+        // with room to spare, or the same thing happens again the next time a font grows.
+        let content = ScoreLayout.scoreFontSize + ScoreLayout.sideFontSize
+        #expect(
+            ScoreLayout.scoreHeight >= content * 1.6,
+            "\(content)pt of text in a \(ScoreLayout.scoreHeight)pt pill"
+        )
     }
 
     @Test("The whole page fits on the smallest watch anybody owns")

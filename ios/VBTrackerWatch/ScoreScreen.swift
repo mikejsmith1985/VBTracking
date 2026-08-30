@@ -62,10 +62,10 @@ struct ScoreScreen: View {
 
             Text(board.status)
                 .font(.system(size: 10, weight: .semibold))
-                .frame(minHeight: ScoreLayout.statusHeight)
                 .foregroundStyle(board.winner == nil ? Color.secondary : Color.orange)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
+                .frame(height: ScoreLayout.statusHeight)
 
             newGameButton
         }
@@ -74,9 +74,9 @@ struct ScoreScreen: View {
 
     /// One side: the number, which is the button that adds to it, and the minus beneath.
     ///
-    /// The minus is deliberately the smaller of the two. Adding a point happens every rally
-    /// and taking one off happens when somebody made a mistake, so the one under the thumb
-    /// is the one that is right nearly every time.
+    /// Both are plain buttons over a shape this file draws. watchOS's bordered style has a
+    /// control height of its own and ignores a frame asked for inside it, which is what put
+    /// the side's name outside its pill and left the minus nearly as tall as the score.
     private func column(_ side: Side) -> some View {
         VStack(spacing: ScoreLayout.spacing) {
             Button {
@@ -84,17 +84,22 @@ struct ScoreScreen: View {
             } label: {
                 VStack(spacing: 0) {
                     Text(side.label)
-                        .font(.system(size: 9, weight: .heavy))
-                        .foregroundStyle(.secondary)
+                        .font(.system(size: ScoreLayout.sideFontSize, weight: .heavy))
+                        .foregroundStyle(tint(side))
+                        .opacity(0.75)
                     Text("\(board.score(side))")
                         .font(.system(size: ScoreLayout.scoreFontSize, weight: .heavy, design: .rounded))
                         .minimumScaleFactor(0.5)
                         .lineLimit(1)
+                        .foregroundStyle(tint(side))
                 }
                 .frame(maxWidth: .infinity, minHeight: ScoreLayout.scoreHeight)
+                .background(
+                    RoundedRectangle(cornerRadius: ScoreLayout.cornerRadius)
+                        .fill(tint(side).opacity(0.22))
+                )
             }
-            .buttonStyle(.bordered)
-            .tint(side == .us ? .cyan : .gray)
+            .buttonStyle(.plain)
             .accessibilityIdentifier("score-\(side.rawValue)")
             .accessibilityLabel("\(side.label), \(board.score(side)). Tap to add a point.")
 
@@ -103,14 +108,26 @@ struct ScoreScreen: View {
             } label: {
                 Image(systemName: "minus")
                     .font(.system(size: ScoreLayout.minusFontSize, weight: .bold))
-                    .frame(maxWidth: .infinity, minHeight: ScoreLayout.minusHeight)
+                    .foregroundStyle(board.canSubtract(from: side) ? Color.secondary : Color.secondary.opacity(0.3))
+                    .frame(maxWidth: .infinity, minHeight: ScoreLayout.minusPillHeight)
+                    .background(
+                        RoundedRectangle(cornerRadius: ScoreLayout.minusPillHeight / 2)
+                            .fill(Color.white.opacity(0.10))
+                    )
+                    // Drawn small, tapped bigger. A control small enough to read as
+                    // secondary is smaller than a thumb, and the difference is free.
+                    .frame(height: ScoreLayout.minusTapHeight)
+                    .contentShape(Rectangle())
             }
-            .buttonStyle(.bordered)
-            .tint(.secondary)
+            .buttonStyle(.plain)
             .disabled(!board.canSubtract(from: side))
             .accessibilityIdentifier("score-minus-\(side.rawValue)")
             .accessibilityLabel("Take a point off \(side.label)")
         }
+    }
+
+    private func tint(_ side: Side) -> Color {
+        side == .us ? .cyan : Color(white: 0.75)
     }
 
     /// Starting again, across the bottom where nothing else is.
@@ -128,11 +145,15 @@ struct ScoreScreen: View {
             }
         } label: {
             Text(isConfirmingNewGame ? "Start over?" : "New game")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: ScoreLayout.newGameFontSize, weight: .semibold))
+                .foregroundStyle(isConfirmingNewGame ? Color.red : Color.secondary)
                 .frame(maxWidth: .infinity, minHeight: ScoreLayout.newGameHeight)
+                .background(
+                    RoundedRectangle(cornerRadius: ScoreLayout.cornerRadius)
+                        .fill(isConfirmingNewGame ? Color.red.opacity(0.22) : Color.white.opacity(0.10))
+                )
         }
-        .buttonStyle(.bordered)
-        .tint(isConfirmingNewGame ? .red : .gray)
+        .buttonStyle(.plain)
         .accessibilityIdentifier("score-new-game")
     }
 
