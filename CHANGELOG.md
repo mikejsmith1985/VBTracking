@@ -6,6 +6,25 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **The scoreboard was unreadable in a lit room.** The tiles were the app's accent colour at
+  22% over black, with the figure in the *same hue* on top — so the number, the tile and the
+  screen behind were all nearly the same shade, and the whole page disappeared under any
+  light. It now paints solid: a light blue tile for US, light lavender for THEM, near-black
+  figures on both. The tile does the shining and the number does the reading.
+
+  The palette is checked rather than eyeballed. Every figure clears 7:1 against the tile
+  under it, the lesser controls clear 4.5:1, and the tiles are held to at least twice the
+  brightness of the minus bars so a glance lands on the score first. The WCAG formula itself
+  is pinned against its known anchors, because a wrong contrast function would let every one
+  of those checks pass on colours nobody can read.
+
+- **A tile was measured against point sizes rather than line heights.** A 44 pt font does not
+  occupy 44 pt of a stack, so the check that the side's name fits beside the figure was
+  measuring the wrong thing — it would pass a tile that clips and fail one that is fine.
+
+
+### Fixed
+
 - **The scoreboard's sizes were never the scoreboard's to set.** Every control used
   watchOS's bordered button style, which has a control height of its own and ignores a frame
   asked for inside it — so US and THEM rode on the edge of their pills instead of sitting
