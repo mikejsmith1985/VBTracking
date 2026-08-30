@@ -122,3 +122,66 @@ struct ArrangementTests {
     }
 
 }
+
+// Correcting a name or a number after the fact.
+//
+// A name typed wrong on the first night was, until the roster gained an editor, only fixable
+// by removing the player — which takes their career with them. These are the rules that
+// editor leans on.
+@Suite("Fixing a player's name or number")
+struct PlayerEditTests {
+    private var season: AppState {
+        build(
+            [event(.createSeason(id: "s1", name: "2026", team: "Tigers", format: .standard))],
+            [event(.addPlayer(id: "p1", name: "Ella Kate Hatch", number: "7", seasonId: "s1"))]
+        )
+    }
+
+    @Test("A misspelled name is corrected without touching anything else")
+    func correctsTheName() {
+        let state = apply(season, .editPlayer(id: "p1", name: "Ella Cate Hatch", number: "7", seasonId: "s1"))
+
+        #expect(state.rosterEntry(id: "p1")?.name == "Ella Cate Hatch")
+        #expect(state.rosterEntry(id: "p1")?.number == "7")
+    }
+
+    @Test("A number changes on the season membership, never on the player")
+    func numberBelongsToTheSeason() {
+        var state = apply(season, .editPlayer(id: "p1", name: "Ella Cate Hatch", number: "12", seasonId: "s1"))
+        state = apply(state, .createSeason(id: "s2", name: "2027", team: "Tigers", format: .standard))
+        state = apply(state, .addPlayer(id: "p1", name: "Ella Cate Hatch", number: "3", seasonId: "s2"))
+
+        #expect(state.number(inSeason: "s1", playerId: "p1") == "12")
+        #expect(state.number(inSeason: "s2", playerId: "p1") == "3", "the shirt they wore last year is still theirs")
+    }
+
+    @Test("Correcting a name keeps every serve they have taken")
+    func keepsTheirRecord() {
+        var state = build(
+            roster(3),
+            [event(.startGame(id: "g1", seasonId: nil, rotatesAtServeLimit: false))],
+            turn("p1", points: 3)
+        )
+        let before = state.currentMatch?.statistics["p1"]
+
+        state = apply(state, .editPlayer(id: "p1", name: "Corrected Name", number: "1", seasonId: nil))
+
+        #expect(state.rosterEntry(id: "p1")?.name == "Corrected Name")
+        #expect(state.currentMatch?.statistics["p1"] == before, "renaming is not removing")
+    }
+
+    @Test("Whitespace either side of a correction is not part of the name")
+    func trimsWhatWasTyped() {
+        let state = apply(season, .editPlayer(id: "p1", name: "  Ella  ", number: " 9 ", seasonId: "s1"))
+
+        #expect(state.rosterEntry(id: "p1")?.name == "Ella")
+        #expect(state.rosterEntry(id: "p1")?.number == "9")
+    }
+
+    @Test("A player has to have a name, and has to exist")
+    func refusesTheImpossible() {
+        #expect(refusal(season, .editPlayer(id: "p1", name: "   ", number: "7", seasonId: "s1")) != nil)
+        #expect(refusal(season, .editPlayer(id: "nobody", name: "Someone", number: "7", seasonId: "s1")) != nil)
+        #expect(refusal(season, .editPlayer(id: "p1", name: "Ella", number: "", seasonId: "s1")) == nil, "a player without a shirt number is still a player")
+    }
+}

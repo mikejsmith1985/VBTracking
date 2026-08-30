@@ -147,6 +147,7 @@ struct RosterScreen: View {
     @State private var name = ""
     @State private var number = ""
     @State private var confirmingRemoval: String?
+    @State private var editing: PlayerEdit?
 
     var body: some View {
         NavigationStack {
@@ -173,10 +174,25 @@ struct RosterScreen: View {
                 Section("\(store.state.roster.count) of \(maxRoster)") {
                     ForEach(store.state.roster, id: \.id) { player in
                         HStack {
-                            Text(text(number: player.number))
-                                .font(.headline.monospacedDigit()).frame(width: 34, alignment: .trailing)
-                            Text(player.name)
-                            Spacer()
+                            // The row is the way in to correcting it. A name typed wrong at
+                            // the first game was, until now, only fixable by removing the
+                            // player -- which takes their career with them.
+                            Button {
+                                editing = PlayerEdit(id: player.id)
+                                confirmingRemoval = nil
+                            } label: {
+                                HStack {
+                                    Text(text(number: player.number))
+                                        .font(.headline.monospacedDigit()).frame(width: 34, alignment: .trailing)
+                                    Text(player.name)
+                                    Spacer()
+                                }
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .accessibilityIdentifier("edit-player-\(player.id)")
+                            .accessibilityHint("Change this player's name or number")
+
                             Button(confirmingRemoval == player.id ? "Remove?" : "Remove", role: .destructive) {
                                 guard confirmingRemoval == player.id else {
                                     confirmingRemoval = player.id
@@ -188,16 +204,100 @@ struct RosterScreen: View {
                                 confirmingRemoval = nil
                             }
                             .font(.caption)
+                            .buttonStyle(.plain)
                         }
                     }
                     // Leaving a squad says nothing about the serves they took last year.
-                    Text("Removing a player takes them off this season's roster. Everything they recorded stays theirs.")
+                    Text("Tap a player to fix their name or number. Removing one takes them off this season's roster — everything they recorded stays theirs.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Roster")
+            .sheet(item: $editing) { edit in
+                PlayerEditor(store: store, playerId: edit.id, editing: $editing)
+            }
         }
     }
+}
+
+/// Correcting a player's name or the number on their shirt.
+///
+/// One screen, because they are one correction: a name spelled wrong and a number read wrong
+/// happen at the same moment, on the first night, from the same sheet of paper.
+///
+/// The number belongs to the season membership and the name belongs to the player, so this
+/// changes two different things at once — which is exactly why it is worth doing here rather
+/// than making the operator find two screens.
+struct PlayerEditor: View {
+    let store: Store
+    let playerId: String
+    @Binding var editing: PlayerEdit?
+
+    @State private var name = ""
+    @State private var number = ""
+
+    private var player: RosterEntry? {
+        store.state.rosterEntry(id: playerId)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("Name") {
+                    TextField("Name", text: $name)
+                        .accessibilityIdentifier("edit-name")
+                }
+
+                Section("Number this season") {
+                    TextField("Number", text: $number)
+                        .keyboardType(.numberPad)
+                        .accessibilityIdentifier("edit-number")
+                }
+
+                Section {
+                    // The one thing about this app that cannot be retrofitted, said plainly
+                    // where somebody is about to change a number.
+                    Text("A number belongs to the season, not to the player. Changing it here does not touch what they wore in any other season.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle(player?.name ?? "Player")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { editing = nil }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") {
+                        let accepted = store.dispatch(
+                            .editPlayer(
+                                id: playerId,
+                                name: name,
+                                number: number,
+                                seasonId: store.state.activeSeasonId
+                            )
+                        )
+                        if accepted { editing = nil }
+                    }
+                    .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .accessibilityIdentifier("save-player")
+                }
+            }
+            .onAppear {
+                name = player?.name ?? ""
+                number = player?.number ?? ""
+            }
+        }
+    }
+}
+
+/// A player being corrected.
+///
+/// A wrapper rather than binding the sheet to the identifier itself: `sheet(item:)` wants
+/// something `Identifiable`, and making every `String` in the app identifiable to satisfy one
+/// sheet is a conformance the whole target would then be living with.
+struct PlayerEdit: Identifiable {
+    let id: String
 }
 
 /// Saving a copy of everything, through the share sheet.

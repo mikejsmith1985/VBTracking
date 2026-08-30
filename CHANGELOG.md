@@ -6,6 +6,16 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **A player's name and number can be corrected.** Tap them on the Roster. Until now a name
+  typed wrong on the first night could only be fixed by removing the player and adding them
+  again — which starts a new person and leaves their serves attached to the old one. The
+  editor changes the name on the player and the number on this season's membership, and says
+  so on screen, because that split is the one thing about this app that cannot be
+  retrofitted.
+
+
+### Added
+
 - **Privacy and support pages, at the two URLs the App Store will not accept a submission
   without.** Both live beside the web app on GitHub Pages, and both are written to be read
   rather than to satisfy a form. The privacy page says the only thing worth saying — the app
