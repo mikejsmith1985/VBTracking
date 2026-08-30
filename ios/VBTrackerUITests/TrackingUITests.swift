@@ -132,3 +132,129 @@ final class TransferUITests: XCTestCase {
         XCTAssertTrue(app.buttons["import-data"].exists)
     }
 }
+
+/// Building a rotation on the court, and using it.
+///
+/// Three bugs shipped here at once, and every one of them was invisible to the domain suite
+/// because every one was about what a tap does to a screen. This is the suite that would
+/// have caught them.
+@MainActor
+final class RotationUITests: XCTestCase {
+    private var app = XCUIApplication()
+
+    private func launchWithSix() {
+        continueAfterFailure = false
+        app = XCUIApplication()
+        app.launchArguments = ["-uiTestFreshStore"]
+        app.launch()
+
+        app.buttons["Roster"].tap()
+        for number in ["1", "2", "3", "4", "5", "6", "7"] {
+            app.textFields["Name"].tap()
+            app.textFields["Name"].typeText("Player \(number)")
+            app.textFields["Number"].tap()
+            app.textFields["Number"].typeText(number)
+            app.buttons["Add"].tap()
+        }
+        app.buttons["Track"].tap()
+        app.buttons["Start game"].tap()
+        dismissNamingSheet()
+    }
+
+    /// Starting a game offers to name it. Nothing here is about naming.
+    private func dismissNamingSheet() {
+        let cancel = app.buttons["Cancel"]
+        if cancel.waitForExistence(timeout: 2) { cancel.tap() }
+    }
+
+    private func emptySpots() -> [XCUIElement] {
+        app.buttons.allElementsBoundByIndex.filter { $0.identifier == "empty-spot" }
+    }
+
+    private func playerChips() -> [XCUIElement] {
+        app.buttons.allElementsBoundByIndex.filter { $0.identifier.hasPrefix("player-") }
+    }
+
+    func testAnEmptySpotIsTappableAnywhereInsideIt() {
+        launchWithSix()
+
+        let spot = emptySpots().first
+        XCTAssertNotNil(spot, "six empty places must be offered")
+        guard let spot else { return }
+
+        // The middle of the box, which is where anybody aims. The box used to be drawn with
+        // a stroked border and no fill, so only the 1pt outline was hittable and taps in
+        // the middle did nothing at all.
+        spot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+
+        XCTAssertTrue(
+            app.staticTexts["WHO?"].waitForExistence(timeout: 3),
+            "one tap in the middle of a spot must pick it up"
+        )
+    }
+
+    func testAPlayerCanBePickedUpBeforeASpotIsChosen() {
+        launchWithSix()
+
+        let chip = playerChips().first
+        XCTAssertNotNil(chip)
+        chip?.tap()
+
+        // It used to start recording that player's serves, which made building a rotation
+        // player-first impossible.
+        XCTAssertFalse(app.buttons["serve-OUT"].exists, "a first tap must not start a turn")
+        XCTAssertTrue(emptySpots().count > 0, "the court is still there to place them on")
+
+        emptySpots().first?.tap()
+        XCTAssertEqual(emptySpots().count, 5, "one of the six places is now filled")
+    }
+
+    func testTheCourtClosesOnceServingAndStaysClosedThroughARotation() {
+        launchWithSix()
+
+        // Six players, spot first each time.
+        for _ in 0..<6 {
+            guard let spot = emptySpots().first, let chip = playerChips().first else { break }
+            spot.tap()
+            chip.tap()
+        }
+        XCTAssertEqual(emptySpots().count, 0, "the order is full")
+
+        // Hand the ball over and record a turn that ends.
+        playerChips().first?.tap()
+        XCTAssertTrue(app.buttons["serve-OUT"].waitForExistence(timeout: 3))
+        app.buttons["serve-OUT"].tap()
+
+        // The rotation hands the serve on. The court must NOT come back: it used to, and
+        // the operator had to find Cancel before they could record the next rally.
+        XCTAssertTrue(
+            app.buttons["serve-OUT"].waitForExistence(timeout: 3),
+            "the outcome controls must survive a rotation"
+        )
+        XCTAssertEqual(emptySpots().count, 0)
+    }
+
+    func testTappingWhoeverIsServingPutsTheCourtAway() {
+        launchWithSix()
+
+        for _ in 0..<6 {
+            guard let spot = emptySpots().first, let chip = playerChips().first else { break }
+            spot.tap()
+            chip.tap()
+        }
+        playerChips().first?.tap()
+        XCTAssertTrue(app.buttons["serve-OUT"].waitForExistence(timeout: 3))
+
+        // Ask for the court, then change your mind by tapping whoever already has the ball.
+        app.buttons["Change"].tap()
+        XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 3))
+
+        let serving = playerChips().first
+        serving?.tap()
+
+        XCTAssertTrue(
+            app.buttons["serve-OUT"].waitForExistence(timeout: 3),
+            "tapping the current server means carry on, not stay here"
+        )
+    }
+}

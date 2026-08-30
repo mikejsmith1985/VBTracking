@@ -92,11 +92,28 @@ public func intent(
         return .armSubstitution(incomingPlayerId: playerId)
 
     case nil:
+        // An order still being built: a tap picks the player up, and the next tap says
+        // where they stand. Serving them instead was the old behaviour and it made
+        // building a rotation player-first impossible -- the first tap started recording
+        // their serves.
+        if state.canArrangeRotation, !isLineupComplete(lineup) {
+            return playerId == state.activeServerId ? .ignore : .armSubstitution(incomingPlayerId: playerId)
+        }
+
         guard lineup != nil, !isOnCourt else {
             return playerId == state.activeServerId ? .ignore : .serve(playerId: playerId)
         }
         return .armSubstitution(incomingPlayerId: playerId)
     }
+}
+
+/// True when somebody is standing in every place in the order.
+///
+/// Half an order is still being arranged; a whole one is ready to serve, and from then on a
+/// tap on a player means hand them the ball.
+public func isLineupComplete(_ lineup: [String?]?) -> Bool {
+    guard let lineup, lineup.count >= lineupSize else { return false }
+    return lineup.prefix(lineupSize).allSatisfy { $0 != nil }
 }
 
 /// Works out what tapping a place on the court means, given what is already held.
@@ -134,18 +151,17 @@ public func pickerHint(state: AppState, armed: Armed?) -> String {
     case let .player(playerId):
         let name = state.rosterEntry(id: playerId)?.name ?? "That player"
         if state.canArrangeRotation {
-            return "\(name) — tap a spot on the court to stand them there, or tap them again to serve."
+            return "\(name) — tap a spot to stand them there, or tap them again to serve first."
         }
         return "\(name) is coming on — tap who they replace. Tap them again to serve without substituting."
 
     case nil:
-        guard state.currentLineup != nil else {
-            return state.canArrangeRotation
-                ? "Tap a spot to build the rotation, or tap a player to serve"
-                : "Tap the next server"
+        if state.canArrangeRotation, !isLineupComplete(state.currentLineup) {
+            return "Tap a spot then a player, or a player then a spot. Serving corner is bottom right."
         }
+        guard state.currentLineup != nil else { return "Tap the next server" }
         if state.canArrangeRotation {
-            return "Serving corner is bottom right · tap a spot, then the player who stands there"
+            return "Tap whoever serves first · serving corner is bottom right"
         }
         return "Serving corner is bottom right · tap a bench player to sub them on"
     }

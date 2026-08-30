@@ -73,7 +73,11 @@ struct CourtPicker: View {
             }
 
         case .ignore:
+            // Putting something down also puts the picker away. Without this, tapping the
+            // player already serving -- which is the most natural way to say "no, carry on"
+            // -- left the court open over the outcome controls until Cancel was found.
             armed = nil
+            isPickerRequested = false
         }
     }
 }
@@ -165,6 +169,10 @@ private struct EmptySpot: View {
                         .font(isHeld ? .caption.bold() : .body)
                         .foregroundStyle(isHeld ? Color.orange : Color.secondary)
                 )
+                // `strokeBorder` draws a line and nothing else, so the box had no inside to
+                // hit -- only the 1pt border and the dash in the middle. Every tap that
+                // landed anywhere else did nothing, which read as needing to tap twice.
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("empty-spot")

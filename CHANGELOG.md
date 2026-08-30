@@ -4,6 +4,31 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **An empty spot on the court could only be tapped on its outline.** It was drawn as a
+  stroked border with nothing inside, so the box had no middle to hit — every tap that landed
+  where anybody would aim did nothing, which read as needing to tap twice to "focus" the
+  court. The whole box is now the target.
+- **Tapping a player first started recording their serves.** Building a rotation player-first
+  was therefore impossible: the first tap handed them the ball instead of picking them up.
+  While an order is still being built, a tap on a player picks them up and the next tap says
+  where they stand. Tapping them a second time still serves them, which is the way out for an
+  operator who wants no rotation at all.
+- **The court reopened after every rotation and had to be cancelled.** Two causes. Tapping
+  whoever was already serving — the natural way to say "no, carry on" — cleared what was held
+  but left the court sitting over the outcome controls. And a rotation with a gap in it opened
+  no turn at all, so nobody was serving, so the app asked who serves next after every single
+  rally. The serve now passes over an empty place to the next player standing, wrapping round;
+  only an order nobody is standing in hands the ball to nobody.
+
+### Added
+
+- **Interface tests for all three.** Every one was invisible to the domain suite because every
+  one was about what a tap does to a screen. They run on the build machine, which is the only
+  place a screen exists.
+
+
 ### Added
 
 - **A game can be named while it is being played.** The Track screen carries the opponent

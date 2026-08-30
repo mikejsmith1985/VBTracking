@@ -384,12 +384,26 @@ private func advanceRotation(_ match: Match) -> Match {
     guard let lineup = match.lineup else { return match }
     if match.openTurn != nil { return match }
     guard let position = match.nextRotationPosition, position < lineup.count else { return match }
-    // The slot was emptied by a roster removal.
-    guard let playerId = lineup[position] else { return match }
+
+    // A slot can be empty -- a short bench, a player removed mid-match, or an order still
+    // being built. Stopping at one froze the whole match: no turn opened, so nobody was
+    // serving, so the app fell back to asking who serves next after every single rally.
+    // The serve passes over the gap to the next person actually standing there.
+    guard let playerId = nextOccupied(in: lineup, from: position) else { return match }
 
     var next = match
     next.turns.append(newTurn(playerId: playerId, ordinal: match.turns.count, lineup: lineup))
     return next
+}
+
+/// The next player standing in the order, starting at `position` and going round.
+///
+/// Nil only when nobody is standing anywhere, which is not a rotation at all.
+private func nextOccupied(in lineup: [String?], from position: Int) -> String? {
+    for step in 0..<lineup.count {
+        if let playerId = lineup[(position + step) % lineup.count] { return playerId }
+    }
+    return nil
 }
 
 // MARK: - Corrections
