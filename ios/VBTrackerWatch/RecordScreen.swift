@@ -30,7 +30,6 @@ struct RecordScreen: View {
             link.record(outcome)
             // Felt as well as seen: the coach is watching the court, not the wrist.
             WKInterfaceDevice.current().play(outcome == .inPoint ? .success : .click)
-            raiseLimitIfReached()
         } label: {
             Text(title)
                 .font(.system(size: 15, weight: .heavy))
@@ -41,20 +40,10 @@ struct RecordScreen: View {
         .accessibilityIdentifier("watch-serve-\(outcome.rawValue)")
     }
 
-    /// The five-serve limit, felt on the wrist.
-    ///
-    /// The watch cannot count the turn itself — the phone holds the record — so it reads
-    /// the count off the court it was last sent. One buzz, at the limit.
-    private func raiseLimitIfReached() {
-        guard let snapshot = link.snapshot,
-            let serving = snapshot.slots.first(where: \.isServing),
-            serving.points != nil
-        else {
-            return
-        }
-        // A distinct, heavier haptic: this one means stop, not "recorded".
-        WKInterfaceDevice.current().play(.notification)
-    }
+    // The five-serve limit is not checked here. It cannot be: the watch has no count of
+    // the turn, only the court it was last sent, and the check that used to live here fired
+    // on any serve that had scored a point -- which is not the rule and never was. The phone
+    // holds the record, so the phone says when the limit is reached; see `RotateAlert`.
 }
 
 /// Who is serving, and what has not reached the phone.

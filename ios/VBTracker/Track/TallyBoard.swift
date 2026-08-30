@@ -1,7 +1,12 @@
-// The tally board: one mark per serve, grouped by turn.
+// The tally board: one mark per serve, grouped by turn, in the colour of the player.
 //
-// Colour carries the TURN; the outcome is carried by the mark's shape, so the board stays
-// readable without colour vision.
+// Colour carries the PLAYER, not the turn. "The green tallies are number 5" is something a
+// coach can hold in their head across a whole match; "the green ones are the third turn"
+// is not. A player's own turns are shades of their one hue, so the turns stay separable
+// without the colour stopping meaning a person.
+//
+// The outcome is carried by the mark's shape, so the board still reads without colour
+// vision at all.
 import SwiftUI
 import VBCore
 import VBPresentation
@@ -10,28 +15,15 @@ struct TallyBoard: View {
     let match: Match?
     let roster: [RosterEntry]
 
-    /// Turns grouped by player, in the order each player first served.
-    private var rows: [(player: RosterEntry?, turns: [Turn])] {
-        guard let match else { return [] }
-        var order: [String] = []
-        var byPlayer: [String: [Turn]] = [:]
-
-        for turn in match.turns where !turn.serves.isEmpty {
-            if byPlayer[turn.playerId] == nil { order.append(turn.playerId) }
-            byPlayer[turn.playerId, default: []].append(turn)
-        }
-        return order.map { id in
-            (roster.first { $0.id == id }, byPlayer[id] ?? [])
-        }
-    }
+    private var rows: [TallyRow] { tallyRows(of: match) }
 
     var body: some View {
         if rows.isEmpty {
             EmptyState(title: "No serves yet", detail: "Pick the server below to start recording.")
         } else {
             VStack(alignment: .leading, spacing: 12) {
-                ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                    TallyRow(player: row.player, turns: row.turns)
+                ForEach(rows, id: \.playerId) { row in
+                    TallyRowView(row: row, player: roster.first { $0.id == row.playerId })
                 }
                 Legend()
             }
@@ -40,31 +32,30 @@ struct TallyBoard: View {
     }
 }
 
-private struct TallyRow: View {
+private struct TallyRowView: View {
+    let row: TallyRow
     let player: RosterEntry?
-    let turns: [Turn]
 
-    private var totals: Figures {
-        turns.reduce(into: Figures()) { running, turn in
-            let figures = turn.figures
-            running.serves += figures.serves
-            running.servesIn += figures.servesIn
-            running.points += figures.points
-        }
-    }
+    private var tint: Color { Color(hex: row.color) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) {
-                Text(text(number: player?.number)).font(.headline.monospacedDigit())
+                // The number carries the player's colour too, so the link between a colour
+                // and a person is stated rather than left to be inferred from the marks.
+                Text(text(number: player?.number))
+                    .font(.headline.monospacedDigit())
+                    .foregroundStyle(tint)
                 Text(player?.name ?? "Removed player").font(.subheadline)
                 Spacer()
-                Text("\(totals.serves) served · \(totals.servesIn) in · \(totals.points) pts")
+                Text("\(row.figures.serves) served · \(row.figures.servesIn) in · \(row.figures.points) pts")
                     .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
             }
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(turns, id: \.ordinal) { TurnGroup(turn: $0) }
+                    ForEach(Array(row.turns.enumerated()), id: \.element.ordinal) { position, turn in
+                        TurnGroup(turn: turn, tint: Color(hex: row.color(ofTurnAt: position)))
+                    }
                 }
             }
         }
@@ -74,6 +65,7 @@ private struct TallyRow: View {
 /// One serve turn: its marks, its counts, and a flag when it ran past the limit.
 private struct TurnGroup: View {
     let turn: Turn
+    let tint: Color
 
     var body: some View {
         VStack(spacing: 4) {
@@ -89,13 +81,9 @@ private struct TurnGroup: View {
         .padding(6)
         .background(RoundedRectangle(cornerRadius: 8).stroke(tint.opacity(0.7)))
     }
-
-    private var tint: Color {
-        Color(hex: colorForTurn(turn.ordinal))
-    }
 }
 
-/// One serve. Shape is the outcome; colour is the turn.
+/// One serve. Shape is the outcome; colour is the player.
 private struct Mark: View {
     let outcome: Outcome
     let tint: Color
@@ -119,14 +107,14 @@ private struct Legend: View {
             Text("filled = point").font(.system(size: 10))
             Text("open = in, no point").font(.system(size: 10))
             Text("crossed = out").font(.system(size: 10))
-            Text("colour = turn").font(.system(size: 10))
+            Text("colour = player").font(.system(size: 10))
         }
         .foregroundStyle(.tertiary)
     }
 }
 
 extension Color {
-    /// The palette is shared with the web app, and it is written in hex there.
+    /// The palette is written in hex, shared with the web app.
     init(hex: String) {
         let digits = hex.hasPrefix("#") ? String(hex.dropFirst()) : hex
         let value = UInt64(digits, radix: 16) ?? 0

@@ -26,46 +26,19 @@ struct OfflineTests {
         "Socket", "dataTask", "downloadTask", "uploadTask",
     ]
 
-    /// The directories that ship. Tests are excluded: they are not in the app.
-    private static let shippedDirectories = [
-        "packages/VBCore/Sources",
-        "ios/VBTracker",
-        "ios/VBTrackerWatch",
-        "ios/Shared",
-    ]
-
-    private var repository: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()  // VBCoreTests
-            .deletingLastPathComponent()  // Tests
-            .deletingLastPathComponent()  // VBCore
-            .deletingLastPathComponent()  // packages
-            .deletingLastPathComponent()  // the repository
-    }
-
-    /// Every Swift file that ends up in one of the two apps.
-    private func shippedFiles() -> [URL] {
-        Self.shippedDirectories.flatMap { directory -> [URL] in
-            let root = repository.appendingPathComponent(directory)
-            guard let walker = FileManager.default.enumerator(atPath: root.path) else { return [] }
-            return walker.compactMap { entry in
-                guard let name = entry as? String, name.hasSuffix(".swift") else { return nil }
-                return root.appendingPathComponent(name)
-            }
-        }
-    }
-
     @Test("No shipped file so much as names a way to open a connection")
     func namesNoNetworkingAPI() throws {
-        let files = shippedFiles()
+        let files = ShippedSources.files()
         #expect(files.count > 20, "the files were found at all")
 
         for file in files {
-            let source = try String(contentsOf: file, encoding: .utf8)
-            let code = source
-                .split(separator: "\n", omittingEmptySubsequences: false)
-                .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
-                .joined(separator: "\n")
+            let code = try ShippedSources.code(of: file)
+            // Reading nothing at all looks exactly like a clean bill of health, so the
+            // scan proves it read something before it decides the file is clean.
+            #expect(
+                ShippedSources.isReadable(code),
+                Comment(rawValue: "nothing was read out of \(file.lastPathComponent)")
+            )
 
             for api in Self.networkingAPIs {
                 #expect(
@@ -80,7 +53,7 @@ struct OfflineTests {
     func importsNoNetworkingFramework() throws {
         let frameworks = ["import Network", "import CloudKit", "import CFNetwork", "import MultipeerConnectivity"]
 
-        for file in shippedFiles() {
+        for file in ShippedSources.files() {
             let source = try String(contentsOf: file, encoding: .utf8)
             for framework in frameworks {
                 #expect(
@@ -96,7 +69,8 @@ struct OfflineTests {
         // WatchConnectivity is Bluetooth and Wi-Fi Direct between two paired devices. It
         // needs no router, no internet and no account -- which is why it is the one link
         // allowed here, and why turning the radios off entirely is not the test.
-        let link = repository.appendingPathComponent("ios/Shared/Link/WatchConnectivitySession.swift")
+        let link = ShippedSources.repository
+            .appendingPathComponent("ios/Shared/Link/WatchConnectivitySession.swift")
         let source = try String(contentsOf: link, encoding: .utf8)
 
         #expect(source.contains("import WatchConnectivity"))

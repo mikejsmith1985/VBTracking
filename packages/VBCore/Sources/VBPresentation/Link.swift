@@ -40,6 +40,63 @@ public struct SnapshotSlot: Equatable, Codable, Sendable {
     }
 }
 
+/// The five-serve rule, as the wrist needs to hear it.
+///
+/// The watch cannot work this out for itself: the phone holds the record, and the count of
+/// a turn is on the phone. So the phone says it, and says it in numbers a box can draw
+/// without a roster.
+public struct ServeLimitNotice: Equatable, Codable, Sendable {
+    /// Who has just finished their five.
+    public var finishedNumber: String?
+
+    /// Who takes the ball next, or nil when there is no order to say — in which case the
+    /// wrist asks for a server rather than naming one.
+    public var nextNumber: String?
+
+    /// How many serves stood on the record when this was raised.
+    ///
+    /// The wrist buzzes once per raising and stops once it is cleared. Two raisings always
+    /// sit at different counts, so this tells them apart without a clock or a made-up id —
+    /// and an undo that takes the count back down raises it again honestly.
+    public var raisedAtServeCount: Int
+
+    public init(finishedNumber: String?, nextNumber: String?, raisedAtServeCount: Int) {
+        self.finishedNumber = finishedNumber
+        self.nextNumber = nextNumber
+        self.raisedAtServeCount = raisedAtServeCount
+    }
+
+    /// Reads the rule off the record, or nothing when it has not just fired.
+    ///
+    /// Derived rather than remembered, so it clears itself the moment the next serve is
+    /// recorded: a notice held in a variable would still be true after play moved on.
+    public static func raised(by state: AppState) -> ServeLimitNotice? {
+        guard let match = state.currentMatch else { return nil }
+
+        // The turn that has the ball, open or just closed. Both shapes happen: with an
+        // order the fifth serve closes the turn and rotates, and without one the same
+        // player is still standing there holding it -- which is the case the rule exists
+        // for, so it must not be the case that goes unannounced.
+        guard let recent = match.turns.last(where: { !$0.serves.isEmpty }),
+            recent.serves.count == serveLimit
+        else {
+            // Fewer than five, or a sixth already served past a referee's miscount:
+            // either way nothing is being raised now.
+            return nil
+        }
+
+        // Only name a next server when it is actually somebody else. Without an order the
+        // same player still holds the ball, and naming them would read as permission to
+        // serve a sixth.
+        let next = state.activeServerId
+        return ServeLimitNotice(
+            finishedNumber: state.rosterEntry(id: recent.playerId)?.number,
+            nextNumber: next == recent.playerId ? nil : next.flatMap { state.rosterEntry(id: $0)?.number },
+            raisedAtServeCount: match.turns.reduce(0) { $0 + $1.serves.count }
+        )
+    }
+}
+
 /// The court, as it travels to the wrist.
 ///
 /// Figures, not the log: the watch draws six boxes and has no use for a season.
@@ -60,20 +117,35 @@ public struct CourtSnapshot: Equatable, Codable, Sendable {
 
     public var slots: [SnapshotSlot]
 
-    public init(sequence: Int, capturedAt: Date, scopeLabel: String, hasOrder: Bool, slots: [SnapshotSlot]) {
+    /// Set while a player has just taken their five and nothing has been recorded since.
+    ///
+    /// Optional so that a watch built before this existed still reads a snapshot sent by a
+    /// phone that sends it.
+    public var serveLimit: ServeLimitNotice?
+
+    public init(
+        sequence: Int,
+        capturedAt: Date,
+        scopeLabel: String,
+        hasOrder: Bool,
+        slots: [SnapshotSlot],
+        serveLimit: ServeLimitNotice? = nil
+    ) {
         self.sequence = sequence
         self.capturedAt = capturedAt
         self.scopeLabel = scopeLabel
         self.hasOrder = hasOrder
         self.slots = slots
+        self.serveLimit = serveLimit
     }
 
     /// Builds the snapshot the wrist should be showing.
-    public init(court: CourtView, sequence: Int, capturedAt: Date) {
+    public init(court: CourtView, sequence: Int, capturedAt: Date, serveLimit: ServeLimitNotice? = nil) {
         self.sequence = sequence
         self.capturedAt = capturedAt
         self.scopeLabel = court.scopeLabel
         self.hasOrder = court.hasOrder
+        self.serveLimit = serveLimit
         self.slots = court.slots.map { slot in
             SnapshotSlot(
                 court: slot.position.rawValue,

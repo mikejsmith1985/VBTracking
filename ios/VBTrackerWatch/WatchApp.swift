@@ -13,11 +13,19 @@ struct VBTrackerWatchApp: App {
 
     var body: some Scene {
         WindowGroup {
-            TabView {
-                CourtScreen(link: link)
-                RecordScreen(link: link)
+            ZStack {
+                TabView {
+                    CourtScreen(link: link)
+                    RecordScreen(link: link)
+                }
+                .tabViewStyle(.verticalPage)
+
+                // Over both pages, because the rule applies wherever the coach happens to
+                // be looking -- and because it is the one thing here worth interrupting for.
+                if let notice = link.serveLimit {
+                    RotateAlert(notice: notice) { link.clearServeLimit() }
+                }
             }
-            .tabViewStyle(.verticalPage)
         }
     }
 }
@@ -34,10 +42,32 @@ final class WatchLink {
     private(set) var pending = PendingQueue()
     private(set) var isReachable = false
 
+    /// The serve count at which the coach last cleared the rotate alert.
+    ///
+    /// Kept rather than a plain "dismissed" flag because the alert has to come back for the
+    /// next player. Two raisings never sit at the same count, so this clears one raising and
+    /// nothing else.
+    private var clearedAtServeCount: Int?
+
     private var session: (any ConnectivitySession)?
 
     init() {
         session = WatchConnectivitySession(delegate: self)
+    }
+
+    /// The rotate alert that is still standing, if any.
+    ///
+    /// Derived rather than remembered: the phone stops sending the notice the moment the
+    /// next serve is recorded, so an alert answered on the phone disappears from the wrist
+    /// without the wrist being told separately.
+    var serveLimit: ServeLimitNotice? {
+        guard let notice = snapshot?.serveLimit else { return nil }
+        return notice.raisedAtServeCount == clearedAtServeCount ? nil : notice
+    }
+
+    /// Stops the buzzing. The coach has seen it.
+    func clearServeLimit() {
+        clearedAtServeCount = snapshot?.serveLimit?.raisedAtServeCount
     }
 
     /// How current the court is, or nil when none has ever arrived.

@@ -31,7 +31,14 @@ final class PhoneLink {
     private func send(_ state: AppState) {
         guard let session, let court = state.courtView() else { return }
         sequence += 1
-        let snapshot = CourtSnapshot(court: court, sequence: sequence, capturedAt: Date())
+        let snapshot = CourtSnapshot(
+            court: court,
+            sequence: sequence,
+            capturedAt: Date(),
+            // The wrist cannot count a turn -- the record is here -- so the rule is read
+            // off the state and sent with the court it applies to.
+            serveLimit: ServeLimitNotice.raised(by: state)
+        )
         session.send(context: LinkPayload.encode(snapshot: snapshot))
     }
 }

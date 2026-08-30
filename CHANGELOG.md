@@ -6,6 +6,44 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **The rotate alert reaches the wrist, and keeps buzzing until it is cleared.** A single tap
+  on the wrist is exactly the thing a coach misses while watching a rally, and missing it
+  means the wrong player serves a sixth — so it now pulses every 1.5 seconds, over both watch
+  pages, until somebody taps "Got it". The phone works out when the rule fires (it holds the
+  record; the watch cannot count a turn) and sends it with the court.
+
+### Fixed
+
+- **The watch's five-serve check never checked the five-serve rule.** It buzzed whenever the
+  serving player had any points recorded — not the rule, and never was. The count it needed
+  was never on the watch to begin with.
+- **The offline guarantee was passing without reading anything.** The scan that proves no
+  shipped file names a networking API split its input on `"
+"`, but a Windows checkout is
+  CRLF and Swift counts `"
+"` as one character — so every file came back as a single line
+  that began with its own header comment, was dropped as a comment, and left an empty string
+  to search. It has read the real source since, and still finds nothing; both scans now
+  assert they read something before reporting a file clean.
+
+### Changed
+
+- **Colour on the tally board means a player, not a turn.** "The green tallies are number 5"
+  is something a coach can hold in their head across a match; "the green ones are the third
+  turn" is not. Each player takes one hue, kept for as long as the board is up, and their own
+  turns are shades of it so the turns stay separable without the colour stopping meaning a
+  person. The jersey number carries the colour too, so the link is stated rather than
+  inferred. Outcome is still carried by the shape of the mark, so the board reads without
+  colour vision at all. The web app still colours by turn.
+- **Nothing in either app can silence the wearer, and a test now says so.** A repeating haptic
+  is one step from asking for an extended runtime session, and several session types suppress
+  the wearer's own notifications for their duration — which would trade a rotation reminder
+  for every message and camera alert of the evening. The alert uses a plain timer instead, and
+  no shipped file may name a session, HealthKit, or the notification centre.
+
+
+### Added
+
 - **The rotation can be set on the court itself, in either direction.** An empty spot is now
   a button: tap it and then the player who stands there, or tap the player and then the
   spot. Both orders work, because before a match people think in both, and asking the
