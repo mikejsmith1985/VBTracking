@@ -7,11 +7,15 @@ All notable changes to this project are recorded here.
 ### Added
 
 - **A scoreboard on the wrist for games nobody is tracking.** Two numbers, a tap each, on
-  their own watch page. No roster, no season, no log — a Saturday in the park does not go in
-  the record and now cannot. It knows the rule that makes a scoreboard worth more than
-  counting on fingers: to the target and two clear, so 21–20 is still a game and 26–24 is
-  not. It says who is on game point, keeps counting past the end because the people on court
-  decide when to stop, and survives a sleeping wrist. Played to 11, 15, 21 or 25.
+  their own watch page, with a minus under each and **New game** across the bottom. No
+  roster, no season, no log — a Saturday in the park does not go in the record and now
+  cannot. Corrections are per side rather than a single undo: a scorekeeper who has given a
+  point to the wrong team knows which team, and asking them to work out how many steps back
+  that was, in a gym, is asking for the wrong correction. It knows the rule that makes a
+  scoreboard worth more than counting on fingers: to the target and two clear, so 21–20 is
+  still a game and 26–24 is not. It says who is on game point, keeps counting past the end
+  because the people on court decide when to stop, and survives a sleeping wrist. Played to
+  11, 15, 21 or 25.
 
 ### Fixed
 

@@ -16,7 +16,7 @@ struct ScoreboardTests {
         #expect(board.us == 0)
         #expect(board.them == 0)
         #expect(board.winner == nil)
-        #expect(board.canUndo == false)
+        #expect(board.hasStarted == false)
     }
 
     @Test("A point goes to the side it was given to, and only that side")
@@ -30,36 +30,72 @@ struct ScoreboardTests {
         #expect(board.them == 2)
     }
 
-    @Test("Undo takes back the last point, whichever side it went to")
-    func undoIsExact() {
+    @Test("A minus takes a point off the side it was pressed under")
+    func subtractsFromOneSide() {
         var board = Scoreboard()
         board.award(to: .us)
         board.award(to: .them)
-        board.undo()
-
-        #expect(board.us == 1)
-        #expect(board.them == 0, "the point taken back is the one that was given, not the higher number")
-    }
-
-    @Test("Undo goes back as far as the game does, and no further")
-    func undoStopsAtNothing() {
-        var board = Scoreboard()
-        board.award(to: .us)
-        board.undo()
-        board.undo()
+        board.subtract(from: .us)
 
         #expect(board.us == 0)
-        #expect(board.canUndo == false)
+        #expect(board.them == 1, "the other side is untouched")
     }
 
-    @Test("Reset clears the game but keeps how they are playing it")
+    @Test("A correction is made where the mistake was, not where the last tap was")
+    func subtractsOutOfOrder() {
+        var board = Scoreboard()
+        board.award(to: .them)
+        for _ in 0..<4 { board.award(to: .us) }
+
+        // The point four rallies ago went to the wrong side. It comes off that side.
+        board.subtract(from: .them)
+
+        #expect(board.them == 0)
+        #expect(board.us == 4, "nothing else is unwound to get there")
+    }
+
+    @Test("Nothing goes below nothing")
+    func neverGoesNegative() {
+        var board = Scoreboard()
+        board.subtract(from: .us)
+        board.subtract(from: .them)
+
+        #expect(board.us == 0)
+        #expect(board.them == 0)
+    }
+
+    @Test("A side with a point on it is the only side that can have one taken off")
+    func knowsWhenItCanSubtract() {
+        var board = Scoreboard()
+        #expect(board.canSubtract(from: .us) == false)
+
+        board.award(to: .us)
+        #expect(board.canSubtract(from: .us))
+        #expect(board.canSubtract(from: .them) == false)
+    }
+
+    @Test("A board nobody has scored on has no game on it to lose")
+    func knowsWhenItHasStarted() {
+        var board = Scoreboard()
+        #expect(board.hasStarted == false)
+
+        board.award(to: .them)
+        #expect(board.hasStarted)
+
+        board.subtract(from: .them)
+        #expect(board.hasStarted == false, "taking the only point off leaves nothing again")
+    }
+
+    @Test("A new game clears the score but keeps how they are playing it")
     func resetKeepsTheTarget() {
         var board = Scoreboard(target: 15)
         board.award(to: .us)
+        board.award(to: .them)
         board.reset()
 
         #expect(board.us == 0)
-        #expect(board.canUndo == false)
+        #expect(board.them == 0)
+        #expect(board.hasStarted == false)
         #expect(board.target == 15, "the target is a choice about today, not part of the score")
     }
 
@@ -158,10 +194,26 @@ struct ScoreboardTests {
 
         let read = try JSONDecoder().decode(Scoreboard.self, from: JSONEncoder().encode(board))
         #expect(read == board)
+    }
 
-        var undone = read
-        undone.undo()
-        #expect(undone.us == 1, "the history came back too, so undo still works")
+    @Test("A board written by an earlier build is read as far as it goes")
+    func readsAnOlderBoard() throws {
+        // The shape that shipped before the minus buttons carried a history of every score,
+        // which nothing reads now. A game in progress must survive the change -- there is
+        // no copy of it anywhere else.
+        let earlier = #"{"us":7,"them":5,"target":15,"history":[{"us":0,"them":0}]}"#
+        let read = try JSONDecoder().decode(Scoreboard.self, from: Data(earlier.utf8))
+
+        #expect(read == Scoreboard(us: 7, them: 5, target: 15))
+    }
+
+    @Test("A board missing a target is played to the usual one, not to nothing")
+    func fillsInAMissingTarget() throws {
+        let partial = #"{"us":2,"them":1}"#
+        let read = try JSONDecoder().decode(Scoreboard.self, from: Data(partial.utf8))
+
+        #expect(read.target == targetScore)
+        #expect(read.us == 2)
     }
 }
 
