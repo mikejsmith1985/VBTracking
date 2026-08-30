@@ -6,6 +6,17 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **The rotate alert can be turned off, from the wrist that wears it.** A third page on the
+  watch holds two switches: whether the alert appears at all, and whether it buzzes. They are
+  separate because the two objections are different ones — a coach who finds the buzzing too
+  much still wants to see the reminder, and a coach who watches the rotation themselves wants
+  neither. Both default to on: somebody who has never opened the page has not decided
+  anything, and the safe reading of that is that the rule still applies. There is no state
+  where an invisible alert vibrates.
+
+
+### Added
+
 - **The rotate alert reaches the wrist, and keeps buzzing until it is cleared.** A single tap
   on the wrist is exactly the thing a coach misses while watching a rally, and missing it
   means the wrong player serves a sixth — so it now pulses every 1.5 seconds, over both watch
@@ -20,7 +31,8 @@ All notable changes to this project are recorded here.
 - **The offline guarantee was passing without reading anything.** The scan that proves no
   shipped file names a networking API split its input on `"
 "`, but a Windows checkout is
-  CRLF and Swift counts `"
+  CRLF and Swift counts `"
+
 "` as one character — so every file came back as a single line
   that began with its own header comment, was dropped as a comment, and left an empty string
   to search. It has read the real source since, and still finds nothing; both scans now

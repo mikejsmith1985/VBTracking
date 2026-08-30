@@ -22,7 +22,7 @@ struct OfflineTests {
     private static let networkingAPIs = [
         "URLSession", "URLRequest", "URLConnection", "NSURLConnection",
         "NWConnection", "NWBrowser", "NWListener", "CFNetwork",
-        "CloudKit", "CKContainer", "CKDatabase",
+        "CloudKit", "CKContainer", "CKDatabase", "NSUbiquitousKeyValueStore",
         "Socket", "dataTask", "downloadTask", "uploadTask",
     ]
 

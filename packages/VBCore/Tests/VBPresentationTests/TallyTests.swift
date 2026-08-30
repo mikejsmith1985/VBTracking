@@ -278,3 +278,82 @@ struct ServeLimitNoticeTests {
         #expect(read.serveLimit == nil)
     }
 }
+
+// MARK: - The coach's own choice
+
+@Suite("What the coach has turned off")
+struct WatchPreferenceTests {
+    private let notice = ServeLimitNotice(finishedNumber: "5", nextNumber: "7", raisedAtServeCount: 5)
+
+    @Test("A coach who has chosen nothing still gets the rule they asked for")
+    func defaultsAreOn() {
+        let preferences = WatchPreferences()
+        #expect(preferences.isRotateAlertOn)
+        #expect(preferences.isRotateBuzzOn)
+        #expect(preferences.shouldShow(notice))
+        #expect(preferences.shouldBuzz)
+    }
+
+    @Test("Turning the alert off shows nothing at all")
+    func alertOffShowsNothing() {
+        let preferences = WatchPreferences(isRotateAlertOn: false)
+        #expect(preferences.shouldShow(notice) == false)
+    }
+
+    @Test("Silencing it keeps the reminder and drops the buzzing")
+    func buzzOffKeepsTheAlert() {
+        let preferences = WatchPreferences(isRotateAlertOn: true, isRotateBuzzOn: false)
+        #expect(preferences.shouldShow(notice))
+        #expect(preferences.shouldBuzz == false)
+    }
+
+    @Test("There is no state where an invisible alert vibrates")
+    func noBuzzWithoutAnAlert() {
+        let preferences = WatchPreferences(isRotateAlertOn: false, isRotateBuzzOn: true)
+        #expect(preferences.shouldShow(notice) == false)
+        #expect(preferences.shouldBuzz == false, "a buzz with nothing on screen explains itself to nobody")
+    }
+
+    @Test("Nothing is shown when the rule has not fired, whatever the settings say")
+    func nothingToShowWithoutANotice() {
+        #expect(WatchPreferences().shouldShow(nil) == false)
+    }
+
+    @Test("The page says what has been turned off, in words")
+    func summaryReadsBack() {
+        #expect(WatchPreferences().summary.contains("buzzes"))
+        #expect(WatchPreferences(isRotateAlertOn: true, isRotateBuzzOn: false).summary.contains("silently"))
+        #expect(WatchPreferences(isRotateAlertOn: false).summary.contains("will not"))
+    }
+
+    @Test("A choice survives being written down and read back")
+    func roundTrips() throws {
+        let chosen = WatchPreferences(isRotateAlertOn: true, isRotateBuzzOn: false)
+        let read = try JSONDecoder().decode(WatchPreferences.self, from: JSONEncoder().encode(chosen))
+        #expect(read == chosen)
+    }
+}
+
+@Suite("Reading a choice back out of storage")
+struct PreferenceStorageTests {
+    @Test("A key that was never written means the default, not off")
+    func absenceIsTheDefault() {
+        let preferences = WatchPreferences(storedRotateAlert: nil, storedRotateBuzz: nil)
+        #expect(preferences.isRotateAlertOn, "a coach who never opened settings chose nothing")
+        #expect(preferences.isRotateBuzzOn)
+    }
+
+    @Test("A choice that was written is honoured, including a false one")
+    func storedChoicesAreKept() {
+        let preferences = WatchPreferences(storedRotateAlert: false, storedRotateBuzz: true)
+        #expect(preferences.isRotateAlertOn == false)
+        #expect(preferences.isRotateBuzzOn)
+    }
+
+    @Test("Something stored that is not a choice is treated as no choice")
+    func rubbishReadsAsTheDefault() {
+        let preferences = WatchPreferences(storedRotateAlert: "yes", storedRotateBuzz: 0)
+        #expect(preferences.isRotateAlertOn)
+        #expect(preferences.isRotateBuzzOn)
+    }
+}

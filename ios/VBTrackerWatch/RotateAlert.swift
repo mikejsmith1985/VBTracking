@@ -19,6 +19,10 @@ private let rotateBeat: TimeInterval = 1.5
 
 struct RotateAlert: View {
     let notice: ServeLimitNotice
+
+    /// False when the coach has kept the alert but silenced it.
+    var shouldBuzz = true
+
     let onDismiss: () -> Void
 
     /// The beat the haptic runs on.
@@ -62,6 +66,7 @@ struct RotateAlert: View {
 
     /// A heavier haptic than a recorded serve gets: this one means stop, not "noted".
     private func buzz() {
+        guard shouldBuzz else { return }
         WKInterfaceDevice.current().play(.notification)
     }
 }
