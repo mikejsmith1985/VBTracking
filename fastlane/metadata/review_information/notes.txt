@@ -18,8 +18,8 @@ DEVICES AND OPERATING SYSTEMS TESTED ON
 
 Tested on physical hardware, not only the simulator:
 
-- iPhone 17 Pro, iOS <<FILL IN>>
-- Apple Watch Ultra 2, watchOS <<FILL IN>>
+- iPhone 17 Pro, iOS 26.6
+- Apple Watch Ultra 2, watchOS 26.6 (23U67)
 
 Builds were distributed through TestFlight and used to record real matches
 across a season before submission. The minimum supported versions are iOS 18.0
