@@ -3,7 +3,7 @@
 import { describe, it, expect } from 'vitest'
 import * as E from '../../src/domain/events.js'
 import { currentMatch } from '../../src/domain/reducer.js'
-import { colorForTurn } from '../../src/domain/palette.js'
+import { colorForPlayer, colorForPlayerTurn } from '../../src/domain/palette.js'
 import { tallyBoard, turnGroup } from '../../src/ui/components/tally.js'
 import { build, roster, turn } from '../helpers.js'
 
@@ -43,10 +43,22 @@ describe('turnGroup', () => {
     expect(turnGroup(match.turns[0])).toContain('mark-out')
   })
 
-  it('carries the turn colour as a custom property (FR-032)', () => {
+  it('carries the player colour as a custom property (FR-032)', () => {
+    // Colour means the player now, not the turn. Two players serving one turn each are two
+    // colours; the same player serving twice is two shades of one.
     const match = matchOf(turn('p1', 1), turn('p2', 1))
-    expect(turnGroup(match.turns[0])).toContain(`--turn-color:${colorForTurn(0)}`)
-    expect(turnGroup(match.turns[1])).toContain(`--turn-color:${colorForTurn(1)}`)
+    expect(turnGroup(match.turns[0], 0, 0)).toContain(`--turn-color:${colorForPlayerTurn(0, 0)}`)
+    expect(turnGroup(match.turns[1], 1, 0)).toContain(`--turn-color:${colorForPlayerTurn(1, 0)}`)
+  })
+
+  it('gives one player their own hue, in shades', () => {
+    const match = matchOf(turn('p1', 1), turn('p1', 1))
+    const first = turnGroup(match.turns[0], 0, 0)
+    const second = turnGroup(match.turns[1], 0, 1)
+
+    expect(first).not.toBe(second)
+    expect(first).toContain(`--turn-color:${colorForPlayerTurn(0, 0)}`)
+    expect(second).toContain(`--turn-color:${colorForPlayerTurn(0, 1)}`)
   })
 
   it('shows this turn\'s own serve and serves-in counts (FR-035)', () => {
@@ -122,6 +134,6 @@ describe('tallyBoard', () => {
   it('includes a legend so the mark shapes are readable without instruction', () => {
     const state = build(roster(1), E.startGame('g1'), turn('p1', 1))
     const html = tallyBoard(currentMatch(state), state.roster)
-    expect(html).toContain('colour = serve turn')
+    expect(html).toContain('colour = player')
   })
 })

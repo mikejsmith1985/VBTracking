@@ -183,6 +183,13 @@ struct StatsTable: View {
         .sorted { ($0.figures.inPercentage ?? -1) > ($1.figures.inPercentage ?? -1) }
     }
 
+    /// True when at least one player has a time-on-court figure to show.
+    ///
+    /// Without a lineup the column would be a row of dashes pretending to mean something,
+    /// which is the same rule the web app has always followed.
+    private var showsCourt: Bool {
+        ordered.contains { $0.figures.turnsOnCourt != nil }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -203,7 +210,15 @@ struct StatsTable: View {
                         Text(text(percentage: row.figures.inPercentage))
                             .font(.caption.monospacedDigit()).frame(width: 44, alignment: .trailing)
                         Text(text(count: row.figures.points))
-                            .font(.caption.monospacedDigit()).frame(width: 30, alignment: .trailing)
+                            .font(.caption.monospacedDigit()).frame(width: 26, alignment: .trailing)
+                        Text(text(count: row.figures.turnsTaken))
+                            .font(.caption.monospacedDigit()).frame(width: 26, alignment: .trailing)
+                            .foregroundStyle(.secondary)
+                        if showsCourt {
+                            Text(text(count: row.figures.turnsOnCourt))
+                                .font(.caption.monospacedDigit()).frame(width: 30, alignment: .trailing)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .buttonStyle(.plain)
@@ -223,7 +238,13 @@ struct StatsTable: View {
             Spacer()
             Text("In / served").frame(width: 52, alignment: .trailing)
             Text("In %").frame(width: 44, alignment: .trailing)
-            Text(pointsHeading(coverage: coverage)).frame(width: 30, alignment: .trailing)
+            Text(pointsHeading(coverage: coverage)).frame(width: 26, alignment: .trailing)
+            // How many turns they served, and how many they stood on court for. The second
+            // is what turns "she served twice" into "she served twice in nine".
+            Text("Turns").frame(width: 26, alignment: .trailing)
+            if showsCourt {
+                Text("Court").frame(width: 30, alignment: .trailing)
+            }
         }
         .font(.caption2.weight(.semibold))
         .textCase(.uppercase)

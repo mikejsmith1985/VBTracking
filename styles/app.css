@@ -774,3 +774,7 @@ button {
 }
 
 .btn-danger:active { background: #3a1119; }
+
+/* The jersey badge carries the player's colour too, so the link between a colour and a
+   person is stated rather than left to be inferred from the marks alone. */
+.tally-row .tally-name .jersey { color: var(--player-color, var(--text)); }

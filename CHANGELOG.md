@@ -4,6 +4,19 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The two apps agree about colour again.** The web app coloured the tally board by turn;
+  the native one changed to colour by player and the web app was left behind, so the same
+  season looked different in each. The web app now computes the identical colours from the
+  identical numbers — one hue per player, their own turns as shades of it, and the jersey
+  badge carrying the colour so the link to a person is stated rather than inferred.
+- **The native stats table shows Turns and Court.** It has always computed both; only the
+  web app printed them, so the same figures were visible in one app and not the other. Court
+  appears only where a lineup was used, which is the rule the web app has always followed —
+  without one it would be a column of dashes pretending to mean something.
+
+
 ### Fixed
 
 - **The interface suite had never run, and could not have.** It failed three ways before a
