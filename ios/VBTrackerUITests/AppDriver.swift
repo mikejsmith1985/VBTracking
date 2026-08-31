@@ -38,13 +38,15 @@ struct AppDriver {
             numberField.tap()
             numberField.typeText(player.number)
 
-            // The keyboard covers the bottom of the screen, and Add is underneath it.
-            if app.keyboards.count > 0 {
-                app.keyboards.buttons["return"].firstMatch.tap()
-            }
-
+            // No reaching for a "return" key: the number field brings up a numeric pad,
+            // which has none, and asking for one failed every test that added a player.
+            // If the keyboard is over the Add button, tapping the section heading takes
+            // the focus away and the keyboard goes with it.
             let add = app.buttons["Add"]
-            XCTAssertTrue(add.waitForExistence(timeout: 3), "the Add button must be reachable")
+            XCTAssertTrue(add.waitForExistence(timeout: 3), "the Add button must exist")
+            if !add.isHittable {
+                app.staticTexts["Add a player"].firstMatch.tap()
+            }
             add.tap()
 
             XCTAssertTrue(
