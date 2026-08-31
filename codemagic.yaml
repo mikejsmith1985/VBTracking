@@ -173,3 +173,140 @@ workflows:
     # of them invisible to the domain suite.
     triggering:
       events: []
+
+  # The listing, and the submission that follows it.
+  #
+  # Separate from the workflow that builds the app on purpose: a listing changes far more
+  # often than a binary does, and a typo in a description should never mean waiting on an
+  # archive. It uses the same App Store Connect key `ios-watch` already publishes with.
+  store-listing:
+    name: The App Store listing
+    max_build_duration: 30
+    integrations:
+      app_store_connect: RLL_Codemagic_CI_AppManager
+    environment:
+      xcode: latest
+      vars:
+        # The one switch that submits. Left off, the run fills in the listing on App Store
+        # Connect and stops there -- metadata and screenshots are private until a
+        # submission is made, so that is safe and inspectable. Submitting for review is
+        # public and cannot be quietly undone, so it is never a side effect of staging.
+        SUBMIT_FOR_REVIEW: "no"
+    scripts:
+      - name: What the listing says
+        script: |
+          echo "Screenshots:"
+          ls -la fastlane/screenshots/en-US
+          echo
+          echo "Keywords:  $(cat fastlane/metadata/en-US/keywords.txt)"
+          echo "Support:   $(cat fastlane/metadata/en-US/support_url.txt)"
+          echo "Privacy:   $(cat fastlane/metadata/en-US/privacy_url.txt)"
+
+      # Names only. A value here would put the App Store Connect key in a build log
+      # forever, which is the one thing this must never do.
+      - name: Which credentials the integration provided
+        script: |
+          env | cut -d= -f1 | grep -E "APP_STORE|ASC_|CERTIFICATE" | sort || echo "(none matched)"
+
+          # Shape, never content. A length of zero would say the integration named the
+          # variable and put nothing in it, which looks identical to a key that cannot be
+          # parsed once it reaches OpenSSL -- and four attempts went at the parsing.
+          for name in APP_STORE_CONNECT_PRIVATE_KEY APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_ISSUER_ID; do
+            value=$(eval printf '%s' "\$$name")
+            chars=$(printf '%s' "$value" | wc -c | tr -d ' ')
+            lines=$(printf '%s' "$value" | wc -l | tr -d ' ')
+            begins=$(printf '%s' "$value" | grep -c BEGIN || true)
+            echo "$name: $chars chars, $lines lines, BEGIN x$begins"
+          done
+
+      # Apple issues the App Store Connect key as PKCS#8, and Ruby's OpenSSL 3 will not
+      # read an EC private key in that container. It says "invalid curve name", which names
+      # neither the curve nor the problem, and survives being handed the key three
+      # different ways because none of them was the issue.
+      #
+      # The `openssl` binary has no such trouble. Converting to SEC1 first is the whole fix.
+      # fastlane 2.233 creates a review submission and never adds the version to it, so
+      # Apple is handed an empty submission and answers "not in valid state" -- which
+      # describes the version rather than the submission and sends you looking in the wrong
+      # place. Codemagic's own CLI speaks the newer submission model; this finds out what it
+      # offers rather than guessing at a subcommand.
+      # The listing, uploaded but not submitted. fastlane is good at this part.
+      - name: Upload the listing
+        script: |
+          set -o pipefail
+          value="$APP_STORE_CONNECT_PRIVATE_KEY"
+          case "$value" in
+            @file:*) cp "${value#@file:}" /tmp/asc.p8 ;;
+            *) if [ -f "$value" ]; then cp "$value" /tmp/asc.p8; else printf '%s' "$value" > /tmp/asc.p8; fi ;;
+          esac
+          chmod 600 /tmp/asc.p8
+          openssl ec -in /tmp/asc.p8 -out /tmp/asc_sec1.pem 2>/dev/null && export ASC_KEY_PATH=/tmp/asc_sec1.pem
+          fastlane ios stage 2>&1 | tail -80
+
+      # And the submission, which fastlane cannot do. It creates a review submission and
+      # never adds the version to it, so Apple is handed an empty one and answers
+      # "appStoreVersions is not in valid state" -- a message about the version, when the
+      # fault is the submission having nothing in it.
+      #
+      # Codemagic's own CLI speaks the newer three-step model: create the submission, add
+      # the version to it, confirm it.
+      - name: Submit for review
+        script: |
+          if [ "$SUBMIT_FOR_REVIEW" != "yes" ]; then
+            echo "SUBMIT_FOR_REVIEW is not yes. The listing is staged and nothing was submitted."
+            exit 0
+          fi
+          set -e
+
+          APP_ID=6806672687
+
+          echo "--- the version to submit ---"
+          VERSION_ID=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null             | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(v['id'] for v in d if v['attributes']['appStoreState'] in ('PREPARE_FOR_SUBMISSION','DEVELOPER_REJECTED','REJECTED','METADATA_REJECTED')))" 2>/dev/null || true)
+          if [ -z "$VERSION_ID" ]; then
+            echo "Could not read the version id from the CLI; listing what it does return:"
+            app-store-connect apps app-store-versions "$APP_ID" --json 2>&1 | head -40
+            exit 1
+          fi
+          echo "Version: $VERSION_ID"
+
+          echo "--- create the submission ---"
+          SUBMISSION_ID=$(app-store-connect review-submissions create "$APP_ID" --platform IOS --json             | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+          echo "Submission: $SUBMISSION_ID"
+
+          # From here on, a failure takes its own submission away with it. An abandoned
+          # draft blocks the next attempt, and asking somebody to go and delete one by hand
+          # after every failed run is a poor way to treat them.
+          set +e
+          echo "--- add the version to it ---"
+          app-store-connect review-submission-items create "$SUBMISSION_ID" --version-id "$VERSION_ID"
+          added=$?
+
+          if [ $added -ne 0 ]; then
+            echo "--- could not add the version; discarding the empty submission ---"
+            # The cancel result is printed rather than swallowed. Last time it was hidden
+            # behind `|| true` and the step announced that nothing was left behind while a
+            # draft submission sat in the account waiting to be deleted by hand.
+            app-store-connect review-submissions cancel "$SUBMISSION_ID"
+            cancelled=$?
+            if [ $cancelled -eq 0 ]; then
+              echo "The empty submission was cancelled."
+            else
+              echo "COULD NOT CANCEL $SUBMISSION_ID -- it may need deleting by hand."
+            fi
+            exit 1
+          fi
+
+          echo "--- confirm ---"
+          app-store-connect review-submissions confirm "$SUBMISSION_ID"
+          confirmed=$?
+
+          if [ $confirmed -ne 0 ]; then
+            echo "--- could not confirm; discarding the submission ---"
+            app-store-connect review-submissions cancel "$SUBMISSION_ID"
+            [ $? -eq 0 ] && echo "The submission was cancelled." || echo "COULD NOT CANCEL $SUBMISSION_ID."
+            exit 1
+          fi
+          echo "Submitted for review."
+
+    triggering:
+      events: []

@@ -1,0 +1,7 @@
+No account or login is needed.
+
+To try the phone app: Roster tab, add six or more players with numbers. Track tab, Start game. Tap an empty spot on the court and then a player to place them, six times, or tap a player and then a spot — both work. Tap the player in the bottom-right corner to hand them the ball, then record with OUT / IN / IN — POINT.
+
+The Apple Watch app mirrors the phone's court over Watch Connectivity and needs a paired watch with the phone app open. Its scoreboard page — swipe up twice — works on its own with no phone at all, if pairing is not convenient.
+
+The app contains no networking code of any kind. Nothing recorded leaves the device, which is why the privacy answer is "Data Not Collected".

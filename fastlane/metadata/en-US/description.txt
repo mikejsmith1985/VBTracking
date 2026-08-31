@@ -1,0 +1,24 @@
+Track every serve of a volleyball season, on your phone and on your wrist.
+
+Built for the person on the sideline with a clipboard. One tap per serve, the rotation advances itself, and the six players on court appear on your Apple Watch — laid out as they are standing, with the next server's box the biggest thing on the screen. Decide on a substitution before the ball gets there.
+
+WHAT IT DOES
+
+• One tap per serve — in, in for a point, or out
+• A rotation of six that advances itself, with substitutions that take the outgoing player's exact place
+• A full-screen alert when a server reaches five, and a buzz on your wrist you can set to off, brief or persistent
+• Career statistics that follow a player across seasons — a jersey number belongs to a roster, a player does not
+• Correct any serve in any past game: change an outcome, add or remove a serve, reassign a turn, or add one that was missed
+• Enter games from paper sheets, one at a time or a batch from a file
+• A standalone scoreboard on the watch for games nobody is tracking
+• Save a copy of everything as one file you keep
+
+HONEST FIGURES
+
+A figure that was never recorded shows as a dash, never as a zero. A game copied from paper holds serves but no points, and reporting those points as nought would say the players earned less than they did.
+
+NO SIGNAL NEEDED
+
+There is no networking code in this app at all — that is checked on every build. Nothing you record leaves your phone. The watch talks to the phone directly, over the link between your own two paired devices.
+
+No adverts. No account. Nothing locked.

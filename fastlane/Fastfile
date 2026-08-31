@@ -1,0 +1,164 @@
+# The listing, and the submission, as files rather than as an afternoon in a web form.
+#
+# Everything App Store Connect needs lives in `metadata/` and `screenshots/` beside this
+# file, which means the listing is reviewable in a pull request and reproducible on the next
+# release. The key is the one Codemagic already holds and already uploads builds with.
+#
+# Two lanes on purpose. `verify` sends nothing and reports what WOULD be sent; `submit` is
+# the irreversible one. Submitting for review is public and cannot be quietly undone, so it
+# is never the default and never a side effect of running the other.
+require 'tmpdir'
+
+default_platform(:ios)
+
+APP = "com.mikejsmith.vbtracker"
+
+# The names Codemagic has used for the three halves of the key. More than one, because a
+# KeyError from ENV.fetch says only that something is missing -- not which thing.
+KEY_ID_NAMES = %w[APP_STORE_CONNECT_KEY_IDENTIFIER APP_STORE_CONNECT_KEY_ID ASC_KEY_ID].freeze
+ISSUER_NAMES = %w[APP_STORE_CONNECT_ISSUER_ID ASC_ISSUER_ID].freeze
+PRIVATE_KEY_NAMES = %w[APP_STORE_CONNECT_PRIVATE_KEY ASC_PRIVATE_KEY].freeze
+
+platform :ios do
+  # The first of these names that is actually set. Names only ever appear in a log; values
+  # never do.
+  def from_env(names, what)
+    found = names.find { |name| !ENV[name].to_s.strip.empty? }
+    unless found
+      present = ENV.keys.grep(/APP_STORE|ASC_|CERTIFICATE/).sort
+      UI.user_error!("No #{what}. Looked for #{names.join(', ')}. Present: #{present.join(', ')}")
+    end
+    UI.message("Using #{found} for #{what}")
+    ENV.fetch(found)
+  end
+
+  # The .p8, written out with real newlines and a PEM wrapper.
+  #
+  # Handed to fastlane as `key_content` straight from the environment, this failed with
+  # "invalid curve name": an EC key whose line breaks arrived as the two characters
+  # backslash and n is not a key OpenSSL can read, and the error says nothing about why.
+  # Writing the file here takes the guesswork out of it.
+  #
+  # Nothing about the contents is ever logged -- only its shape.
+  def key_file
+    raw = from_env(PRIVATE_KEY_NAMES, "private key").strip
+    body = raw.include?('\n') && !raw.include?("\n") ? raw.gsub('\n', "\n") : raw
+
+    unless body.start_with?("-----BEGIN")
+      wrapped = body.gsub(/\s+/, "").scan(/.{1,64}/).join("\n")
+      body = "-----BEGIN PRIVATE KEY-----\n#{wrapped}\n-----END PRIVATE KEY-----"
+    end
+    body += "\n" unless body.end_with?("\n")
+
+    UI.message("Key: #{body.lines.count} lines, header #{body.start_with?('-----BEGIN') ? 'present' : 'MISSING'}")
+
+    path = File.join(Dir.tmpdir, "asc_api_key.p8")
+    File.write(path, body)
+    File.chmod(0o600, path)
+    path
+  end
+
+  # The key file to use: the one the workflow already converted, if it did, and otherwise
+  # one written from the environment.
+  #
+  # Apple issues the .p8 in PKCS#8, and Ruby's OpenSSL 3 will not read an EC private key in
+  # that container -- it reports "invalid curve name", which describes neither the curve nor
+  # the problem. The workflow converts it to SEC1 with the `openssl` binary first, because
+  # the binary has no such trouble.
+  def key_path
+    prepared = ENV["ASC_KEY_PATH"].to_s
+    if !prepared.empty? && File.exist?(prepared)
+      UI.message("Using the key prepared by the workflow")
+      return prepared
+    end
+    key_file
+  end
+
+  def connect_key
+    app_store_connect_api_key(
+      key_id: from_env(KEY_ID_NAMES, "key id"),
+      issuer_id: from_env(ISSUER_NAMES, "issuer id"),
+      key_filepath: key_path,
+      in_house: false
+    )
+  end
+
+  # Settings shared by both lanes, so a dry run cannot differ from the real thing in any way
+  # except whether it sends.
+  def listing(api_key, extra)
+    {
+      api_key: api_key,
+      app_identifier: APP,
+      # The binary is already on App Store Connect: `ios-watch` uploaded it. Uploading it
+      # again would be a second copy under a build number Apple refuses.
+      skip_binary_upload: true,
+      skip_screenshots: false,
+      skip_metadata: false,
+      overwrite_screenshots: true,
+      # Held until the operator releases it. An app that goes live the moment a reviewer
+      # nods is an app that goes live while nobody is watching.
+      automatic_release: false,
+      # No prompt, no browser: this runs on a machine with nobody sitting at it.
+      force: true,
+      run_precheck_before_submit: false,
+      # No age-rating config. Apple renamed the questionnaire's attributes and fastlane maps
+      # only some of the old names, so the file is rejected a key at a time -- and it is a
+      # ONE-TIME questionnaire, set once per app and never touched again. Ten more CI runs
+      # to save a click that happens once is not a trade worth making.
+      submission_information: {
+        # No encryption in the app at all, no advertising identifier, and every image in it
+        # is ours.
+        export_compliance_uses_encryption: false,
+        export_compliance_encryption_updated: false,
+        add_id_info_uses_idfa: false,
+        content_rights_contains_third_party_content: false,
+        content_rights_has_rights: true
+      }
+    }.merge(extra)
+  end
+
+  # "Data Not Collected", declared rather than clicked.
+  #
+  # It is the truthful answer and the whole of it: the app has no networking code, so there
+  # is no route by which anything could be collected. Its own test suite fails if a shipped
+  # file so much as names a networking API.
+  def declare_no_data_collected
+    # No api_key here: this action does not take one. It rides the session that
+    # `app_store_connect_api_key` has already established, which is why the key has to be
+    # built before it is called rather than handed to it.
+    connect_key
+    upload_app_privacy_details_to_app_store(
+      app_identifier: APP,
+      json_path: "fastlane/metadata/app_privacy_details.json",
+      skip_json_file_saving: true,
+      skip_upload: false,
+      skip_publish: false
+    )
+  rescue StandardError => error
+    UI.important("Could not set the privacy answers automatically: #{error.message}")
+    UI.important("That page is a one-time questionnaire and may have to be answered by hand.")
+  end
+
+  desc "Fill in the listing on App Store Connect, without submitting it."
+  lane :stage do
+    declare_no_data_collected
+    # `verify_only` was the obvious flag and is the wrong one: it validates a binary, and
+    # there is no binary here -- the build was uploaded by another workflow. It failed with
+    # "no implicit conversion of nil into String", which is Ruby's way of saying it went
+    # looking for an IPA path and found none.
+    #
+    # Uploading the listing without submitting is the better dry run anyway. Metadata and
+    # screenshots on App Store Connect are private until a submission is made, and can be
+    # changed or replaced any number of times before one is -- so this produces something
+    # somebody can actually look at, rather than a report saying it would have worked.
+    deliver(listing(connect_key, verify_only: false, submit_for_review: false))
+    UI.success("The listing is on App Store Connect. Nothing has been submitted.")
+  end
+
+  desc "Upload the listing and submit the build for review. Irreversible."
+  lane :submit do
+    declare_no_data_collected
+    deliver(listing(connect_key, verify_only: false, submit_for_review: true))
+    UI.success("Submitted for review.")
+  end
+end
