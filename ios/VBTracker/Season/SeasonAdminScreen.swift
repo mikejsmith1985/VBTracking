@@ -105,6 +105,7 @@ struct SeasonAdminScreen: View {
             }
         }
         .navigationTitle("Seasons")
+        .keyboardDismissable()
         .onAppear {
             name = season?.name ?? ""
             team = season?.team ?? ""

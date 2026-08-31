@@ -19,6 +19,14 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **A jersey number could trap you on the roster screen.** The number field brings up a
+  number pad, a number pad has no return key, and nothing else on the screen dismissed one —
+  so the keyboard sat over the tab bar and the page could not be left at all short of
+  force-quitting the app. Every screen that takes typing now offers Done above the keyboard,
+  and a drag down over the list puts it away too. Two interface tests cover it: one proves
+  the way out exists, the other proves the tab bar is still reachable with a number
+  half-typed.
+
 - **The interface suite had never run, and could not have.** It failed three ways before a
   single test executed: no `CODE_SIGNING_ALLOWED=NO`, so the build reached for credentials the
   workflow deliberately holds none of; `-sdk iphonesimulator` forced onto a scheme that embeds

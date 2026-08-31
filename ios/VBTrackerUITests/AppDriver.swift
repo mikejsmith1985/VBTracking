@@ -67,21 +67,21 @@ struct AppDriver {
     /// Dismisses any keyboard before going anywhere.
     ///
     /// A keyboard sits on top of the tab bar. XCUITest reports the tab as existing either
-    /// way -- it is in the hierarchy whether or not anything covers it -- so the tap went to
-    /// its frame, landed on the keyboard, and nothing moved. Every test then sat on the
-    /// roster screen insisting there was no game to start, which is true of the roster
-    /// screen and says nothing about why it was still showing.
-    private func putTheKeyboardAway() {
+    /// way -- being in the hierarchy is not the same as being reachable -- so the tap went
+    /// to the tab's frame, landed on the keyboard, and nothing moved.
+    ///
+    /// It found a real one: a number pad has no return key, and until the Done button was
+    /// added an operator on the roster screen could not leave the page either.
+    func putTheKeyboardAway() {
         guard app.keyboards.element.exists else { return }
 
-        // The navigation bar is always there and takes focus away from a field.
-        app.navigationBars.firstMatch.tap()
-        if app.keyboards.element.waitForNonExistence(timeout: 3) { return }
+        let done = app.buttons["dismiss-keyboard"]
+        XCTAssertTrue(done.waitForExistence(timeout: 3), "every keyboard must offer a way out")
+        done.tap()
 
-        app.swipeDown()
         XCTAssertTrue(
             app.keyboards.element.waitForNonExistence(timeout: 3),
-            "the keyboard must go away, or it covers the tab bar and no test can navigate"
+            "the keyboard must go away, or it covers the tab bar and the page cannot be left"
         )
     }
 
@@ -105,9 +105,9 @@ struct AppDriver {
             numberField.typeText(player.number)
 
             // No reaching for a "return" key: the number field brings up a numeric pad and
-            // has none. The navigation bar is always there and always takes focus away, so
-            // the keyboard goes with it and the Add button underneath comes back.
-            app.navigationBars.firstMatch.tap()
+            // has none. Done is the app's own way out of a keyboard, so using it here means
+            // every run exercises the thing an operator has to reach for.
+            putTheKeyboardAway()
 
             let add = app.buttons["Add"]
             XCTAssertTrue(add.waitForExistence(timeout: 3), "the Add button must exist")

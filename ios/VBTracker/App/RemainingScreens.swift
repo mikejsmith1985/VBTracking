@@ -217,6 +217,7 @@ struct RosterScreen: View {
                 }
             }
             .navigationTitle("Roster")
+            .keyboardDismissable()
             .sheet(item: $editing) { edit in
                 PlayerEditor(store: store, playerId: edit.id, editing: $editing)
             }
@@ -266,6 +267,7 @@ struct PlayerEditor: View {
                 }
             }
             .navigationTitle(player?.name ?? "Player")
+            .keyboardDismissable()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

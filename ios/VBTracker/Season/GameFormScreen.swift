@@ -125,6 +125,7 @@ struct GameFormScreen: View {
             }
         }
         .navigationTitle(game.map(title(of:)) ?? "Game")
+        .keyboardDismissable()
         .navigationDestination(isPresented: $isShowingRecord) {
             ServeRecordScreen(store: store, gameId: gameId)
         }

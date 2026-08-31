@@ -185,3 +185,48 @@ final class RotationUITests: XCTestCase {
         )
     }
 }
+
+/// Being able to stop typing.
+///
+/// A number pad has no return key, and nothing else on the roster screen dismissed one. An
+/// operator who typed a jersey number was stuck: the keyboard covered the tab bar, so the
+/// page could not be left at all short of force-quitting the app. It shipped, and the
+/// interface suite hit it before a person reported it -- as a puzzling failure elsewhere,
+/// because every test that tried to change tab was silently tapping the keyboard.
+@MainActor
+final class KeyboardUITests: XCTestCase {
+    func testANumberPadCanBePutAway() {
+        let driver = AppDriver.launch(self)
+        driver.go(to: "roster")
+
+        let number = driver.app.textFields["Number"]
+        XCTAssertTrue(number.waitForExistence(timeout: 5))
+        number.tap()
+        number.typeText("7")
+
+        XCTAssertTrue(driver.app.keyboards.element.exists, "a number pad, with no return key")
+
+        let done = driver.app.buttons["dismiss-keyboard"]
+        XCTAssertTrue(done.exists, "a keyboard with no return key must offer another way out")
+        done.tap()
+
+        XCTAssertTrue(driver.app.keyboards.element.waitForNonExistence(timeout: 3))
+    }
+
+    func testTheTabBarIsReachableAfterTyping() {
+        let driver = AppDriver.launch(self)
+        driver.go(to: "roster")
+
+        let number = driver.app.textFields["Number"]
+        XCTAssertTrue(number.waitForExistence(timeout: 5))
+        number.tap()
+        number.typeText("7")
+
+        // The whole point: leaving the page, which is what could not be done.
+        driver.go(to: "season")
+        XCTAssertTrue(
+            driver.app.buttons["export-data"].waitForExistence(timeout: 3),
+            "a half-typed number must not trap the operator on the roster"
+        )
+    }
+}
