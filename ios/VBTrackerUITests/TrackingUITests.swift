@@ -20,7 +20,7 @@ final class TrackingUITests: XCTestCase {
 
         driver.app.buttons["serve-IN_POINT"].tap()
 
-        driver.app.buttons["Game"].tap()
+        driver.go(to: "game")
         XCTAssertTrue(driver.app.staticTexts["1/1"].waitForExistence(timeout: 3), "one serve, one landed in")
     }
 
@@ -34,7 +34,7 @@ final class TrackingUITests: XCTestCase {
         driver.app.buttons["serve-IN_POINT"].tap()
         driver.app.buttons["undo"].tap()
 
-        driver.app.buttons["Game"].tap()
+        driver.go(to: "game")
         XCTAssertTrue(driver.app.staticTexts["1/1"].waitForExistence(timeout: 3), "one serve reversed, not two")
     }
 
@@ -93,7 +93,7 @@ final class TransferUITests: XCTestCase {
 
         // It used to live on the game screen, which shows nothing until a game exists -- so
         // an operator between games had no way to save their season.
-        driver.app.buttons["Season"].tap()
+        driver.go(to: "season")
         XCTAssertTrue(driver.app.buttons["export-data"].waitForExistence(timeout: 3))
         XCTAssertTrue(driver.app.buttons["import-data"].exists)
     }

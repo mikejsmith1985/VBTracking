@@ -13,21 +13,30 @@ struct VBTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
+            // Each tab carries an identifier of its own. A `Label` in a tab bar exposes its
+            // symbol name to the accessibility tree and not its text, so the tabs read as
+            // "record.circle" and "person.3" -- which is no use to anybody navigating by
+            // voice, and was why every interface test sat on the roster screen wondering
+            // where the Track tab had gone.
             TabView(selection: $tab) {
                 TrackScreen(store: store)
                     .tabItem { Label("Track", systemImage: "record.circle") }
+                    .accessibilityIdentifier("tab-track")
                     .tag(Tab.track)
 
                 GameScreen(store: store)
                     .tabItem { Label("Game", systemImage: "list.number") }
+                    .accessibilityIdentifier("tab-game")
                     .tag(Tab.game)
 
                 SeasonScreen(store: store)
                     .tabItem { Label("Season", systemImage: "calendar") }
+                    .accessibilityIdentifier("tab-season")
                     .tag(Tab.season)
 
                 RosterScreen(store: store)
                     .tabItem { Label("Roster", systemImage: "person.3") }
+                    .accessibilityIdentifier("tab-roster")
                     .tag(Tab.roster)
             }
             .tint(.cyan)

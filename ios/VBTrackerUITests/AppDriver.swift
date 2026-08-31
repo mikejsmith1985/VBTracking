@@ -24,6 +24,19 @@ struct AppDriver {
         return AppDriver(app: app, test: test)
     }
 
+    /// Moves to a tab by its own identifier.
+    ///
+    /// Not by its title: a `Label` in a tab bar exposes its SF Symbol name to the
+    /// accessibility tree and not its text, so the tabs read as "record.circle" and
+    /// "person.3". Every failure in this suite came back to a tap on "Track" that matched
+    /// nothing, leaving the test on the roster screen looking for a button that was one
+    /// screen away.
+    func go(to tab: String) {
+        let item = app.buttons["tab-\(tab)"]
+        XCTAssertTrue(item.waitForExistence(timeout: 5), "there is no \(tab) tab")
+        item.tap()
+    }
+
     /// Adds players, and proves each one landed.
     ///
     /// The proof is the roster's own count, not the name appearing somewhere on screen. A
@@ -31,7 +44,7 @@ struct AppDriver {
     /// name found the half-filled form and reported success while nothing had been added --
     /// and the failure surfaced two screens later as "no game to start".
     func addPlayers(_ players: [(number: String, name: String)]) {
-        app.buttons["Roster"].tap()
+        go(to: "roster")
 
         for (index, player) in players.enumerated() {
             let nameField = app.textFields["Name"]
@@ -71,7 +84,7 @@ struct AppDriver {
     /// were spent guessing at why a screen was not what it should be, and a list of what is
     /// actually on it ends that in one run.
     func startGame() {
-        app.buttons["Track"].tap()
+        go(to: "track")
 
         let start = app.buttons["Start game"]
         if !start.waitForExistence(timeout: 5) {
