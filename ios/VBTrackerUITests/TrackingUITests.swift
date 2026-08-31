@@ -10,54 +10,43 @@ import XCTest
 // what it launches, which reads better anyway.
 @MainActor
 final class TrackingUITests: XCTestCase {
-    private var app = XCUIApplication()
-
-    /// A clean container each run: a test that inherits last run's season proves nothing.
-    private func launch() {
-        continueAfterFailure = false
-        app = XCUIApplication()
-        app.launchArguments = ["-uiTestFreshStore"]
-        app.launch()
-    }
+    private let squad = [(number: "5", name: "Aria"), (number: "7", name: "Ella")]
 
     func testAServeIsRecordedInOneTap() {
-        launch()
-        addPlayers(["7": "Ella", "5": "Aria"])
-        app.buttons["Track"].tap()
-        app.buttons["Start game"].tap()
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
+        driver.chooseFirstServer()
 
-        firstPlayerChip().tap()
-        app.buttons["serve-IN_POINT"].tap()
+        driver.app.buttons["serve-IN_POINT"].tap()
 
-        app.buttons["Game"].tap()
-        XCTAssertTrue(app.staticTexts["1/1"].waitForExistence(timeout: 3), "one serve, one landed in")
+        driver.app.buttons["Game"].tap()
+        XCTAssertTrue(driver.app.staticTexts["1/1"].waitForExistence(timeout: 3), "one serve, one landed in")
     }
 
     func testOneUndoReversesExactlyOneAction() {
-        launch()
-        addPlayers(["7": "Ella", "5": "Aria"])
-        app.buttons["Track"].tap()
-        app.buttons["Start game"].tap()
-        firstPlayerChip().tap()
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
+        driver.chooseFirstServer()
 
-        app.buttons["serve-IN_POINT"].tap()
-        app.buttons["serve-IN_POINT"].tap()
-        app.buttons["undo"].tap()
+        driver.app.buttons["serve-IN_POINT"].tap()
+        driver.app.buttons["serve-IN_POINT"].tap()
+        driver.app.buttons["undo"].tap()
 
-        app.buttons["Game"].tap()
-        XCTAssertTrue(app.staticTexts["1/1"].waitForExistence(timeout: 3), "one serve reversed, not two")
+        driver.app.buttons["Game"].tap()
+        XCTAssertTrue(driver.app.staticTexts["1/1"].waitForExistence(timeout: 3), "one serve reversed, not two")
     }
 
     func testTheFiveServeAlertInterrupts() {
-        launch()
-        addPlayers(["7": "Ella", "5": "Aria"])
-        app.buttons["Track"].tap()
-        app.buttons["Start game"].tap()
-        firstPlayerChip().tap()
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
+        driver.chooseFirstServer()
 
-        for _ in 0..<5 { app.buttons["serve-IN_POINT"].tap() }
+        for _ in 0..<5 { driver.app.buttons["serve-IN_POINT"].tap() }
 
-        let alert = app.otherElements["serve-limit-alert"]
+        let alert = driver.app.otherElements["serve-limit-alert"]
         XCTAssertTrue(alert.waitForExistence(timeout: 3), "five serves must interrupt")
 
         alert.tap()
@@ -65,55 +54,34 @@ final class TrackingUITests: XCTestCase {
     }
 
     func testASixthServeIsRecordedWithoutNaggingAgain() {
-        launch()
-        addPlayers(["7": "Ella", "5": "Aria"])
-        app.buttons["Track"].tap()
-        app.buttons["Start game"].tap()
-        firstPlayerChip().tap()
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
+        driver.chooseFirstServer()
 
-        for _ in 0..<5 { app.buttons["serve-IN_POINT"].tap() }
-        app.otherElements["serve-limit-alert"].tap()
-        app.buttons["serve-IN_POINT"].tap()
+        for _ in 0..<5 { driver.app.buttons["serve-IN_POINT"].tap() }
+        driver.app.otherElements["serve-limit-alert"].tap()
+        driver.app.buttons["serve-IN_POINT"].tap()
 
-        XCTAssertFalse(app.otherElements["serve-limit-alert"].exists, "a miscount is recorded, not nagged about")
+        XCTAssertFalse(
+            driver.app.otherElements["serve-limit-alert"].exists,
+            "a miscount is recorded, not nagged about"
+        )
     }
 
     func testTheDockNeverShowsBothOutcomesAndThePicker() {
-        launch()
-        addPlayers(["7": "Ella", "5": "Aria"])
-        app.buttons["Track"].tap()
-        app.buttons["Start game"].tap()
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
 
         // Before a server is chosen: the picker, and no outcome controls.
-        XCTAssertFalse(app.buttons["serve-OUT"].exists)
-        firstPlayerChip().tap()
+        XCTAssertFalse(driver.app.buttons["serve-OUT"].exists)
+
+        driver.chooseFirstServer()
 
         // After: the outcome controls, and no picker.
-        XCTAssertTrue(app.buttons["serve-OUT"].waitForExistence(timeout: 3))
-        XCTAssertEqual(playerChips().count, 0, "a control that is present but wrong is a mis-tap")
-    }
-
-    // MARK: - Getting to a match
-
-    private func addPlayers(_ players: [String: String]) {
-        app.buttons["Roster"].tap()
-        for (number, name) in players.sorted(by: { $0.key < $1.key }) {
-            app.textFields["Name"].tap()
-            app.textFields["Name"].typeText(name)
-            app.textFields["Number"].tap()
-            app.textFields["Number"].typeText(number)
-            app.buttons["Add"].tap()
-        }
-    }
-
-    private func playerChips() -> [XCUIElement] {
-        app.buttons.allElementsBoundByIndex.filter { $0.identifier.hasPrefix("player-") }
-    }
-
-    private func firstPlayerChip() -> XCUIElement {
-        let chip = playerChips().first
-        XCTAssertNotNil(chip, "the picker must offer someone to serve")
-        return chip ?? app.buttons.firstMatch
+        XCTAssertTrue(driver.app.buttons["serve-OUT"].waitForExistence(timeout: 3))
+        XCTAssertEqual(driver.playerChips().count, 0, "a control that is present but wrong is a mis-tap")
     }
 }
 
@@ -121,132 +89,98 @@ final class TrackingUITests: XCTestCase {
 @MainActor
 final class TransferUITests: XCTestCase {
     func testTheExportIsReachableWithNoGameInProgress() {
-        let app = XCUIApplication()
-        app.launchArguments = ["-uiTestFreshStore"]
-        app.launch()
+        let driver = AppDriver.launch(self)
 
         // It used to live on the game screen, which shows nothing until a game exists -- so
         // an operator between games had no way to save their season.
-        app.buttons["Season"].tap()
-        XCTAssertTrue(app.buttons["export-data"].waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["import-data"].exists)
+        driver.app.buttons["Season"].tap()
+        XCTAssertTrue(driver.app.buttons["export-data"].waitForExistence(timeout: 3))
+        XCTAssertTrue(driver.app.buttons["import-data"].exists)
     }
 }
 
 /// Building a rotation on the court, and using it.
 ///
 /// Three bugs shipped here at once, and every one of them was invisible to the domain suite
-/// because every one was about what a tap does to a screen. This is the suite that would
-/// have caught them.
+/// because every one was about what a tap does to a screen.
 @MainActor
 final class RotationUITests: XCTestCase {
-    private var app = XCUIApplication()
-
-    private func launchWithSix() {
-        continueAfterFailure = false
-        app = XCUIApplication()
-        app.launchArguments = ["-uiTestFreshStore"]
-        app.launch()
-
-        app.buttons["Roster"].tap()
-        for number in ["1", "2", "3", "4", "5", "6", "7"] {
-            app.textFields["Name"].tap()
-            app.textFields["Name"].typeText("Player \(number)")
-            app.textFields["Number"].tap()
-            app.textFields["Number"].typeText(number)
-            app.buttons["Add"].tap()
-        }
-        app.buttons["Track"].tap()
-        app.buttons["Start game"].tap()
-    }
-
-    private func emptySpots() -> [XCUIElement] {
-        app.buttons.allElementsBoundByIndex.filter { $0.identifier == "empty-spot" }
-    }
-
-    private func playerChips() -> [XCUIElement] {
-        app.buttons.allElementsBoundByIndex.filter { $0.identifier.hasPrefix("player-") }
-    }
+    private let squad = (1...7).map { (number: "\($0)", name: "Player \($0)") }
 
     func testAnEmptySpotIsTappableAnywhereInsideIt() {
-        launchWithSix()
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
 
-        let spot = emptySpots().first
-        XCTAssertNotNil(spot, "six empty places must be offered")
-        guard let spot else { return }
+        guard let spot = driver.emptySpots().first else {
+            return XCTFail("six empty places must be offered")
+        }
 
         // The middle of the box, which is where anybody aims. The box used to be drawn with
-        // a stroked border and no fill, so only the 1pt outline was hittable and taps in
-        // the middle did nothing at all.
+        // a stroked border and no fill, so only the 1pt outline was hittable and taps in the
+        // middle did nothing at all.
         spot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
 
         XCTAssertTrue(
-            app.staticTexts["WHO?"].waitForExistence(timeout: 3),
+            driver.app.staticTexts["WHO?"].waitForExistence(timeout: 3),
             "one tap in the middle of a spot must pick it up"
         )
     }
 
     func testAPlayerCanBePickedUpBeforeASpotIsChosen() {
-        launchWithSix()
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
 
-        let chip = playerChips().first
-        XCTAssertNotNil(chip)
-        chip?.tap()
+        driver.playerChips().first?.tap()
 
         // It used to start recording that player's serves, which made building a rotation
         // player-first impossible.
-        XCTAssertFalse(app.buttons["serve-OUT"].exists, "a first tap must not start a turn")
-        XCTAssertTrue(emptySpots().count > 0, "the court is still there to place them on")
+        XCTAssertFalse(driver.app.buttons["serve-OUT"].exists, "a first tap must not start a turn")
+        XCTAssertTrue(driver.emptySpots().count > 0, "the court is still there to place them on")
 
-        emptySpots().first?.tap()
-        XCTAssertEqual(emptySpots().count, 5, "one of the six places is now filled")
+        driver.emptySpots().first?.tap()
+        XCTAssertEqual(driver.emptySpots().count, 5, "one of the six places is now filled")
     }
 
     func testTheCourtClosesOnceServingAndStaysClosedThroughARotation() {
-        launchWithSix()
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
+        driver.buildFullRotation()
 
-        // Six players, spot first each time.
-        for _ in 0..<6 {
-            guard let spot = emptySpots().first, let chip = playerChips().first else { break }
-            spot.tap()
-            chip.tap()
-        }
-        XCTAssertEqual(emptySpots().count, 0, "the order is full")
+        // With six standing, one tap on a player hands them the ball.
+        driver.playerChips().first?.tap()
+        XCTAssertTrue(driver.app.buttons["serve-OUT"].waitForExistence(timeout: 3))
 
-        // Hand the ball over and record a turn that ends.
-        playerChips().first?.tap()
-        XCTAssertTrue(app.buttons["serve-OUT"].waitForExistence(timeout: 3))
-        app.buttons["serve-OUT"].tap()
+        driver.app.buttons["serve-OUT"].tap()
 
-        // The rotation hands the serve on. The court must NOT come back: it used to, and
-        // the operator had to find Cancel before they could record the next rally.
+        // The rotation hands the serve on. The court must NOT come back: it used to, and the
+        // operator had to find Cancel before they could record the next rally.
         XCTAssertTrue(
-            app.buttons["serve-OUT"].waitForExistence(timeout: 3),
+            driver.app.buttons["serve-OUT"].waitForExistence(timeout: 3),
             "the outcome controls must survive a rotation"
         )
-        XCTAssertEqual(emptySpots().count, 0)
+        XCTAssertEqual(driver.emptySpots().count, 0)
     }
 
     func testTappingWhoeverIsServingPutsTheCourtAway() {
-        launchWithSix()
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
+        driver.buildFullRotation()
 
-        for _ in 0..<6 {
-            guard let spot = emptySpots().first, let chip = playerChips().first else { break }
-            spot.tap()
-            chip.tap()
-        }
-        playerChips().first?.tap()
-        XCTAssertTrue(app.buttons["serve-OUT"].waitForExistence(timeout: 3))
+        driver.playerChips().first?.tap()
+        XCTAssertTrue(driver.app.buttons["serve-OUT"].waitForExistence(timeout: 3))
 
         // Ask for the court, then change your mind by tapping whoever already has the ball.
-        app.buttons["Change"].tap()
-        XCTAssertTrue(app.buttons["Cancel"].waitForExistence(timeout: 3))
+        driver.app.buttons["Change"].tap()
+        XCTAssertTrue(driver.app.buttons["Cancel"].waitForExistence(timeout: 3))
 
-        let serving = playerChips().first
-        serving?.tap()
+        driver.playerChips().first?.tap()
 
         XCTAssertTrue(
-            app.buttons["serve-OUT"].waitForExistence(timeout: 3),
+            driver.app.buttons["serve-OUT"].waitForExistence(timeout: 3),
             "tapping the current server means carry on, not stay here"
         )
     }
