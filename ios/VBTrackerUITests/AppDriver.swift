@@ -24,11 +24,12 @@ struct AppDriver {
         return AppDriver(app: app, test: test)
     }
 
-    /// What the tab bar exposes for each tab, best name first.
+    /// What the tab bar exposes for each tab.
     ///
-    /// The tabs now carry an explicit accessibility label, so the title should match. The
-    /// symbol name is kept behind it because that is what an unlabelled tab bar exposes, and
-    /// a suite that only knows the new name would go dark against any older build.
+    /// The symbol name, because that is what a SwiftUI tab bar puts in the accessibility
+    /// tree -- the `Label`'s text is dropped and an `.accessibilityLabel` on it does not
+    /// take. The title is tried first anyway, so the day that stops being true the suite
+    /// needs no edit.
     private static let tabCandidates: [String: [String]] = [
         "track": ["Track", "record.circle"],
         "game": ["Game", "list.number"],
@@ -39,10 +40,11 @@ struct AppDriver {
     /// Moves to a tab.
     ///
     /// The search is confined to the tab bar. Looking across the whole app found matches
-    /// inside a tab's own content -- off-screen, unhittable, and tapping one moved nothing --
-    /// which is how every test came to sit on the roster screen reporting that the game it
-    /// wanted to start was missing.
+    /// inside a tab's own content -- off-screen and unhittable -- and tapping one moved
+    /// nothing.
     func go(to tab: String) {
+        putTheKeyboardAway()
+
         let bar = app.tabBars.firstMatch
         XCTAssertTrue(bar.waitForExistence(timeout: 5), "the app must show a tab bar")
 
@@ -60,6 +62,27 @@ struct AppDriver {
             .map { $0.identifier.isEmpty ? $0.label : $0.identifier }
             .filter { !$0.isEmpty }
         XCTFail("No \(tab) tab. The bar holds: \(inBar.joined(separator: " | "))")
+    }
+
+    /// Dismisses any keyboard before going anywhere.
+    ///
+    /// A keyboard sits on top of the tab bar. XCUITest reports the tab as existing either
+    /// way -- it is in the hierarchy whether or not anything covers it -- so the tap went to
+    /// its frame, landed on the keyboard, and nothing moved. Every test then sat on the
+    /// roster screen insisting there was no game to start, which is true of the roster
+    /// screen and says nothing about why it was still showing.
+    private func putTheKeyboardAway() {
+        guard app.keyboards.element.exists else { return }
+
+        // The navigation bar is always there and takes focus away from a field.
+        app.navigationBars.firstMatch.tap()
+        if app.keyboards.element.waitForNonExistence(timeout: 3) { return }
+
+        app.swipeDown()
+        XCTAssertTrue(
+            app.keyboards.element.waitForNonExistence(timeout: 3),
+            "the keyboard must go away, or it covers the tab bar and no test can navigate"
+        )
     }
 
     /// Adds players, and proves each one landed.
