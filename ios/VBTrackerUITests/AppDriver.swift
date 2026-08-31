@@ -24,25 +24,30 @@ struct AppDriver {
         return AppDriver(app: app, test: test)
     }
 
-    /// What the tab bar actually exposes for each tab.
+    /// What the tab bar exposes for each tab, best name first.
     ///
-    /// A `Label` in a tab item puts its SF Symbol into the accessibility tree and not its
-    /// text, and an `.accessibilityIdentifier` applied after `.tabItem` lands on the tab's
-    /// content rather than on the bar button. So the identifier, the title and the symbol
-    /// are all tried, and the symbol is the one the screen dump proved is there.
+    /// The tabs now carry an explicit accessibility label, so the title should match. The
+    /// symbol name is kept behind it because that is what an unlabelled tab bar exposes, and
+    /// a suite that only knows the new name would go dark against any older build.
     private static let tabCandidates: [String: [String]] = [
-        "track": ["tab-track", "Track", "record.circle"],
-        "game": ["tab-game", "Game", "list.number"],
-        "season": ["tab-season", "Season", "calendar"],
-        "roster": ["tab-roster", "Roster", "person.3"],
+        "track": ["Track", "record.circle"],
+        "game": ["Game", "list.number"],
+        "season": ["Season", "calendar"],
+        "roster": ["Roster", "person.3"],
     ]
 
     /// Moves to a tab.
+    ///
+    /// The search is confined to the tab bar. Looking across the whole app found matches
+    /// inside a tab's own content -- off-screen, unhittable, and tapping one moved nothing --
+    /// which is how every test came to sit on the roster screen reporting that the game it
+    /// wanted to start was missing.
     func go(to tab: String) {
-        let candidates = Self.tabCandidates[tab] ?? [tab]
+        let bar = app.tabBars.firstMatch
+        XCTAssertTrue(bar.waitForExistence(timeout: 5), "the app must show a tab bar")
 
-        for candidate in candidates {
-            let item = app.buttons[candidate]
+        for candidate in Self.tabCandidates[tab] ?? [tab] {
+            let item = bar.buttons[candidate]
             if item.exists {
                 item.tap()
                 return
@@ -51,10 +56,10 @@ struct AppDriver {
 
         // Nothing matched, so say what the bar does hold rather than only that it does not
         // hold this.
-        let onScreen = app.buttons.allElementsBoundByIndex
+        let inBar = bar.buttons.allElementsBoundByIndex
             .map { $0.identifier.isEmpty ? $0.label : $0.identifier }
             .filter { !$0.isEmpty }
-        XCTFail("No \(tab) tab. Tried \(candidates.joined(separator: ", ")). Buttons: \(onScreen.joined(separator: " | "))")
+        XCTFail("No \(tab) tab. The bar holds: \(inBar.joined(separator: " | "))")
     }
 
     /// Adds players, and proves each one landed.

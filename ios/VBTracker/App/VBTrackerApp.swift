@@ -13,30 +13,29 @@ struct VBTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // Each tab carries an identifier of its own. A `Label` in a tab bar exposes its
-            // symbol name to the accessibility tree and not its text, so the tabs read as
-            // "record.circle" and "person.3" -- which is no use to anybody navigating by
-            // voice, and was why every interface test sat on the roster screen wondering
-            // where the Track tab had gone.
+            // Each tab spells out its own name. A `Label` in a tab bar exposes its symbol
+            // name to the accessibility tree and not its text, so the tabs read aloud as
+            // "record.circle" and "person.3" -- no use to anybody navigating by voice, and
+            // the reason every interface test sat on the roster screen wondering where the
+            // Track tab had gone. An identifier does not fix it: applied after `.tabItem` it
+            // lands on the tab's CONTENT and spreads to the buttons inside, so a test asking
+            // for the tab found something off-screen and tapped nothing. The label belongs on
+            // the Label itself, which is the thing the bar button is built from.
             TabView(selection: $tab) {
                 TrackScreen(store: store)
-                    .tabItem { Label("Track", systemImage: "record.circle") }
-                    .accessibilityIdentifier("tab-track")
+                    .tabItem { Label("Track", systemImage: "record.circle").accessibilityLabel("Track") }
                     .tag(Tab.track)
 
                 GameScreen(store: store)
-                    .tabItem { Label("Game", systemImage: "list.number") }
-                    .accessibilityIdentifier("tab-game")
+                    .tabItem { Label("Game", systemImage: "list.number").accessibilityLabel("Game") }
                     .tag(Tab.game)
 
                 SeasonScreen(store: store)
-                    .tabItem { Label("Season", systemImage: "calendar") }
-                    .accessibilityIdentifier("tab-season")
+                    .tabItem { Label("Season", systemImage: "calendar").accessibilityLabel("Season") }
                     .tag(Tab.season)
 
                 RosterScreen(store: store)
-                    .tabItem { Label("Roster", systemImage: "person.3") }
-                    .accessibilityIdentifier("tab-roster")
+                    .tabItem { Label("Roster", systemImage: "person.3").accessibilityLabel("Roster") }
                     .tag(Tab.roster)
             }
             .tint(.cyan)
