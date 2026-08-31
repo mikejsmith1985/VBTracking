@@ -25,10 +25,15 @@ struct AppDriver {
     }
 
     /// Adds players, and proves each one landed.
+    ///
+    /// The proof is the roster's own count, not the name appearing somewhere on screen. A
+    /// text field exposes what has been typed into it as static text, so looking for the
+    /// name found the half-filled form and reported success while nothing had been added --
+    /// and the failure surfaced two screens later as "no game to start".
     func addPlayers(_ players: [(number: String, name: String)]) {
         app.buttons["Roster"].tap()
 
-        for player in players {
+        for (index, player) in players.enumerated() {
             let nameField = app.textFields["Name"]
             XCTAssertTrue(nameField.waitForExistence(timeout: 5), "the roster must offer a name field")
             nameField.tap()
@@ -38,23 +43,27 @@ struct AppDriver {
             numberField.tap()
             numberField.typeText(player.number)
 
-            // No reaching for a "return" key: the number field brings up a numeric pad,
-            // which has none, and asking for one failed every test that added a player.
-            // If the keyboard is over the Add button, tapping the section heading takes
-            // the focus away and the keyboard goes with it.
+            // No reaching for a "return" key: the number field brings up a numeric pad and
+            // has none. The navigation bar is always there and always takes focus away, so
+            // the keyboard goes with it and the Add button underneath comes back.
+            app.navigationBars.firstMatch.tap()
+
             let add = app.buttons["Add"]
             XCTAssertTrue(add.waitForExistence(timeout: 3), "the Add button must exist")
-            if !add.isHittable {
-                app.staticTexts["Add a player"].firstMatch.tap()
-            }
             add.tap()
 
+            // The roster says how many it holds. Nothing else on this screen can be
+            // mistaken for a player who is not there.
+            let count = "\(index + 1) of \(Self.maxRoster)"
             XCTAssertTrue(
-                app.staticTexts[player.name].waitForExistence(timeout: 3),
-                "\(player.name) was not added to the roster"
+                app.staticTexts[count].waitForExistence(timeout: 3),
+                "the roster should read \(count) after adding \(player.name)"
             )
         }
     }
+
+    /// The roster cap, as the roster screen prints it.
+    private static let maxRoster = 20
 
     /// Starts a game, having checked there is one to start.
     func startGame() {
