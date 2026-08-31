@@ -66,13 +66,28 @@ struct AppDriver {
     private static let maxRoster = 20
 
     /// Starts a game, having checked there is one to start.
+    ///
+    /// When it cannot find the button it says what it CAN see. Three rounds of this failure
+    /// were spent guessing at why a screen was not what it should be, and a list of what is
+    /// actually on it ends that in one run.
     func startGame() {
         app.buttons["Track"].tap()
+
         let start = app.buttons["Start game"]
-        XCTAssertTrue(
-            start.waitForExistence(timeout: 5),
-            "no game to start — the Track screen offers one only once the roster has players"
-        )
+        if !start.waitForExistence(timeout: 5) {
+            let buttons = app.buttons.allElementsBoundByIndex
+                .map { "\($0.identifier.isEmpty ? $0.label : $0.identifier)" }
+                .filter { !$0.isEmpty }
+            let texts = app.staticTexts.allElementsBoundByIndex.map(\.label).filter { !$0.isEmpty }
+            XCTFail(
+                """
+                No game to start.
+                Buttons on screen: \(buttons.joined(separator: " | "))
+                Text on screen: \(texts.prefix(15).joined(separator: " | "))
+                """
+            )
+            return
+        }
         start.tap()
     }
 
