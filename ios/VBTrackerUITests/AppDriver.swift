@@ -24,17 +24,37 @@ struct AppDriver {
         return AppDriver(app: app, test: test)
     }
 
-    /// Moves to a tab by its own identifier.
+    /// What the tab bar actually exposes for each tab.
     ///
-    /// Not by its title: a `Label` in a tab bar exposes its SF Symbol name to the
-    /// accessibility tree and not its text, so the tabs read as "record.circle" and
-    /// "person.3". Every failure in this suite came back to a tap on "Track" that matched
-    /// nothing, leaving the test on the roster screen looking for a button that was one
-    /// screen away.
+    /// A `Label` in a tab item puts its SF Symbol into the accessibility tree and not its
+    /// text, and an `.accessibilityIdentifier` applied after `.tabItem` lands on the tab's
+    /// content rather than on the bar button. So the identifier, the title and the symbol
+    /// are all tried, and the symbol is the one the screen dump proved is there.
+    private static let tabCandidates: [String: [String]] = [
+        "track": ["tab-track", "Track", "record.circle"],
+        "game": ["tab-game", "Game", "list.number"],
+        "season": ["tab-season", "Season", "calendar"],
+        "roster": ["tab-roster", "Roster", "person.3"],
+    ]
+
+    /// Moves to a tab.
     func go(to tab: String) {
-        let item = app.buttons["tab-\(tab)"]
-        XCTAssertTrue(item.waitForExistence(timeout: 5), "there is no \(tab) tab")
-        item.tap()
+        let candidates = Self.tabCandidates[tab] ?? [tab]
+
+        for candidate in candidates {
+            let item = app.buttons[candidate]
+            if item.exists {
+                item.tap()
+                return
+            }
+        }
+
+        // Nothing matched, so say what the bar does hold rather than only that it does not
+        // hold this.
+        let onScreen = app.buttons.allElementsBoundByIndex
+            .map { $0.identifier.isEmpty ? $0.label : $0.identifier }
+            .filter { !$0.isEmpty }
+        XCTFail("No \(tab) tab. Tried \(candidates.joined(separator: ", ")). Buttons: \(onScreen.joined(separator: " | "))")
     }
 
     /// Adds players, and proves each one landed.
