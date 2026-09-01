@@ -4,7 +4,7 @@
 // by a human, which is the whole reason this project ships no bundler.
 
 // Bump on every release. A new version fully replaces the old rather than serving a mix.
-const CACHE = 'vbtracking-v19'
+const CACHE = 'vbtracking-v20'
 
 const PRECACHE = [
   './',

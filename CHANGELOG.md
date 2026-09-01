@@ -6,6 +6,13 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- **Every icon is lit like a neon sign, and they all come from one renderer.** The web app
+  drew a volleyball while the native apps carried the player and the ball — the same product
+  wearing two faces depending on how it was installed. All five now come from the same
+  traced artwork and the same code: black ground, a bright tube along the shape's edge, a
+  cyan wash behind it, and a frame around the tile. The frame follows what each icon gets
+  cropped to — a rounded rectangle for a home screen, a circle for a watch face and for the
+  `maskable` icon, which a browser may crop to a circle of 80% of its width.
 - **The app icon is lit like a neon sign.** The same silhouette and ball, traced from the
   same artwork, but on black with a bright tube along the shape's edge, a cyan wash behind
   it, and a frame around the tile. The frame follows the shape each platform crops to — a
