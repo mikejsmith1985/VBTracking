@@ -156,8 +156,45 @@ struct AppDriver {
         app.buttons.allElementsBoundByIndex.filter { $0.identifier.hasPrefix("player-") }
     }
 
+    /// Only the players who are not standing on the court yet.
+    ///
+    /// A chip carries the same identifier wherever it is drawn, so "the first player" meant
+    /// whoever came first in the hierarchy -- and after one placement that is somebody
+    /// already on the court. Placing them again only moved them, which emptied one box to
+    /// fill another, and six rounds of that left five boxes still empty.
+    func benchChips() -> [XCUIElement] {
+        playerChips().filter { $0.label.hasSuffix("on the bench") }
+    }
+
     func emptySpots() -> [XCUIElement] {
         app.buttons.allElementsBoundByIndex.filter { $0.identifier == "empty-spot" }
+    }
+
+    /// The box that is holding a place open, waiting to be told who stands in it.
+    ///
+    /// Asked for by the label the app announces, not by the "WHO?" written inside it: the
+    /// button carries an `.accessibilityLabel`, which makes it a leaf and hides its own text
+    /// from anything reading the screen.
+    func heldSpot() -> XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label == %@", "Empty spot, selected")).firstMatch
+    }
+
+    /// Records serves won on serve, proving each one before tapping the next.
+    ///
+    /// Tapped in a tight loop they outran the screen and some were simply lost, so five taps
+    /// recorded four serves and the alert that fires on the fifth never came. The proof is
+    /// the tally's own count.
+    func recordPointsWon(_ count: Int) {
+        for serve in 1...count {
+            app.buttons["serve-IN_POINT"].tap()
+
+            let landed = app.staticTexts["\(serve) · \(serve) in"]
+            let interrupted = app.otherElements["serve-limit-alert"]
+            XCTAssertTrue(
+                landed.waitForExistence(timeout: 3) || interrupted.exists,
+                "serve \(serve) must be recorded before the next is tapped"
+            )
+        }
     }
 
     /// Hands the ball to the first player offered.
@@ -178,11 +215,19 @@ struct AppDriver {
 
     /// Fills all six places, spot first each time.
     func buildFullRotation() {
-        for _ in 0..<6 {
-            guard let spot = emptySpots().first, let chip = playerChips().first else { break }
+        for placed in 1...6 {
+            guard let spot = emptySpots().first, let chip = benchChips().first else {
+                return XCTFail("place \(placed): needs an empty box and somebody on the bench")
+            }
+
+            // The chip is asked for again by name after the box is tapped. An element bound
+            // by index resolves to whatever sits at that index when it is used, and tapping
+            // a box changes the hierarchy underneath it.
+            let chipId = chip.identifier
             spot.tap()
-            chip.tap()
+            app.buttons[chipId].tap()
+
+            XCTAssertEqual(emptySpots().count, 6 - placed, "place \(placed) must fill exactly one box")
         }
-        XCTAssertEqual(emptySpots().count, 0, "six places, six players")
     }
 }

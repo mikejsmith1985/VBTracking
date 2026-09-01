@@ -44,7 +44,7 @@ final class TrackingUITests: XCTestCase {
         driver.startGame()
         driver.chooseFirstServer()
 
-        for _ in 0..<5 { driver.app.buttons["serve-IN_POINT"].tap() }
+        driver.recordPointsWon(5)
 
         let alert = driver.app.otherElements["serve-limit-alert"]
         XCTAssertTrue(alert.waitForExistence(timeout: 3), "five serves must interrupt")
@@ -59,8 +59,12 @@ final class TrackingUITests: XCTestCase {
         driver.startGame()
         driver.chooseFirstServer()
 
-        for _ in 0..<5 { driver.app.buttons["serve-IN_POINT"].tap() }
-        driver.app.otherElements["serve-limit-alert"].tap()
+        driver.recordPointsWon(5)
+
+        let alert = driver.app.otherElements["serve-limit-alert"]
+        XCTAssertTrue(alert.waitForExistence(timeout: 3), "the fifth serve raises it")
+        alert.tap()
+
         driver.app.buttons["serve-IN_POINT"].tap()
 
         XCTAssertFalse(
@@ -122,7 +126,7 @@ final class RotationUITests: XCTestCase {
         spot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
 
         XCTAssertTrue(
-            driver.app.staticTexts["WHO?"].waitForExistence(timeout: 3),
+            driver.heldSpot().waitForExistence(timeout: 3),
             "one tap in the middle of a spot must pick it up"
         )
     }
@@ -132,7 +136,7 @@ final class RotationUITests: XCTestCase {
         driver.addPlayers(squad)
         driver.startGame()
 
-        driver.playerChips().first?.tap()
+        driver.benchChips().first?.tap()
 
         // It used to start recording that player's serves, which made building a rotation
         // player-first impossible.
