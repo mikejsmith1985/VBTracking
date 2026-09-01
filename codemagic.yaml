@@ -167,7 +167,8 @@ workflows:
         script: |
           set -o pipefail
           status=0
-          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTracker -destination 'platform=iOS Simulator,name=iPhone 17 Pro' CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/phone.log | tail -200 || status=$?
+          device=$(./scripts/ci-simulator.sh 'iPhone' 'iPhone 17 Pro')
+          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTracker -destination "platform=iOS Simulator,name=$device" CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/phone.log | tail -200 || status=$?
           ./scripts/ci-test-digest.sh /tmp/phone.log
           exit "$status"
 
@@ -175,7 +176,8 @@ workflows:
         script: |
           set -o pipefail
           status=0
-          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTrackerWatch -destination 'platform=watchOS Simulator,name=Apple Watch Ultra 2 (49mm)' CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/watch.log | tail -200 || status=$?
+          device=$(./scripts/ci-simulator.sh 'Apple Watch' 'Apple Watch Ultra 2 (49mm)')
+          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTrackerWatch -destination "platform=watchOS Simulator,name=$device" CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/watch.log | tail -200 || status=$?
           ./scripts/ci-test-digest.sh /tmp/watch.log
           exit "$status"
 

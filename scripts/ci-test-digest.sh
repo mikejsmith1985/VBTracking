@@ -27,6 +27,15 @@ else
   echo "No failing assertion was reported."
 fi
 
+# A run that never reached a test fails with no assertion at all. Saying only "nothing
+# failed" about a build that exploded is worse than saying nothing, so xcodebuild's own
+# complaints are printed too -- a missing simulator reads exactly like a compile error
+# otherwise, and cost a run to tell apart.
+echo
+echo "-------------------- WHAT XCODEBUILD SAID --------------------"
+printf '%s
+' "$lines" | grep -E "^xcodebuild: error:|error: .*\.swift|The following build commands failed" | sort -u | head -20 || true
+
 echo
 echo "-------------------- WHAT THE SCREEN HELD --------------------"
 # The diagnostic dumps a failing test prints. They are the whole reason those dumps exist.
