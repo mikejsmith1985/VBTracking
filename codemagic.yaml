@@ -158,15 +158,26 @@ workflows:
       #
       # No signing either: a simulator needs no signature, and this workflow holds no
       # credentials on purpose.
+      #
+      # The whole run goes to a file and only a digest is printed at the end. A test log is
+      # far longer than the build log keeps, so `tail` on the run itself threw away the
+      # early failures and left five failing tests showing as one -- the four that mattered
+      # had scrolled off before anybody could read them. The digest is last, so it survives.
       - name: The phone
         script: |
           set -o pipefail
-          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTracker -destination 'platform=iOS Simulator,name=iPhone 17 Pro' CODE_SIGNING_ALLOWED=NO 2>&1 | tail -400
+          status=0
+          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTracker -destination 'platform=iOS Simulator,name=iPhone 17 Pro' CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/phone.log | tail -200 || status=$?
+          ./scripts/ci-test-digest.sh /tmp/phone.log
+          exit "$status"
 
       - name: The watch, where the on-deck box is measured
         script: |
           set -o pipefail
-          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTrackerWatch -destination 'platform=watchOS Simulator,name=Apple Watch Ultra 2 (49mm)' CODE_SIGNING_ALLOWED=NO 2>&1 | tail -400
+          status=0
+          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTrackerWatch -destination 'platform=watchOS Simulator,name=Apple Watch Ultra 2 (49mm)' CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/watch.log | tail -200 || status=$?
+          ./scripts/ci-test-digest.sh /tmp/watch.log
+          exit "$status"
 
     # Run by hand, before anything ships. It is the only suite that can say whether a tap
     # does what it looks like it does, and the three bugs it was written for were every one
