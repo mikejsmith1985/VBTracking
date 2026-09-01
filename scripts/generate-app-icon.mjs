@@ -1,27 +1,36 @@
-// The native app icon: the player striking, and the ball above them.
+// The native app icon: the player striking, the ball above them, lit like a neon sign.
 //
 // The shape is the artwork the stakeholder chose, not a redrawing of it. It lives beside
 // this script as `assets/app-icon-figure.png` -- a traced silhouette, white on black, at
-// icon size -- and this script paints it: figure colour through the white, background
-// colour through the black.
+// icon size -- and this script lights it: a bright tube along the edge of the shape, a
+// coloured halo bleeding off it, a dim fill inside, and a frame around the tile. All of it
+// on black, because that is what makes a neon sign read as one.
 //
-// Kept as a mask rather than a finished icon so the two colours stay adjustable without
+// Kept as a mask rather than a finished icon so the look stays adjustable without
 // re-tracing, and so the watch and the phone cannot drift apart. `assets/app-icon-source.jpg`
 // is the original the mask was traced from, committed so the trace can be redone.
 //
+// The frame follows the shape the platform will crop to: a rounded rectangle on the phone,
+// a circle on the watch. A rounded rectangle drawn for a watch face would have its corners
+// sliced off, which is a worse icon than no frame at all.
+//
 // No image library: the mask is a plain 8-bit greyscale PNG, which is a zlib stream of
-// filtered rows, and Node can inflate that on its own.
+// filtered rows, and Node can inflate that on its own. The blur underneath the glow is
+// three box passes, which is a Gaussian to within a percent and needs no library either.
 import { deflateSync, inflateSync } from 'node:zlib'
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { dirname, resolve, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
+const SIZE = 1024
 
-// Pale blue behind, near-black in front: the same near-black the app itself is painted in,
-// so the icon and the first screen agree with each other.
-const BACKGROUND = [0xcf, 0xe6, 0xf5]
-const FIGURE = [0x0b, 0x0f, 0x14]
+// Cyan, because it is the colour the app itself is tinted with -- the icon and the first
+// screen agree with each other. The core of a neon tube reads as white however it is
+// filtered, so the tube is lifted most of the way there and the colour lives in the halo.
+const NEON = [0x22, 0xd3, 0xee]
+const TUBE = [0xd6, 0xfb, 0xff]
+const BACKGROUND = [0x00, 0x00, 0x00]
 
 /** The bytes of one PNG chunk, length and CRC included. */
 function chunk(type, body) {
@@ -135,30 +144,202 @@ function paeth(left, up, upLeft) {
   return toUp <= toUpLeft ? up : upLeft
 }
 
-/** Paints the mask: background where it is black, figure where it is white. */
-function encodePng(mask) {
-  const { width, height, pixels } = mask
-  const stride = width * 3
-  const raw = Buffer.alloc((stride + 1) * height)
+/**
+ * Blurs a field in place-ish, separably, three box passes to a Gaussian.
+ *
+ * Three passes is the standard approximation and is indistinguishable from a real Gaussian
+ * at these radii, which matters because a halo with visible banding stops looking like
+ * light and starts looking like a mistake.
+ */
+function blur(field, radius) {
+  if (radius < 1) return Float32Array.from(field)
+  let current = Float32Array.from(field)
+  for (let pass = 0; pass < 3; pass += 1) {
+    current = boxPass(current, radius, true)
+    current = boxPass(current, radius, false)
+  }
+  return current
+}
 
-  for (let row = 0; row < height; row += 1) {
+/** One box pass, along rows or down columns. */
+function boxPass(field, radius, isHorizontal) {
+  const out = new Float32Array(field.length)
+  const span = radius * 2 + 1
+
+  for (let line = 0; line < SIZE; line += 1) {
+    const at = (step) =>
+      isHorizontal ? line * SIZE + clampIndex(step) : clampIndex(step) * SIZE + line
+
+    let running = 0
+    for (let step = -radius; step <= radius; step += 1) running += field[at(step)]
+
+    for (let step = 0; step < SIZE; step += 1) {
+      out[isHorizontal ? line * SIZE + step : step * SIZE + line] = running / span
+      running += field[at(step + radius + 1)] - field[at(step - radius)]
+    }
+  }
+  return out
+}
+
+/** Reading past the edge repeats the edge, so a glow does not darken against the border. */
+function clampIndex(index) {
+  return index < 0 ? 0 : index >= SIZE ? SIZE - 1 : index
+}
+
+/**
+ * The bright tube that runs along the edge of a shape.
+ *
+ * A blurred shape passes through a half at exactly its boundary, so `4b(1 - b)` peaks
+ * there and falls away on both sides -- a tube of light centred on the outline, as wide as
+ * the blur, with no edge detection and nothing to alias.
+ */
+function tubeAlong(shape, radius) {
+  const soft = blur(shape, radius)
+  const tube = new Float32Array(soft.length)
+  for (let at = 0; at < soft.length; at += 1) {
+    const band = 4 * soft[at] * (1 - soft[at])
+    tube[at] = Math.min(1, band * band * 1.6)
+  }
+  return tube
+}
+
+/** How far a point is outside a rounded rectangle centred on the tile; negative inside. */
+function roundedRectDistance(x, y, halfExtent, cornerRadius) {
+  const middle = SIZE / 2 - 0.5
+  const dx = Math.abs(x - middle) - (halfExtent - cornerRadius)
+  const dy = Math.abs(y - middle) - (halfExtent - cornerRadius)
+  const outside = Math.hypot(Math.max(dx, 0), Math.max(dy, 0))
+  return outside + Math.min(Math.max(dx, dy), 0) - cornerRadius
+}
+
+/** The same, for the circle a watch face crops to. */
+function circleDistance(x, y, radius) {
+  const middle = SIZE / 2 - 0.5
+  return Math.hypot(x - middle, y - middle) - radius
+}
+
+/**
+ * The frame: a stroked outline of whatever shape the platform will crop this icon to.
+ *
+ * Inset far enough that the crop cannot touch it. A frame that the corner of a squircle
+ * bites into reads as a printing error, not as a sign.
+ */
+function frameFor(platform) {
+  const stroke = 5
+  const field = new Float32Array(SIZE * SIZE)
+
+  for (let row = 0; row < SIZE; row += 1) {
+    for (let column = 0; column < SIZE; column += 1) {
+      const distance =
+        platform === 'watchos'
+          ? circleDistance(column, row, 392)
+          : roundedRectDistance(column, row, 416, 150)
+      // One pixel of softness either side of the line, so the frame is smooth at every
+      // size Xcode resamples it to.
+      field[row * SIZE + column] = clamp01((stroke - Math.abs(distance)) / 2 + 0.5)
+    }
+  }
+  return field
+}
+
+function clamp01(value) {
+  return value < 0 ? 0 : value > 1 ? 1 : value
+}
+
+/**
+ * The traced shape, shrunk to sit inside the frame.
+ *
+ * The trace fills its canvas edge to edge, so drawn at full size the legs cross the frame
+ * and the ball sits on top of it. A sign's frame goes round the sign.
+ */
+function scaled(mask, factor) {
+  const field = new Float32Array(SIZE * SIZE)
+  const middle = (SIZE - 1) / 2
+
+  for (let row = 0; row < SIZE; row += 1) {
+    const sourceY = (row - middle) / factor + middle
+    if (sourceY < 0 || sourceY > SIZE - 1) continue
+
+    for (let column = 0; column < SIZE; column += 1) {
+      const sourceX = (column - middle) / factor + middle
+      if (sourceX < 0 || sourceX > SIZE - 1) continue
+      field[row * SIZE + column] = sample(mask, sourceX, sourceY) / 255
+    }
+  }
+  return field
+}
+
+/** One pixel of the mask, read between its neighbours so the shrink does not stair-step. */
+function sample(mask, x, y) {
+  const left = Math.floor(x)
+  const top = Math.floor(y)
+  const right = Math.min(left + 1, SIZE - 1)
+  const bottom = Math.min(top + 1, SIZE - 1)
+  const acrossWeight = x - left
+  const downWeight = y - top
+
+  const above =
+    mask.pixels[top * SIZE + left] * (1 - acrossWeight) + mask.pixels[top * SIZE + right] * acrossWeight
+  const below =
+    mask.pixels[bottom * SIZE + left] * (1 - acrossWeight) + mask.pixels[bottom * SIZE + right] * acrossWeight
+  return above * (1 - downWeight) + below * downWeight
+}
+
+/**
+ * Lights the shapes and writes the picture.
+ *
+ * Light adds, so every layer is added rather than laid over: a halo crossing another halo
+ * gets brighter, which is what happens in front of a real sign and what stops the overlaps
+ * looking like cut-out shapes.
+ */
+function encodePng(mask, platform) {
+  const figure = scaled(mask, platform === 'watchos' ? 0.74 : 0.8)
+
+  const frame = frameFor(platform)
+
+  // Two haloes, near and far: the near one gives the tube its body, the far one is the
+  // wash a sign throws onto the wall behind it.
+  const lit = new Float32Array(figure.length)
+  for (let at = 0; at < lit.length; at += 1) lit[at] = Math.max(figure[at], frame[at])
+
+  const tube = tubeAlong(figure, 7)
+  for (let at = 0; at < tube.length; at += 1) tube[at] = Math.max(tube[at], frame[at])
+
+  // The near halo comes off the tube, not off the filled shape. Blurring the fill lit the
+  // whole figure evenly and it stopped reading as a tube of light and started reading as a
+  // cyan cut-out. The far wash still comes off everything, because that is the light
+  // landing on the wall and the wall does not care what shape threw it.
+  const near = blur(tube, 24)
+  const far = blur(lit, 92)
+
+  const stride = SIZE * 3
+  const raw = Buffer.alloc((stride + 1) * SIZE)
+
+  for (let row = 0; row < SIZE; row += 1) {
     const start = row * (stride + 1)
     raw[start] = 0
-    for (let column = 0; column < width; column += 1) {
-      // The mask is anti-aliased, so its greys are the edge of the silhouette. Mixing the
-      // two colours by that grey is what keeps the outline smooth at every size Xcode
-      // resamples this to.
-      const weight = pixels[row * width + column] / 255
-      const at = start + 1 + column * 3
+    for (let column = 0; column < SIZE; column += 1) {
+      const at = row * SIZE + column
+      // The glass of an unlit tube is still visible against black, which is what keeps the
+      // figure readable at 40 points where the halo has blurred into nothing.
+      const inside = figure[at] * 0.3
+      const halo = Math.min(1, near[at] * 2.1 + far[at] * 1.15)
+      const core = tube[at]
+
+      const out = start + 1 + column * 3
       for (let channel = 0; channel < 3; channel += 1) {
-        raw[at + channel] = Math.round(BACKGROUND[channel] * (1 - weight) + FIGURE[channel] * weight)
+        const value =
+          BACKGROUND[channel] +
+          NEON[channel] * (halo + inside) +
+          (TUBE[channel] - NEON[channel] * 0.35) * core
+        raw[out + channel] = Math.round(Math.min(255, Math.max(0, value)))
       }
     }
   }
 
   const header = Buffer.alloc(13)
-  header.writeUInt32BE(width, 0)
-  header.writeUInt32BE(height, 4)
+  header.writeUInt32BE(SIZE, 0)
+  header.writeUInt32BE(SIZE, 4)
   header[8] = 8
   header[9] = 2
 
@@ -182,16 +363,14 @@ const CONTENTS = (platform) => `${JSON.stringify({
 }, null, 2)}\n`
 
 const mask = decodeGreyscalePng(readFileSync(resolve(HERE, '../assets/app-icon-figure.png')))
-if (mask.width !== 1024 || mask.height !== 1024) {
-  throw new Error(`mask must be 1024x1024 (got ${mask.width}x${mask.height})`)
+if (mask.width !== SIZE || mask.height !== SIZE) {
+  throw new Error(`mask must be ${SIZE}x${SIZE} (got ${mask.width}x${mask.height})`)
 }
-
-const png = encodePng(mask)
 
 for (const [directory, platform] of TARGETS) {
   const target = resolve(HERE, directory)
   mkdirSync(target, { recursive: true })
-  writeFileSync(resolve(target, 'icon-1024.png'), png)
+  writeFileSync(resolve(target, 'icon-1024.png'), encodePng(mask, platform))
   writeFileSync(resolve(target, 'Contents.json'), CONTENTS(platform))
   console.log(`wrote ${relative(resolve(HERE, '..'), target)}/icon-1024.png`)
 }

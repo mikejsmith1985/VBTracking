@@ -6,6 +6,12 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- **The app icon is lit like a neon sign.** The same silhouette and ball, traced from the
+  same artwork, but on black with a bright tube along the shape's edge, a cyan wash behind
+  it, and a frame around the tile. The frame follows the shape each platform crops to — a
+  rounded rectangle on the phone, a circle on the watch — because a rounded rectangle drawn
+  for a watch face would have its corners sliced off.
+
 - **The two apps agree about colour again.** The web app coloured the tally board by turn;
   the native one changed to colour by player and the web app was left behind, so the same
   season looked different in each. The web app now computes the identical colours from the
