@@ -46,8 +46,7 @@ final class TrackingUITests: XCTestCase {
 
         driver.recordPointsWon(5)
 
-        let alert = driver.app.otherElements["serve-limit-alert"]
-        XCTAssertTrue(alert.waitForExistence(timeout: 3), "five serves must interrupt")
+        let alert = driver.waitForServeLimitAlert()
 
         alert.tap()
         XCTAssertFalse(alert.exists, "any tap clears it")
@@ -61,9 +60,7 @@ final class TrackingUITests: XCTestCase {
 
         driver.recordPointsWon(5)
 
-        let alert = driver.app.otherElements["serve-limit-alert"]
-        XCTAssertTrue(alert.waitForExistence(timeout: 3), "the fifth serve raises it")
-        alert.tap()
+        driver.waitForServeLimitAlert().tap()
 
         driver.app.buttons["serve-IN_POINT"].tap()
 

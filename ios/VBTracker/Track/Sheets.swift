@@ -47,7 +47,15 @@ struct ServeLimitOverlay: View {
             .overlay(RoundedRectangle(cornerRadius: 20).stroke(.orange, lineWidth: 2))
             .padding(24)
         }
+        // A container in SwiftUI is not an accessibility element on its own, so the
+        // identifier had nothing to attach to and the overlay could not be addressed at all
+        // -- by a test, or by anything else reading the screen. Naming it as a container
+        // that keeps its children also lets it be marked modal, which is what tells
+        // VoiceOver to ignore the court behind it. That is the whole point of an interrupt.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("serve-limit-alert")
+        .accessibilityAddTraits(.isModal)
+        .accessibilityLabel("Rotate")
         .onTapGesture(perform: onDismiss)
     }
 }

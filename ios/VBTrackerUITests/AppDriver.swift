@@ -197,6 +197,27 @@ struct AppDriver {
         }
     }
 
+    /// The five-serve interrupt, or a failure that says what was on screen instead.
+    ///
+    /// A container in SwiftUI is not an accessibility element on its own, so the overlay's
+    /// identifier had nothing to attach to and could not be addressed at all. When that
+    /// happens again the dump is what tells the difference between "the alert did not
+    /// appear" and "the alert appeared and cannot be named".
+    @discardableResult
+    func waitForServeLimitAlert() -> XCUIElement {
+        let alert = app.otherElements["serve-limit-alert"]
+        if alert.waitForExistence(timeout: 4) { return alert }
+
+        let texts = app.staticTexts.allElementsBoundByIndex.map(\.label).filter { !$0.isEmpty }
+        XCTFail(
+            """
+            The five-serve alert never arrived.
+            Text on screen: \(texts.prefix(20).joined(separator: " | "))
+            """
+        )
+        return alert
+    }
+
     /// Hands the ball to the first player offered.
     ///
     /// Two taps, not one. While an order is still being built a tap picks a player up so

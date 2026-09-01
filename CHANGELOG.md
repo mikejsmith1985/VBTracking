@@ -32,6 +32,12 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **The five-serve alert was invisible to VoiceOver.** A container in SwiftUI is not an
+  accessibility element on its own, so the overlay had no identity: it could not be
+  announced, and nothing behind it was hidden while it was up. It is now named, and marked
+  modal, so the court behind it is ignored while the interrupt is on screen — which is the
+  whole point of an interrupt.
+
 - **A jersey number could trap you on the roster screen.** The number field brings up a
   number pad, a number pad has no return key, and nothing else on the screen dismissed one —
   so the keyboard sat over the tab bar and the page could not be left at all short of
