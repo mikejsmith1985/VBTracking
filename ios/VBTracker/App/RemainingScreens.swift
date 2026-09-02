@@ -153,6 +153,14 @@ struct RosterScreen: View {
     @State private var confirmingRemoval: String?
     @State private var editing: PlayerEdit?
 
+    /// Which of the two fields is being typed into, so Return can move between them.
+    ///
+    /// The number pad has no Return of its own, which is why the field order matters: the
+    /// name is typed first and hands over, and the number is the one the Done button and a
+    /// successful Add both close.
+    @FocusState private var focus: Field?
+    private enum Field { case name, number }
+
     var body: some View {
         NavigationStack {
             List {
@@ -160,7 +168,12 @@ struct RosterScreen: View {
 
                 Section("Add a player") {
                     TextField("Name", text: $name)
-                    TextField("Number", text: $number).keyboardType(.numberPad)
+                        .focused($focus, equals: .name)
+                        .submitLabel(.next)
+                        .onSubmit { focus = .number }
+                    TextField("Number", text: $number)
+                        .keyboardType(.numberPad)
+                        .focused($focus, equals: .number)
                     Button("Add") {
                         let accepted = store.dispatch(
                             .addPlayer(
@@ -170,9 +183,13 @@ struct RosterScreen: View {
                                 seasonId: store.state.activeSeasonId
                             )
                         )
-                        if accepted { name = ""; number = "" }
+                        // The keyboard goes with the player. Leaving it up over the tab
+                        // bar after a successful Add is what trapped an operator on this
+                        // screen, and no button they could reach was the way out.
+                        if accepted { name = ""; number = ""; focus = nil }
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .accessibilityIdentifier("add-player")
                 }
 
                 Section("\(store.state.roster.count) of \(maxRoster)") {

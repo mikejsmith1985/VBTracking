@@ -203,6 +203,7 @@ struct GameNameSheet: View {
                 }
             }
             .navigationTitle("This game")
+            .keyboardDismissable()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

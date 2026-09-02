@@ -4,6 +4,28 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A game can be named before the whistle.** The only way in was a caption at the top of
+  the match header, which read as a label rather than a control, so an operator looking for
+  somewhere to type the opponent found nothing and tracked a game the season list would call
+  "Unnamed opponent". The pre-game screen now offers the field outright, and the header
+  control is drawn as a button whether or not it already holds a name.
+- **The keyboard lets go.** Adding a player left the number pad up over the tab bar, and a
+  number pad has no return key -- the screen could not be left. Adding now takes the
+  keyboard with it, Return moves from the name to the number, any scroll dismisses rather
+  than only a deliberate drag, and the Done button is drawn bold. The Track screen and the
+  game-naming sheet were missing the escape entirely and now carry it.
+
+### Added
+
+- **The interface suites are filmed.** Every screen in this app is written on a machine that
+  cannot run it, so the first person to see one was whoever installed the build -- which is
+  how a keyboard that could not be dismissed reached a release. Both suites now record the
+  simulator they drive and publish the video, and both run to the end even when one fails,
+  with the pass or fail decided afterwards. Naming a game and escaping a keyboard are
+  covered by tests for the first time.
+
 ### Changed
 
 - **Every icon is lit like a neon sign, and they all come from one renderer.** The web app

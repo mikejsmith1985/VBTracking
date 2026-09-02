@@ -16,27 +16,36 @@ import UIKit
 struct KeyboardDismissable: ViewModifier {
     func body(content: Content) -> some View {
         content
-            // A drag down over the list dismisses it, which is what a hand reaches for first.
-            .scrollDismissesKeyboard(.interactively)
+            // Any scroll of the list dismisses it, not a deliberate drag that tracks the
+            // finger. Interactive dismissal reads as "the keyboard is stuck" to somebody
+            // who flicks the list and watches it come straight back.
+            .scrollDismissesKeyboard(.immediately)
             // And a button, because a list too short to scroll cannot be dragged.
             .toolbar {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
-                    Button("Done") { resignAnyFirstResponder() }
+                    Button("Done") { dismissKeyboard() }
+                        .font(.body.bold())
                         .accessibilityIdentifier("dismiss-keyboard")
                 }
             }
     }
 
-    /// Asks whatever holds the keyboard to give it up.
-    private func resignAnyFirstResponder() {
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder),
-            to: nil,
-            from: nil,
-            for: nil
-        )
-    }
+}
+
+/// Puts away whichever keyboard is up, from anywhere.
+///
+/// Free of any view, because the screens that need it most need it after an action rather
+/// than after a tap on a button: adding a player leaves the number field focused, and a
+/// keyboard that stays up over the tab bar is the same trap whether it was opened by hand
+/// or left behind by a form that finished.
+func dismissKeyboard() {
+    UIApplication.shared.sendAction(
+        #selector(UIResponder.resignFirstResponder),
+        to: nil,
+        from: nil,
+        for: nil
+    )
 }
 
 extension View {

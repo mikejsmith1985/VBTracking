@@ -163,23 +163,30 @@ workflows:
       # far longer than the build log keeps, so `tail` on the run itself threw away the
       # early failures and left five failing tests showing as one -- the four that mattered
       # had scrolled off before anybody could read them. The digest is last, so it survives.
-      - name: The phone
-        script: |
-          set -o pipefail
-          status=0
-          device=$(./scripts/ci-simulator.sh 'iPhone' 'iPhone 17 Pro')
-          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTracker -destination "platform=iOS Simulator,name=$device" CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/phone.log | tail -200 || status=$?
-          ./scripts/ci-test-digest.sh /tmp/phone.log
-          exit "$status"
+      # Both suites run to the end and both are filmed, even when one fails -- a failing
+      # run is the one worth watching, and a phone failure used to stop the watch suite
+      # from running at all. The verdict is passed at the end instead.
+      - name: The phone, filmed
+        script: ./scripts/ci-film-tests.sh 'iPhone' 'iPhone 17 Pro' VBTracker 'iOS Simulator' /tmp/phone.log /tmp/film/phone.mp4
+        ignore_failure: true
 
       - name: The watch, where the on-deck box is measured
+        script: ./scripts/ci-film-tests.sh 'Apple Watch' 'Apple Watch Ultra 2 (49mm)' VBTrackerWatch 'watchOS Simulator' /tmp/watch.log /tmp/film/watch.mp4
+        ignore_failure: true
+
+      - name: The verdict
         script: |
-          set -o pipefail
-          status=0
-          device=$(./scripts/ci-simulator.sh 'Apple Watch' 'Apple Watch Ultra 2 (49mm)')
-          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTrackerWatch -destination "platform=watchOS Simulator,name=$device" CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/watch.log | tail -200 || status=$?
-          ./scripts/ci-test-digest.sh /tmp/watch.log
-          exit "$status"
+          set -u
+          failed=0
+          for log in /tmp/phone.log /tmp/watch.log; do
+            [ -f "$log" ] || { echo "$log was never written"; failed=1; continue; }
+            grep -qE '^\*\* TEST SUCCEEDED \*\*' "$log" || { echo "$(basename "$log"): failing"; failed=1; }
+          done
+          exit "$failed"
+
+    # The films, so a screen can be looked at without a device in hand.
+    artifacts:
+      - /tmp/film/*.mp4
 
     # Run by hand, before anything ships. It is the only suite that can say whether a tap
     # does what it looks like it does, and the three bugs it was written for were every one

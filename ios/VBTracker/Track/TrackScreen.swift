@@ -62,6 +62,7 @@ struct TrackScreen: View {
                 }
             }
         }
+        .keyboardDismissable()
         .sheet(isPresented: $isNamingGame) { GameNameSheet(store: store, isPresented: $isNamingGame) }
         .sheet(isPresented: $isEndingMatch) { EndMatchSheet(store: store, isPresented: $isEndingMatch) }
         .sheet(isPresented: $isChoosingLineup) { LineupSheet(store: store, isPresented: $isChoosingLineup) }
@@ -95,16 +96,17 @@ private struct MatchHeader: View {
                 Button {
                     isNamingGame = true
                 } label: {
+                    // Always drawn as a control, whether or not it holds a name. As a bare
+                    // caption it read as a label, and an operator looking for somewhere to
+                    // type the opponent in went looking on other screens instead.
                     HStack(spacing: 4) {
-                        Text(opponent ?? "Name this game")
-                            .font(.caption.bold())
-                            .foregroundStyle(opponent == nil ? Color.cyan : Color.secondary)
-                        if opponent != nil {
-                            Image(systemName: "pencil").font(.system(size: 9)).foregroundStyle(.tertiary)
-                        }
+                        Image(systemName: "pencil").font(.caption2)
+                        Text(opponent ?? "Name this game").font(.caption.bold())
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .tint(opponent == nil ? Color.cyan : Color.secondary)
                 .accessibilityIdentifier("name-game")
 
                 Text("Match \((store.state.currentMatch?.index ?? 0) + 1) of \(matchesPerGame)")
@@ -132,6 +134,10 @@ private struct MatchHeader: View {
 private struct BetweenGames: View {
     let store: Store
 
+    /// Who they are playing, typed before the whistle rather than only after it.
+    @State private var opponent = ""
+    @FocusState private var isNaming: Bool
+
     /// Today, in the form the log keeps dates in.
     private func today() -> String {
         let formatter = DateFormatter()
@@ -147,6 +153,21 @@ private struct BetweenGames: View {
                     ? "Every match is finished."
                     : "A game is \(matchesPerGame) matches to \(targetScore)."
             )
+            // Optional, and in front of the operator rather than behind a tap on the
+            // header once play has started. Left empty the game is still started at once --
+            // the whistle never waits on typing.
+            VStack(spacing: 6) {
+                TextField("Opposing team (optional)", text: $opponent)
+                    .textFieldStyle(.roundedBorder)
+                    .submitLabel(.done)
+                    .focused($isNaming)
+                    .onSubmit { isNaming = false }
+                    .accessibilityIdentifier("pre-game-opponent")
+                Text("You can also name it, or change it, from the header once play starts.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 32)
+
             Button("Start game") {
                 // The rule is written into the event, never read from the code: a game
                 // recorded before the rule existed must replay as it always did.
@@ -162,7 +183,17 @@ private struct BetweenGames: View {
                 }
                 // Dated the moment it starts. A game being tracked is being played today,
                 // and a season full of "No date" is the cost of not saying so.
-                store.dispatch(.setGameContext(gameId: id, context: GameContext(date: today())))
+                store.dispatch(
+                    .setGameContext(
+                        gameId: id,
+                        context: GameContext(
+                            date: today(),
+                            opponent: opponent.trimmingCharacters(in: .whitespaces)
+                        )
+                    )
+                )
+                opponent = ""
+                isNaming = false
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
