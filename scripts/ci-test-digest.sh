@@ -44,4 +44,17 @@ printf '%s\n' "$lines" | grep -E "Buttons on screen|Text on screen|The bar holds
 echo
 echo "-------------------- THE COUNT --------------------"
 printf '%s\n' "$lines" | grep -E "^Executed [0-9]+ test" | sort -u || true
+
+# When every section above came up empty the run still failed, and the digest has said
+# nothing at all -- which is exactly what happened to the phone suite. The tail of the log
+# is printed as a last resort so a failure can never be silent again.
+found=$(printf '%s
+' "$lines" | grep -cE "^.*: error: -\[|^xcodebuild: error:|^Executed [0-9]+ test" || true)
+if [ "$found" -eq 0 ]; then
+  echo
+  echo "-------------------- NOTHING MATCHED, SO HERE IS THE END OF THE LOG --------------------"
+  printf '%s
+' "$lines" | grep -v '^[[:space:]]*$' | tail -60
+fi
+
 echo "====================================================="

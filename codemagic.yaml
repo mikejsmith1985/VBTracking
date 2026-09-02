@@ -179,28 +179,15 @@ workflows:
       # watch suite from running at all, so a single broken tap hid whatever the watch had
       # to say. The verdict is passed at the end instead.
       #
-      # The phone is filmed, and photographed. The film is for a person to watch; the
-      # stills are for anybody -- or anything -- that can only read. Judging a screen from
-      # a video means somebody sitting through it, and that somebody was never available.
-      - name: The phone, filmed
-        script: ./scripts/ci-film-tests.sh 'iPhone' 'iPhone 17 Pro' VBTracker 'iOS Simulator' /tmp/phone.log /tmp/film/phone.mp4
+      # Both suites leave stills and a digest behind. Video was tried and dropped: 134 MB
+      # of it, zipped together with the digest by Codemagic, made the one small file that
+      # explains a failure take longer to fetch than the build took to produce it.
+      - name: The phone
+        script: ./scripts/ci-run-tests.sh 'iPhone' 'iPhone 17 Pro' VBTracker 'iOS Simulator' /tmp/phone.log
         ignore_failure: true
 
-      # Not filmed: this suite measures a layout, and there is nothing in it to watch.
-      #
-      # Filming was blamed for this suite failing and was innocent. It failed because the
-      # script that names a simulator cut the name at its first bracket, and a watch carries
-      # its size inside its name -- so it asked for a device that does not exist. That is
-      # fixed where it belongs, in ci-simulator.sh.
       - name: The watch, where the on-deck box is measured
-        script: |
-          set -o pipefail
-          mkdir -p /tmp/digest
-          status=0
-          device=$(./scripts/ci-simulator.sh 'Apple Watch' 'Apple Watch Ultra 2 (49mm)')
-          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTrackerWatch -destination "platform=watchOS Simulator,name=$device" CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/watch.log | tail -200 || status=$?
-          ./scripts/ci-test-digest.sh /tmp/watch.log | tee /tmp/digest/watch.txt
-          exit "$status"
+        script: ./scripts/ci-run-tests.sh 'Apple Watch' 'Apple Watch Ultra 2 (49mm)' VBTrackerWatch 'watchOS Simulator' /tmp/watch.log
         ignore_failure: true
 
       - name: The verdict
@@ -218,11 +205,11 @@ workflows:
           done
           exit "$failed"
 
-    # The films, so a screen can be looked at without a device in hand -- and the logs,
-    # because Codemagic keeps none for a step that failed.
+    # Small on purpose. Codemagic keeps no downloadable log for a step that failed, and it
+    # zips every artifact into one file -- so anything large in here buries the one thing
+    # worth reading.
     artifacts:
       - /tmp/shots/**/*.png
-      - /tmp/film/*.mp4
       - /tmp/digest/*.txt
 
     # Run by hand, before anything ships. It is the only suite that can say whether a tap
