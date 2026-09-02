@@ -186,11 +186,12 @@ workflows:
         script: ./scripts/ci-film-tests.sh 'iPhone' 'iPhone 17 Pro' VBTracker 'iOS Simulator' /tmp/phone.log /tmp/film/phone.mp4
         ignore_failure: true
 
-      # Not filmed, and deliberately so. Filming boots the simulator by hand so the
-      # recorder can attach to it, and a watchOS simulator is normally paired with a phone
-      # one -- booting it alone was the only change between the run where this suite passed
-      # and the run where it stopped being able to find its device. This suite measures a
-      # layout; there was never much to watch.
+      # Not filmed: this suite measures a layout, and there is nothing in it to watch.
+      #
+      # Filming was blamed for this suite failing and was innocent. It failed because the
+      # script that names a simulator cut the name at its first bracket, and a watch carries
+      # its size inside its name -- so it asked for a device that does not exist. That is
+      # fixed where it belongs, in ci-simulator.sh.
       - name: The watch, where the on-deck box is measured
         script: |
           set -o pipefail

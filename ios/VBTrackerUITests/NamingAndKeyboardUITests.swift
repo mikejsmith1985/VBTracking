@@ -183,11 +183,18 @@ final class ScreenshotUITests: XCTestCase {
         driver.app.buttons["serve-IN_NO_POINT"].tap()
         driver.photograph("05-tally-board")
 
+        // A second turn, opened with a serve that went out. Without one the board holds
+        // no crossed mark at all, and the crossed mark is the one that used to reach over
+        // its neighbour -- a picture that cannot show the defect cannot show the fix.
+        driver.chooseFirstServer()
+        driver.app.buttons["serve-OUT"].tap()
+        driver.photograph("06-tally-board-with-an-out")
+
         driver.go(to: "season")
-        driver.photograph("06-season")
+        driver.photograph("07-season")
 
         driver.go(to: "game")
-        driver.photograph("07-game")
+        driver.photograph("08-game")
     }
 
     /// The five-serve interrupt, photographed while it is up.
@@ -199,6 +206,6 @@ final class ScreenshotUITests: XCTestCase {
 
         driver.recordPointsWon(5)
         driver.waitForServeLimitAlert()
-        driver.photograph("08-five-serve-alert")
+        driver.photograph("09-five-serve-alert")
     }
 }
