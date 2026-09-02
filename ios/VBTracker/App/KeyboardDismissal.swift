@@ -39,6 +39,11 @@ struct KeyboardDismissable: ViewModifier {
 /// than after a tap on a button: adding a player leaves the number field focused, and a
 /// keyboard that stays up over the tab bar is the same trap whether it was opened by hand
 /// or left behind by a form that finished.
+///
+/// Isolated to the main actor by hand. Inside a `ViewModifier` it was isolated for free --
+/// SwiftUI's protocols carry `@MainActor` and a conforming type's members inherit it -- and
+/// a plain global function inherits nothing, so under Swift 6 it would not compile.
+@MainActor
 func dismissKeyboard() {
     UIApplication.shared.sendAction(
         #selector(UIResponder.resignFirstResponder),

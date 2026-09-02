@@ -30,9 +30,12 @@ final class NamingUITests: XCTestCase {
             driver.app.buttons["name-game"].waitForExistence(timeout: 3),
             "a game in progress must show what it is called"
         )
-        XCTAssertEqual(
-            driver.app.buttons["name-game"].label, "Northside",
-            "the name typed before the whistle must survive the whistle"
+        // Contains rather than equals: the control carries a pencil beside the name, and
+        // the accessibility label picks up both.
+        XCTAssertTrue(
+            driver.app.buttons["name-game"].label.contains("Northside"),
+            "the name typed before the whistle must survive the whistle, "
+                + "but the header reads: \(driver.app.buttons["name-game"].label)"
         )
     }
 
@@ -52,9 +55,11 @@ final class NamingUITests: XCTestCase {
         field.typeText("Eastvale")
         driver.app.buttons["save-game-name"].tap()
 
+        let named = driver.app.buttons["name-game"]
+        XCTAssertTrue(named.waitForExistence(timeout: 3), "the header must survive the sheet")
         XCTAssertTrue(
-            driver.app.buttons["Eastvale"].waitForExistence(timeout: 3),
-            "the header must show the name that was just saved"
+            named.label.contains("Eastvale"),
+            "the header must show the name that was just saved, but reads: \(named.label)"
         )
     }
 
