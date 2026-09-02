@@ -41,7 +41,8 @@ xcodebuild test \
 kill -INT "$recorder" 2>/dev/null || true
 wait "$recorder" 2>/dev/null || true
 
-./scripts/ci-test-digest.sh "$log"
+mkdir -p /tmp/digest
+./scripts/ci-test-digest.sh "$log" | tee "/tmp/digest/$(basename "${log%.log}").txt"
 
 if [ -s "$film" ]; then
   echo "Film: $film ($(du -h "$film" | cut -f1))"
