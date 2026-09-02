@@ -4,6 +4,15 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Changed
+
+- **The two figures under a jersey number are readable from a wrist.** Serve-in percentage
+  and points sat at 13-16pt in secondary and tertiary grey -- the dimmest things on a screen
+  that gets one second of attention, across a gym, at arm's length. Both are larger and both
+  gained a step of contrast; only the unit "pts" stays quiet, because it is the same on every
+  box and is recognised rather than read. The jersey number still leads by a long way, so a
+  box is scanned in the same order as before. A test now holds a floor under both sizes.
+
 ### Fixed
 
 - **An out serve stays inside its own mark.** The cross was a fixed 16px bar hung past both
