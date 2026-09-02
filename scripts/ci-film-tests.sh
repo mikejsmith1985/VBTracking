@@ -28,12 +28,17 @@ xcrun simctl bootstatus "$device" -b >/dev/null 2>&1 || true
 xcrun simctl io "$device" recordVideo --codec h264 --force "$film" &
 recorder=$!
 
+results="/tmp/results/$(basename "${log%.log}").xcresult"
+rm -rf "$results"
+mkdir -p /tmp/results
+
 status=0
 set -o pipefail
 xcodebuild test \
   -project ios/VBTracker.xcodeproj \
   -scheme "$scheme" \
   -destination "platform=$platform,name=$device" \
+  -resultBundlePath "$results" \
   CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$log" | tail -200 || status=$?
 
 # The one process this script started, addressed by the pid it was given. Never a pattern:
@@ -43,6 +48,13 @@ wait "$recorder" 2>/dev/null || true
 
 mkdir -p /tmp/digest
 ./scripts/ci-test-digest.sh "$log" | tee "/tmp/digest/$(basename "${log%.log}").txt"
+
+# The stills the suite took, lifted out of the result bundle. A film can only be judged by
+# somebody watching it; a picture can be looked at by anyone, including whoever is reviewing
+# this without a Mac. They are named in the test, so they arrive in reading order.
+mkdir -p /tmp/shots
+xcrun xcresulttool export attachments --path "$results" --output-path /tmp/shots >/dev/null 2>&1 || echo "No stills could be exported."
+find /tmp/shots -name '*.png' -print | sort | sed 's/^/  still: /' || true
 
 if [ -s "$film" ]; then
   echo "Film: $film ($(du -h "$film" | cut -f1))"

@@ -139,3 +139,66 @@ final class KeyboardEscapeUITests: XCTestCase {
         )
     }
 }
+
+/// A walk through the app that leaves a picture of every screen behind.
+///
+/// Not a test of behaviour -- the assertions here only keep the walk honest. Its output is
+/// the pictures, which are exported from the result bundle and published with the build, so
+/// a screen can be LOOKED at by somebody who has no Mac and no device. A film can only be
+/// judged by a person watching it end to end; a still can be read.
+@MainActor
+final class ScreenshotUITests: XCTestCase {
+    private let squad = [
+        (number: "5", name: "Aria"), (number: "7", name: "Bea"), (number: "9", name: "Cass"),
+        (number: "11", name: "Dee"), (number: "13", name: "Eve"), (number: "15", name: "Fay"),
+    ]
+
+    func testEveryScreenIsPhotographed() {
+        let driver = AppDriver.launch(self)
+
+        driver.go(to: "roster")
+        driver.photograph("01-roster-empty")
+
+        driver.addPlayers(squad)
+        driver.photograph("02-roster-filled")
+
+        driver.go(to: "track")
+        let opponent = driver.app.textFields["pre-game-opponent"]
+        XCTAssertTrue(opponent.waitForExistence(timeout: 5), "the game must be nameable before it starts")
+        opponent.tap()
+        opponent.typeText("Northside")
+        driver.putTheKeyboardAway()
+        driver.photograph("03-before-the-game")
+
+        driver.app.buttons["Start game"].tap()
+        driver.photograph("04-game-started")
+
+        driver.chooseFirstServer()
+
+        // A turn holding all three outcomes, because the marks are the thing worth looking
+        // at: filled for a point, open for in, crossed for out -- and a crossed mark that
+        // reaches past its own edge is what made two turns read as one.
+        driver.app.buttons["serve-IN_POINT"].tap()
+        driver.app.buttons["serve-IN_POINT"].tap()
+        driver.app.buttons["serve-IN_NO_POINT"].tap()
+        driver.photograph("05-tally-board")
+
+        driver.go(to: "season")
+        driver.photograph("06-season")
+
+        driver.go(to: "game")
+        driver.photograph("07-game")
+    }
+
+    /// The five-serve interrupt, photographed while it is up.
+    func testTheServeLimitAlertIsPhotographed() {
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.startGame()
+        driver.chooseFirstServer()
+
+        driver.recordPointsWon(5)
+        driver.waitForServeLimitAlert()
+        driver.photograph("08-five-serve-alert")
+    }
+}

@@ -179,8 +179,9 @@ workflows:
       # watch suite from running at all, so a single broken tap hid whatever the watch had
       # to say. The verdict is passed at the end instead.
       #
-      # The phone is filmed, because a phone screen is the thing nobody here can otherwise
-      # see before it reaches a device.
+      # The phone is filmed, and photographed. The film is for a person to watch; the
+      # stills are for anybody -- or anything -- that can only read. Judging a screen from
+      # a video means somebody sitting through it, and that somebody was never available.
       - name: The phone, filmed
         script: ./scripts/ci-film-tests.sh 'iPhone' 'iPhone 17 Pro' VBTracker 'iOS Simulator' /tmp/phone.log /tmp/film/phone.mp4
         ignore_failure: true
@@ -219,6 +220,7 @@ workflows:
     # The films, so a screen can be looked at without a device in hand -- and the logs,
     # because Codemagic keeps none for a step that failed.
     artifacts:
+      - /tmp/shots/**/*.png
       - /tmp/film/*.mp4
       - /tmp/digest/*.txt
 

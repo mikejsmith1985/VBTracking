@@ -66,6 +66,19 @@ struct AppDriver {
 
     /// Dismisses any keyboard before going anywhere.
     ///
+    /// Keeps a picture of the screen under a name.
+    ///
+    /// The suite runs on a machine nobody here can see, and a video of it can only be
+    /// judged by a person watching it. A still can be READ -- by a reviewer, by a diff, by
+    /// whoever is asking "does the board look right" without a device in hand. The pictures
+    /// are exported from the result bundle and published beside the film.
+    func photograph(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        test.add(shot)
+    }
+
     /// A keyboard sits on top of the tab bar. XCUITest reports the tab as existing either
     /// way -- being in the hierarchy is not the same as being reachable -- so the tap went
     /// to the tab's frame, landed on the keyboard, and nothing moved.
