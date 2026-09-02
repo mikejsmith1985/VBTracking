@@ -189,7 +189,7 @@ struct AppDriver {
             app.buttons["serve-IN_POINT"].tap()
 
             let landed = app.staticTexts["\(serve) · \(serve) in"]
-            let interrupted = app.otherElements["serve-limit-alert"]
+            let interrupted = serveLimitWitness
             XCTAssertTrue(
                 landed.waitForExistence(timeout: 3) || interrupted.exists,
                 "serve \(serve) must be recorded before the next is tapped"
@@ -197,16 +197,21 @@ struct AppDriver {
         }
     }
 
-    /// The five-serve interrupt, or a failure that says what was on screen instead.
+    /// What the five-serve interrupt says out loud -- the only part of it a query can find.
     ///
-    /// A container in SwiftUI is not an accessibility element on its own, so the overlay's
-    /// identifier had nothing to attach to and could not be addressed at all. When that
-    /// happens again the dump is what tells the difference between "the alert did not
-    /// appear" and "the alert appeared and cannot be named".
+    /// The overlay's identifier sits on a SwiftUI container, and a container is not an
+    /// accessibility element of its own, so it never resolves as something to match against.
+    /// The word the operator reads does resolve. Waiting on what the screen SAYS also
+    /// happens to be the honest test: an interrupt nobody can read is not an interrupt.
+    private var serveLimitWitness: XCUIElement { app.staticTexts["Rotate"] }
+
+    /// Whether the five-serve interrupt is currently covering the court.
+    var isServeLimitAlertUp: Bool { serveLimitWitness.exists }
+
+    /// The five-serve interrupt, or a failure that says what was on screen instead.
     @discardableResult
     func waitForServeLimitAlert() -> XCUIElement {
-        let alert = app.otherElements["serve-limit-alert"]
-        if alert.waitForExistence(timeout: 4) { return alert }
+        if serveLimitWitness.waitForExistence(timeout: 4) { return serveLimitWitness }
 
         let texts = app.staticTexts.allElementsBoundByIndex.map(\.label).filter { !$0.isEmpty }
         XCTFail(
@@ -215,7 +220,17 @@ struct AppDriver {
             Text on screen: \(texts.prefix(20).joined(separator: " | "))
             """
         )
-        return alert
+        return serveLimitWitness
+    }
+
+    /// Clears the interrupt the way the operator does, by pressing the button it offers.
+    func dismissServeLimitAlert() {
+        waitForServeLimitAlert()
+        app.buttons["Got it"].tap()
+        XCTAssertTrue(
+            serveLimitWitness.waitForNonExistence(timeout: 3),
+            "pressing Got it must give the court back"
+        )
     }
 
     /// Hands the ball to the first player offered.

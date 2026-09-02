@@ -46,10 +46,8 @@ final class TrackingUITests: XCTestCase {
 
         driver.recordPointsWon(5)
 
-        let alert = driver.waitForServeLimitAlert()
-
-        alert.tap()
-        XCTAssertFalse(alert.exists, "any tap clears it")
+        driver.dismissServeLimitAlert()
+        XCTAssertFalse(driver.isServeLimitAlertUp, "pressing Got it clears it")
     }
 
     func testASixthServeIsRecordedWithoutNaggingAgain() {
@@ -60,12 +58,12 @@ final class TrackingUITests: XCTestCase {
 
         driver.recordPointsWon(5)
 
-        driver.waitForServeLimitAlert().tap()
+        driver.dismissServeLimitAlert()
 
         driver.app.buttons["serve-IN_POINT"].tap()
 
         XCTAssertFalse(
-            driver.app.otherElements["serve-limit-alert"].exists,
+            driver.isServeLimitAlertUp,
             "a miscount is recorded, not nagged about"
         )
     }
