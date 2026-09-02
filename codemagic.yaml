@@ -105,13 +105,25 @@ workflows:
           cd packages/VBCore
           swift test
 
+      # The whole build goes to a file, and its errors are reprinted at the end.
+      #
+      # Codemagic keeps no downloadable log for a step that fails, so a compile error here
+      # was only ever readable by opening the web UI -- and the API, which is how this gets
+      # driven, could not see it at all. The log is published as an artifact instead.
       - name: Build the phone and the watch it carries
         script: |
-          xcode-project build-ipa \
-            --project ios/VBTracker.xcodeproj \
-            --scheme VBTracker
+          set -o pipefail
+          mkdir -p /tmp/logs
+          status=0
+          xcode-project build-ipa --project ios/VBTracker.xcodeproj --scheme VBTracker 2>&1 | tee /tmp/logs/build.log || status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "==================== WHAT THE COMPILER SAID ===================="
+            grep -E 'error:|The following build commands failed' /tmp/logs/build.log | head -40 || true
+          fi
+          exit "$status"
 
     artifacts:
+      - /tmp/logs/*.log
       - build/ios/ipa/*.ipa
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
 
@@ -184,9 +196,11 @@ workflows:
           done
           exit "$failed"
 
-    # The films, so a screen can be looked at without a device in hand.
+    # The films, so a screen can be looked at without a device in hand -- and the logs,
+    # because Codemagic keeps none for a step that failed.
     artifacts:
       - /tmp/film/*.mp4
+      - /tmp/*.log
 
     # Run by hand, before anything ships. It is the only suite that can say whether a tap
     # does what it looks like it does, and the three bugs it was written for were every one
