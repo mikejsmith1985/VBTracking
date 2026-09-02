@@ -6,6 +6,15 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **An out serve stays inside its own mark.** The cross was a fixed 16px bar hung past both
+  edges of the 8px mark and turned 45 degrees, so it drew across the mark beside it and over
+  the border of its own turn -- two turns side by side read as one block, and the figures
+  under them looked like they belonged to whichever turn the eye landed on. Both apps now
+  draw it corner to corner of the mark itself, which is bounded by construction rather than
+  by a number that has to stay in step with the mark's size.
+
+### Fixed
+
 - **A game can be named before the whistle.** The only way in was a caption at the top of
   the match header, which read as a label rather than a control, so an operator looking for
   somewhere to type the opponent found nothing and tracked a game the season list would call
