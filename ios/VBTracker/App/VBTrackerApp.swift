@@ -45,6 +45,15 @@ struct VBTrackerApp: App {
                 guard link == nil else { return }
                 link = PhoneLink(store: store)
             }
+            // A season sent from another phone. The file arrives here whether the app was
+            // running or not, and it is merged rather than restored: the person receiving it
+            // has their own roster, and replacing it would be a disaster dressed up as a
+            // feature. The Season tab is shown afterwards because that is where the arrival
+            // is visible.
+            .onOpenURL { url in
+                store.receive(fileAt: url)
+                tab = .season
+            }
         }
     }
 

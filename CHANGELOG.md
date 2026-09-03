@@ -6,6 +6,18 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **A season can be handed to another phone, and what arrives is merged.** A coach and an
+  assistant coach at the same match need the same figures, and only one of them is tracking.
+  "Send this season to another phone" writes the same bytes a backup holds under an extension
+  the app owns, so AirDrop offers the app by name on the receiving phone instead of dropping
+  the file into Files for somebody to go and find. What arrives is merged rather than
+  restored: everything already on the receiving phone is kept in the order it was recorded,
+  and only events it does not already hold are added. An event is recognised by its
+  identifier, and one that arrives without a name is named from its own content, so the same
+  file twice adds nothing the second time. If the rulebook would refuse any arriving event --
+  two phones that both recorded the same game -- the whole merge is refused and the log is
+  left exactly as it was, because half a season arriving is worse than none.
+
 - **A season can be thrown away, and everything can be erased.** Neither app had any way
   out of its own data: a season entered to try the app out could be emptied game by game
   and player by player and would still sit at the top of the screen with no control that

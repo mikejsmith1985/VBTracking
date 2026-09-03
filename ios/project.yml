@@ -63,6 +63,30 @@ targets:
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    # A file type of the app's own, so a season sent by AirDrop offers this app by name
+    # instead of landing in Files for somebody to go and find. The synthesised Info.plist
+    # cannot hold arrays, which is what a document type is, so these keys are merged in
+    # from a file beside it -- Xcode combines the two when both are present.
+    info:
+      path: VBTracker/Info.plist
+      properties:
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Volleyball season
+            LSHandlerRank: Owner
+            CFBundleTypeRole: Viewer
+            LSItemContentTypes:
+              - com.mikejsmith.vbtracker.season
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.mikejsmith.vbtracker.season
+            UTTypeDescription: Volleyball season
+            # It is JSON underneath, and saying so lets anything that reads JSON still open
+            # it. The app is only claiming this one extension, not every JSON file on the
+            # phone.
+            UTTypeConformsTo:
+              - public.json
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - vbseason
     entitlements:
       path: VBTracker/VBTracker.entitlements
       properties:

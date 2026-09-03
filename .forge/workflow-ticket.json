@@ -1,0 +1,23 @@
+{
+  "taskId": "recall-radar-hybrid-search",
+  "branch": "feature/hybrid-search",
+  "startedAt": "2026-09-03T23:14:43.3183507Z",
+  "updatedAt": "2026-09-03T23:14:52.1984373Z",
+  "gates": [
+    {
+      "gate": "branch-created",
+      "passedAt": "2026-09-03T23:14:43.3183507Z",
+      "evidence": "feature/hybrid-search worktree at C:\\ProjectsWin\\recall-radar-wt-search, based on main"
+    },
+    {
+      "gate": "tests-written",
+      "passedAt": "2026-09-03T23:14:48.0613961Z",
+      "evidence": "211 unit and 39 integration tests covering three retrieval modes, filters, vehicle isolation, HTTP contract, embeddings and provider outages"
+    },
+    {
+      "gate": "tests-passed",
+      "passedAt": "2026-09-03T23:14:52.1984373Z",
+      "evidence": "Unit 211/211 cold and warm, integration 39/39; live API verified against the real 3,634-chunk corpus"
+    }
+  ]
+}

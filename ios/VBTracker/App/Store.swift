@@ -174,6 +174,92 @@ public final class Store {
         return true
     }
 
+    /// A filename for handing this season to somebody else's phone.
+    public func handoverFilename() -> String {
+        let day = ISO8601DateFormatter().string(from: now()).prefix(10)
+        return VBCore.seasonFilename(on: String(day))
+    }
+
+    /// Takes in a season from a file the phone handed us.
+    ///
+    /// A file arriving from AirDrop sits outside the app's own container, so it has to be
+    /// asked for before it can be read. Reading it here rather than at the call site keeps
+    /// every failure reported in the one place the operator reads notices.
+    @discardableResult
+    public func receive(fileAt url: URL) -> Bool {
+        let opened = url.startAccessingSecurityScopedResource()
+        defer { if opened { url.stopAccessingSecurityScopedResource() } }
+
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else {
+            notice = Notice(text: "That file could not be opened.", isFailure: true)
+            return false
+        }
+        return receive(from: text)
+    }
+
+    /// Takes in a season somebody else recorded, keeping everything already here.
+    ///
+    /// Different from `restore` on purpose. Restoring is for a lost phone and replaces
+    /// everything; this is for a coach handing the match over, where wiping the roster on
+    /// the receiving phone would be a disaster dressed up as a feature.
+    ///
+    /// All or nothing, like every other way into the log. A merge the rulebook would refuse
+    /// changes nothing and says why.
+    @discardableResult
+    public func receive(from text: String) -> Bool {
+        let read = readBackup(text)
+        guard let incoming = read.log else {
+            notice = Notice(text: read.reason ?? "That file could not be read.", isFailure: true)
+            return false
+        }
+
+        let merged = merge(mine: events, theirs: incoming.events)
+        if let refusal = merged.refusal {
+            notice = Notice(text: refusal, isFailure: true)
+            return false
+        }
+        guard merged.eventsAdded > 0 else {
+            notice = Notice(text: "That season is already here. Nothing was changed.", isFailure: false)
+            return true
+        }
+
+        do {
+            try log.replace(with: merged.events)
+            try ledger.record(
+                ImportEntry(
+                    sourceHash: incoming.sourceHash,
+                    importedAt: ISO8601DateFormatter().string(from: now()),
+                    eventCount: merged.eventsAdded
+                )
+            )
+        } catch {
+            notice = Notice(
+                text: (error as? LogFileError)?.message ?? "That season could not be saved.",
+                isFailure: true
+            )
+            return false
+        }
+
+        events = merged.events
+        state = replay(raw: events)
+        notice = Notice(text: arrivalWording(merged), isFailure: false)
+        onChange?(state)
+        return true
+    }
+
+    /// What to tell the operator arrived, counted rather than guessed at.
+    private func arrivalWording(_ merged: MergeResult) -> String {
+        var parts: [String] = []
+        if merged.seasonsAdded > 0 { parts.append(count(merged.seasonsAdded, "season")) }
+        if merged.playersAdded > 0 { parts.append(count(merged.playersAdded, "player")) }
+        parts.append(count(merged.eventsAdded, "recorded action"))
+        return "Added " + parts.joined(separator: ", ") + "."
+    }
+
+    private func count(_ number: Int, _ noun: String) -> String {
+        "\(number) \(noun)\(number == 1 ? "" : "s")"
+    }
+
     /// Throws away every season, every game and every player, leaving a new install.
     ///
     /// Not an event: an event would be appended to the log it is meant to empty, and the

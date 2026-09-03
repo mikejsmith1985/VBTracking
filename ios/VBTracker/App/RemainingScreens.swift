@@ -347,3 +347,28 @@ struct ExportSheet: View {
         return url
     }
 }
+
+/// Handing this season to another phone, through the share sheet.
+///
+/// The same bytes a backup holds, under an extension the app owns, so AirDrop offers the
+/// app by name on the other phone instead of dropping the file into Files for somebody to
+/// go and find. A backup keeps `.json` because the web app reads those.
+struct HandoverSheet: View {
+    let store: Store
+
+    var body: some View {
+        let text = store.exportedBackup()
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(store.handoverFilename())
+
+        ShareLink(item: written(text, to: url)) {
+            Label("Send this season", systemImage: "person.2.badge.gearshape")
+        }
+        .presentationDetents([.medium])
+        .accessibilityIdentifier("share-season")
+    }
+
+    private func written(_ text: String, to url: URL) -> URL {
+        try? text.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+}

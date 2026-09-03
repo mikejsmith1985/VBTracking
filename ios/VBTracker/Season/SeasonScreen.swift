@@ -11,6 +11,7 @@ import VBPresentation
 struct SeasonScreen: View {
     @Bindable var store: Store
     @State private var isImporting = false
+    @State private var isHandingOver = false
     @State private var isExporting = false
     @State private var openGameId: String?
     @State private var careerPlayerId: String?
@@ -85,6 +86,15 @@ struct SeasonScreen: View {
                     Text("Every season, every game, every serve — as one file you keep. Nothing is sent anywhere.")
                         .font(.caption).foregroundStyle(.secondary)
 
+                    // Separate from saving a copy, because it answers a different question.
+                    // A backup is for getting a season back; this is for a coach and an
+                    // assistant coach who both need the figures when only one of them is
+                    // tracking. What arrives is merged, so neither phone loses its roster.
+                    Button("Send this season to another phone") { isHandingOver = true }
+                        .accessibilityIdentifier("hand-over")
+                    Text("Sends it over AirDrop. The other phone keeps what it already has and adds what it does not.")
+                        .font(.caption).foregroundStyle(.secondary)
+
                     // The way back to an empty app. Without it, data put in to try the app
                     // out -- or a backup restored to see what it looked like -- could only
                     // be taken out one season, one game, one player at a time.
@@ -121,6 +131,7 @@ struct SeasonScreen: View {
                 CareerScreen(store: store, playerId: id)
             }
             .sheet(isPresented: $isExporting) { ExportSheet(store: store, isPresented: $isExporting) }
+            .sheet(isPresented: $isHandingOver) { HandoverSheet(store: store) }
             .fileImporter(isPresented: $isImporting, allowedContentTypes: [.item]) { result in
                 // No file-type filter at all: iOS saves a JSON file from Safari as
                 // ".json.txt", and a filter greys out the file the phone just wrote. The
