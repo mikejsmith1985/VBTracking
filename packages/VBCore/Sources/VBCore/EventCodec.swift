@@ -16,6 +16,7 @@ public enum EventType {
     public static let createSeason = "CREATE_SEASON"
     public static let renameSeason = "RENAME_SEASON"
     public static let activateSeason = "ACTIVATE_SEASON"
+    public static let discardSeason = "DISCARD_SEASON"
     public static let startGame = "START_GAME"
     public static let discardGame = "DISCARD_GAME"
     public static let setGameContext = "SET_GAME_CONTEXT"
@@ -76,6 +77,9 @@ extension Event.Kind {
 
         case EventType.activateSeason:
             self = .activateSeason(id: raw.string("id"))
+
+        case EventType.discardSeason:
+            self = .discardSeason(id: raw.string("id"))
 
         case EventType.addPlayer:
             self = .addPlayer(

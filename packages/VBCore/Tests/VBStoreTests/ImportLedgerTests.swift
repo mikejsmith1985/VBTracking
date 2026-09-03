@@ -99,3 +99,27 @@ struct ImportDecisionTests {
         #expect(decision.log != nil)
     }
 }
+
+@Suite("Forgetting every import")
+struct ImportLedgerForgettingTests {
+    /// Erasing everything must also erase the memory of what was imported.
+    ///
+    /// Otherwise the operator wipes the app, reaches for the backup they just made, and is
+    /// told it is already in -- with nothing on screen to show for it.
+    @Test("A forgotten ledger accepts the same backup again")
+    func forgettingLetsTheSameFileBack() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ledger-forget-\(UUID().uuidString)")
+        let ledger = ImportLedger(url: directory.appendingPathComponent("imports.json"))
+
+        try ledger.record(ImportEntry(sourceHash: "abc", importedAt: "2026-09-03", eventCount: 3))
+        #expect(ledger.knownHashes() == ["abc"])
+
+        try ledger.forget()
+        #expect(ledger.knownHashes().isEmpty)
+
+        // And forgetting a ledger that was never written is not an error: a device that has
+        // imported nothing is the ordinary case.
+        try ledger.forget()
+    }
+}

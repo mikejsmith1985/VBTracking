@@ -179,6 +179,9 @@ public struct Event: Equatable, Sendable {
         case createSeason(id: String, name: String, team: String, format: SeasonFormat)
         case renameSeason(id: String, name: String, team: String?)
         case activateSeason(id: String)
+        /// Throws a season away with its memberships and every game played in it. The
+        /// players stay: a person outlives any roster, and their other seasons are untouched.
+        case discardSeason(id: String)
 
         // Players and rosters
         case addPlayer(id: String, name: String, number: String, seasonId: String?)

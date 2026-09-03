@@ -49,6 +49,9 @@ public func rejectionReason(_ state: AppState, _ event: Event) -> String? {
         if state.currentMatch != nil { return "Finish the current game before starting another." }
         return nil
 
+    case let .discardSeason(id):
+        return state.season(id: id) != nil ? nil : "That season no longer exists."
+
     case let .discardGame(id):
         return state.games.contains { $0.id == id } ? nil : "That game no longer exists."
 

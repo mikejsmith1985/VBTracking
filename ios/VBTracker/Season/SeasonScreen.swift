@@ -14,6 +14,8 @@ struct SeasonScreen: View {
     @State private var isExporting = false
     @State private var openGameId: String?
     @State private var careerPlayerId: String?
+    /// Asked once. A second tap is the answer, and it is the last one.
+    @State private var isConfirmingErase = false
 
     private var season: Season? { store.state.activeSeason }
     private var games: [Game] {
@@ -82,6 +84,26 @@ struct SeasonScreen: View {
                         .accessibilityIdentifier("import-data")
                     Text("Every season, every game, every serve — as one file you keep. Nothing is sent anywhere.")
                         .font(.caption).foregroundStyle(.secondary)
+
+                    // The way back to an empty app. Without it, data put in to try the app
+                    // out -- or a backup restored to see what it looked like -- could only
+                    // be taken out one season, one game, one player at a time.
+                    Button(
+                        isConfirmingErase ? "Erase everything?" : "Erase everything",
+                        role: .destructive
+                    ) {
+                        guard isConfirmingErase else { isConfirmingErase = true; return }
+                        store.eraseEverything()
+                        isConfirmingErase = false
+                    }
+                    .accessibilityIdentifier("erase-everything")
+
+                    Text(
+                        isConfirmingErase
+                            ? "Tap again to erase. Every season, game, serve and player is thrown away and cannot be recovered — save a copy first if you might want it back."
+                            : "Returns the app to how it was on the day it was installed. Save a copy first."
+                    )
+                    .font(.caption).foregroundStyle(isConfirmingErase ? Color.red : Color.secondary)
                 }
 
                 // Last, quietly, on a screen read between matches. It never comes to the

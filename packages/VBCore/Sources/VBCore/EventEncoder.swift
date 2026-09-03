@@ -31,6 +31,9 @@ public enum EventEncoder {
         case let .activateSeason(id):
             ["t": .string(EventType.activateSeason), "id": .string(id)]
 
+        case let .discardSeason(id):
+            ["t": .string(EventType.discardSeason), "id": .string(id)]
+
         case let .addPlayer(id, name, number, seasonId):
             player(EventType.addPlayer, id: id, name: name, number: number, seasonId: seasonId)
 

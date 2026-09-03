@@ -17,6 +17,8 @@ struct SeasonAdminScreen: View {
     @State private var newSeasonTeam = ""
     @State private var addingPlayerId: String?
     @State private var newNumber = ""
+    /// Which season has been asked about once. A second tap is the answer.
+    @State private var confirmingDiscard: String?
 
     private var season: Season? { store.state.activeSeason }
 
@@ -70,6 +72,33 @@ struct SeasonAdminScreen: View {
 
                     Text("A number belongs to the season, never to the person. The same child can wear a different one next year.")
                         .font(.caption).foregroundStyle(.secondary)
+                }
+
+                // Getting rid of a season had no control anywhere. A season entered to try
+                // the app out could be emptied game by game and player by player and still
+                // sit at the top of this screen with nothing that would remove it.
+                Section {
+                    Button(
+                        confirmingDiscard == season.id
+                            ? "Discard \"\(season.name)\"?"
+                            : "Discard this season",
+                        role: .destructive
+                    ) {
+                        guard confirmingDiscard == season.id else {
+                            confirmingDiscard = season.id
+                            return
+                        }
+                        store.dispatch(.discardSeason(id: season.id))
+                        confirmingDiscard = nil
+                    }
+                    .accessibilityIdentifier("discard-season")
+
+                    Text(
+                        confirmingDiscard == season.id
+                            ? "Tap again to discard. Every game recorded in this season goes with it. The players stay, and so does everything they did in any other season."
+                            : "Removes this season and every game in it. The players themselves are kept."
+                    )
+                    .font(.caption).foregroundStyle(.secondary)
                 }
 
                 let others = store.state.seasons.filter { $0.id != season.id }

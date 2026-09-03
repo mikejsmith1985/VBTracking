@@ -174,6 +174,34 @@ public final class Store {
         return true
     }
 
+    /// Throws away every season, every game and every player, leaving a new install.
+    ///
+    /// Not an event: an event would be appended to the log it is meant to empty, and the
+    /// figures would come back on the next replay. The log itself is replaced with nothing.
+    ///
+    /// The import ledger is cleared with it, so a backup restored before can be restored
+    /// again -- otherwise erasing everything would leave the app refusing the only file the
+    /// operator has to put it back.
+    @discardableResult
+    public func eraseEverything() -> Bool {
+        do {
+            try log.replace(with: [])
+            try ledger.forget()
+        } catch {
+            notice = Notice(
+                text: (error as? LogFileError)?.message ?? "That could not be erased.",
+                isFailure: true
+            )
+            return false
+        }
+
+        events = []
+        state = replay(raw: events)
+        notice = Notice(text: "Everything was erased.", isFailure: false)
+        onChange?(state)
+        return true
+    }
+
     /// Says something happened, when it was not an event that said it.
     ///
     /// Used by the screens that add several events at once — a batch of games from paper —

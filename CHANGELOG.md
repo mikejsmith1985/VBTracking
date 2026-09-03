@@ -4,6 +4,17 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added
+
+- **A season can be thrown away, and everything can be erased.** Neither app had any way
+  out of its own data: a season entered to try the app out could be emptied game by game
+  and player by player and would still sit at the top of the screen with no control that
+  would remove it. Discarding a season takes its games with it and deliberately keeps the
+  players -- a person outlives any roster, and what they wore in another season is
+  untouched. "Erase everything" returns the app to the day it was installed, and forgets
+  which backups have been imported so the operator's own file can be restored again. Both
+  arm on the first tap and commit on the second, like every other destructive control.
+
 ### Changed
 
 - **The two figures under a jersey number are readable from a wrist.** Serve-in percentage

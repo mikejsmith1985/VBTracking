@@ -115,6 +115,14 @@ function seasonAdmin(state, season, ui) {
         <input name="team" value="${esc(season.team)}" maxlength="40" aria-label="Team name">
         <button type="submit">Save</button>
       </form>
+      <button class="btn btn-danger" data-action="discard-season" data-id="${season.id}" type="button">
+        ${ui.confirmingDiscardSeason === season.id ? `Discard “${esc(season.name)}”?` : 'Discard this season'}
+      </button>
+      <div class="roster-count">
+        ${ui.confirmingDiscardSeason === season.id
+          ? 'Tap again to discard. Every game recorded in this season goes with it. The players stay, and so does everything they did in any other season.'
+          : 'Removes this season and every game in it. The players themselves are kept.'}
+      </div>
       ${switcher}
       <div class="section-title">Add a season</div>
       <form class="season-form" id="create-season-form" autocomplete="off">
@@ -156,6 +164,12 @@ function backupControls(ui) {
       ${ui.confirmingImport
         ? 'Tap again to choose a file. Restoring replaces every roster and game currently on this device, including any match in progress.'
         : 'Every season, every game, every serve — as one file you keep. Nothing is sent anywhere.'}
+    </div>
+    <button class="btn btn-danger" data-action="erase-everything" type="button">Erase everything</button>
+    <div class="roster-count">
+      ${ui.confirmingErase
+        ? 'Tap again to erase. Every season, game, serve and player is thrown away and cannot be recovered — save a copy first if you might want it back.'
+        : 'Returns the app to how it was the day it was installed. Save a copy first.'}
     </div>`
 }
 
