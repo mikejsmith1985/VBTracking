@@ -374,8 +374,10 @@ workflows:
     environment:
       xcode: latest
       vars:
-        # Empty means read and report. A number means attach that build to the version.
-        ATTACH_BUILD: ""
+        # "none" means read and report. A build number means attach that build to the
+        # version. Not an empty string: Codemagic refuses a variable with no characters in
+        # it, and the whole workflow with it, before a single step runs.
+        ATTACH_BUILD: "none"
     scripts:
       # Everything this learns goes to a file that is published, because Codemagic keeps
       # no log for a step that failed -- and a step asking questions of a CLI whose exact
@@ -414,8 +416,8 @@ workflows:
           mkdir -p /tmp/asc
           report=/tmp/asc/attach.txt
 
-          if [ -z "$ATTACH_BUILD" ]; then
-            echo "ATTACH_BUILD is empty. Nothing was changed." | tee "$report"
+          if [ "$ATTACH_BUILD" = "none" ]; then
+            echo "ATTACH_BUILD is none. Nothing was changed." | tee "$report"
             exit 0
           fi
 
