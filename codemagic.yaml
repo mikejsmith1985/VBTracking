@@ -392,20 +392,28 @@ workflows:
         # rejects the whole workflow before a step runs.
         SUBMISSION_ACTION: "list"
         SUBMISSION_ID: "none"
+        # Space separated. Read only; nothing here changes anything.
+        SUBMISSION_IDS: "none"
     scripts:
       - name: What submissions exist
         script: |
           set -o pipefail
           mkdir -p /tmp/asc
+          # There is no "list" subcommand -- only cancel, confirm, create, get and items --
+          # so the ids have to be handed in. They come out of the 409 the failed submission
+          # printed, which names both the submission holding the version and the empty one
+          # left behind.
           look() {
-            APP_ID=6806672687
-            echo "=================== SUBMISSIONS ==================="
-            app-store-connect review-submissions list --application-id "$APP_ID" 2>&1 | head -60
-            echo
-            echo "=================== WHAT THEY HOLD ==================="
-            for id in $(app-store-connect review-submissions list --application-id "$APP_ID" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(" ".join(x["id"] for x in d))'); do
-              echo "--- $id ---"
-              app-store-connect review-submissions items "$id" 2>&1 | head -20
+            if [ "$SUBMISSION_IDS" = "none" ]; then
+              echo "No SUBMISSION_IDS given, so nothing was read."
+              return 0
+            fi
+            for id in $SUBMISSION_IDS; do
+              echo "=================== $id ==================="
+              app-store-connect review-submissions get "$id" 2>&1 | head -30
+              echo "--- what it holds ---"
+              app-store-connect review-submissions items "$id" 2>&1 | head -30
+              echo
             done
           }
           look 2>&1 | tee /tmp/asc/submissions.txt
