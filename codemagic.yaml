@@ -372,6 +372,66 @@ workflows:
     triggering:
       events: []
 
+  # The review submissions themselves, which are a layer above the version and the only
+  # place a rejection actually lives.
+  #
+  # A version can belong to exactly one review submission. Apple leaves the bounced
+  # submission open and holding the version, so creating a fresh one fails with "already
+  # added to another reviewSubmission" -- a message that names the new submission's id and
+  # not the old one's, which sends you looking in the wrong place.
+  store-submissions:
+    name: The review submissions
+    max_build_duration: 20
+    integrations:
+      app_store_connect: RLL_Codemagic_CI_AppManager
+    environment:
+      xcode: latest
+      vars:
+        # "list" reports and changes nothing. "cancel" withdraws the submission named by
+        # SUBMISSION_ID. "confirm" sends it to review. Never an empty string: Codemagic
+        # rejects the whole workflow before a step runs.
+        SUBMISSION_ACTION: "list"
+        SUBMISSION_ID: "none"
+    scripts:
+      - name: What submissions exist
+        script: |
+          set -o pipefail
+          mkdir -p /tmp/asc
+          look() {
+            APP_ID=6806672687
+            echo "=================== SUBMISSIONS ==================="
+            app-store-connect review-submissions list --application-id "$APP_ID" 2>&1 | head -60
+            echo
+            echo "=================== WHAT THEY HOLD ==================="
+            for id in $(app-store-connect review-submissions list --application-id "$APP_ID" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(" ".join(x["id"] for x in d))'); do
+              echo "--- $id ---"
+              app-store-connect review-submissions items "$id" 2>&1 | head -20
+            done
+          }
+          look 2>&1 | tee /tmp/asc/submissions.txt
+        ignore_failure: true
+
+      - name: Cancel or confirm, if one was named
+        script: |
+          set -o pipefail
+          mkdir -p /tmp/asc
+          act() {
+            if [ "$SUBMISSION_ACTION" = "list" ] || [ "$SUBMISSION_ID" = "none" ]; then
+              echo "SUBMISSION_ACTION is $SUBMISSION_ACTION and SUBMISSION_ID is $SUBMISSION_ID. Nothing was changed."
+              return 0
+            fi
+            echo "$SUBMISSION_ACTION on $SUBMISSION_ID"
+            app-store-connect review-submissions "$SUBMISSION_ACTION" "$SUBMISSION_ID" 2>&1
+          }
+          act 2>&1 | tee /tmp/asc/action.txt
+        ignore_failure: true
+
+    artifacts:
+      - /tmp/asc/*.txt
+
+    triggering:
+      events: []
+
   # Which build the version under review carries.
   #
   # A rejected version keeps the build it was rejected with, and answering App Review with a
