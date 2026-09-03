@@ -301,61 +301,73 @@ workflows:
       # the version to it, confirm it.
       - name: Submit for review
         script: |
-          if [ "$SUBMIT_FOR_REVIEW" != "yes" ]; then
-            echo "SUBMIT_FOR_REVIEW is not yes. The listing is staged and nothing was submitted."
-            exit 0
-          fi
-          set -e
-
-          APP_ID=6806672687
-
-          echo "--- the version to submit ---"
-          VERSION_ID=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null             | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(v['id'] for v in d if v['attributes']['appStoreState'] in ('PREPARE_FOR_SUBMISSION','DEVELOPER_REJECTED','REJECTED','METADATA_REJECTED')))" 2>/dev/null || true)
-          if [ -z "$VERSION_ID" ]; then
-            echo "Could not read the version id from the CLI; listing what it does return:"
-            app-store-connect apps app-store-versions "$APP_ID" --json 2>&1 | head -40
-            exit 1
-          fi
-          echo "Version: $VERSION_ID"
-
-          echo "--- create the submission ---"
-          SUBMISSION_ID=$(app-store-connect review-submissions create "$APP_ID" --platform IOS --json             | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
-          echo "Submission: $SUBMISSION_ID"
-
-          # From here on, a failure takes its own submission away with it. An abandoned
-          # draft blocks the next attempt, and asking somebody to go and delete one by hand
-          # after every failed run is a poor way to treat them.
-          set +e
-          echo "--- add the version to it ---"
-          app-store-connect review-submission-items create "$SUBMISSION_ID" --version-id "$VERSION_ID"
-          added=$?
-
-          if [ $added -ne 0 ]; then
-            echo "--- could not add the version; discarding the empty submission ---"
-            # The cancel result is printed rather than swallowed. Last time it was hidden
-            # behind `|| true` and the step announced that nothing was left behind while a
-            # draft submission sat in the account waiting to be deleted by hand.
-            app-store-connect review-submissions cancel "$SUBMISSION_ID"
-            cancelled=$?
-            if [ $cancelled -eq 0 ]; then
-              echo "The empty submission was cancelled."
-            else
-              echo "COULD NOT CANCEL $SUBMISSION_ID -- it may need deleting by hand."
+          # Codemagic keeps no downloadable log for a step that failed, which is exactly
+          # the step whose output is worth reading. Everything it says goes to a file that
+          # is published as an artifact, and pipefail keeps the step's own verdict intact.
+          set -o pipefail
+          mkdir -p /tmp/asc
+          submit_for_review() {
+            if [ "$SUBMIT_FOR_REVIEW" != "yes" ]; then
+              echo "SUBMIT_FOR_REVIEW is not yes. The listing is staged and nothing was submitted."
+              exit 0
             fi
-            exit 1
-          fi
+            set -e
 
-          echo "--- confirm ---"
-          app-store-connect review-submissions confirm "$SUBMISSION_ID"
-          confirmed=$?
+            APP_ID=6806672687
 
-          if [ $confirmed -ne 0 ]; then
-            echo "--- could not confirm; discarding the submission ---"
-            app-store-connect review-submissions cancel "$SUBMISSION_ID"
-            [ $? -eq 0 ] && echo "The submission was cancelled." || echo "COULD NOT CANCEL $SUBMISSION_ID."
-            exit 1
-          fi
-          echo "Submitted for review."
+            echo "--- the version to submit ---"
+            VERSION_ID=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null             | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(v['id'] for v in d if v['attributes']['appStoreState'] in ('PREPARE_FOR_SUBMISSION','DEVELOPER_REJECTED','REJECTED','METADATA_REJECTED')))" 2>/dev/null || true)
+            if [ -z "$VERSION_ID" ]; then
+              echo "Could not read the version id from the CLI; listing what it does return:"
+              app-store-connect apps app-store-versions "$APP_ID" --json 2>&1 | head -40
+              exit 1
+            fi
+            echo "Version: $VERSION_ID"
+
+            echo "--- create the submission ---"
+            SUBMISSION_ID=$(app-store-connect review-submissions create "$APP_ID" --platform IOS --json             | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+            echo "Submission: $SUBMISSION_ID"
+
+            # From here on, a failure takes its own submission away with it. An abandoned
+            # draft blocks the next attempt, and asking somebody to go and delete one by hand
+            # after every failed run is a poor way to treat them.
+            set +e
+            echo "--- add the version to it ---"
+            app-store-connect review-submission-items create "$SUBMISSION_ID" --version-id "$VERSION_ID"
+            added=$?
+
+            if [ $added -ne 0 ]; then
+              echo "--- could not add the version; discarding the empty submission ---"
+              # The cancel result is printed rather than swallowed. Last time it was hidden
+              # behind `|| true` and the step announced that nothing was left behind while a
+              # draft submission sat in the account waiting to be deleted by hand.
+              app-store-connect review-submissions cancel "$SUBMISSION_ID"
+              cancelled=$?
+              if [ $cancelled -eq 0 ]; then
+                echo "The empty submission was cancelled."
+              else
+                echo "COULD NOT CANCEL $SUBMISSION_ID -- it may need deleting by hand."
+              fi
+              exit 1
+            fi
+
+            echo "--- confirm ---"
+            app-store-connect review-submissions confirm "$SUBMISSION_ID"
+            confirmed=$?
+
+            if [ $confirmed -ne 0 ]; then
+              echo "--- could not confirm; discarding the submission ---"
+              app-store-connect review-submissions cancel "$SUBMISSION_ID"
+              [ $? -eq 0 ] && echo "The submission was cancelled." || echo "COULD NOT CANCEL $SUBMISSION_ID."
+              exit 1
+            fi
+            echo "Submitted for review."
+
+          }
+          submit_for_review 2>&1 | tee /tmp/asc/submit.txt
+
+    artifacts:
+      - /tmp/asc/*.txt
 
     triggering:
       events: []
