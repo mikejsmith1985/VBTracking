@@ -1,94 +1,22 @@
-WHAT THE APP DOES
+1. SCREEN RECORDING
+A screen recording was supplied in the Guideline 2.1 reply. Captured on an iPhone 17 Pro running iOS 26.6, build 25. It begins with launching the app and walks through the typical flow: adding players to the roster, starting a game, placing six players on the court, recording serves with OUT / IN / IN-POINT, the five-serve alert, undo, the game figures, and the season list. The app has no account, no login, no purchases, no user-generated content shared with anyone, and requests no permissions, so none of those flows exist to record.
 
-Volleyball Serve Tracker records which player served, and whether each serve
-went in, out, or won the point. It is a replacement for the paper clipboard a
-parent or assistant coach keeps on the sideline at a youth volleyball match.
-From those serves it derives each player's serve-in percentage and points, per
-game, per match and across a season.
+2. DEVICES AND OS TESTED
+Physical hardware: iPhone 17 Pro (iOS 26.6) and Apple Watch Ultra 2 (watchOS 26.6, 23U67). Builds were distributed through TestFlight and used to record real matches before submission. Minimum supported: iOS 18.0, watchOS 11.0. An automated interface suite also drives a full match on the iPhone simulator on every build, and a layout suite checks the watch court at all seven Apple Watch sizes down to 40 mm.
 
-Target audience: parents, assistant coaches and team managers of school and
-club volleyball teams, mostly youth level.
+3. WHAT THE APP DOES AND FOR WHOM
+Volleyball Serve Tracker records which player served and whether each serve went in, out, or won the point. It replaces the paper serve chart a parent or assistant coach keeps on the sideline at a youth volleyball match, and totals serve-in percentage and points per player continuously so the coach has figures in front of them when deciding on a substitution. The Apple Watch app mirrors the court onto the coach's wrist. Audience: parents, assistant coaches and team managers of school and club volleyball teams.
 
-The problem it solves: a serve chart kept on paper cannot be totalled during a
-match, so the coach making a substitution decision has no figures in front of
-them. The app totals continuously, and the Apple Watch app puts the court on the
-coach's wrist so they can see who serves next without holding a phone.
+4. HOW TO SET UP AND REACH EVERY FEATURE
+No credentials or sample files are needed. From a fresh install:
+- Roster tab: type a name and jersey number, tap Add. Repeat six or more times.
+- Track tab: tap Start game. Tap an empty court box, then a player, six times.
+- Tap the player in the bottom-right box to hand them the ball, then record serves with OUT / IN / IN-POINT. Rotation advances by itself; Undo reverses one action.
+- After five serves by one player a full-screen alert appears; any tap clears it.
+- Game tab shows running figures. Season tab holds past games, notes, backup and restore, and per-serve corrections.
+- Apple Watch: mirrors the phone's court over Watch Connectivity while the phone app is open. Swipe up twice on the watch for the standalone scoreboard page, which needs no phone.
 
-DEVICES AND OPERATING SYSTEMS TESTED ON
+5. EXTERNAL SERVICES, TOOLS AND PLATFORMS
+None. No data providers, authentication, payments, AI, analytics, advertising SDK, crash reporter or social login. The app contains no networking code; an automated test fails the build if any shipped source file references a networking API. All data stays on the device, hence the "Data Not Collected" privacy answer. The only outbound link is an optional "buy me a coffee" tip link that opens in Safari; the app takes no payments.
 
-Tested on physical hardware, not only the simulator:
-
-- iPhone 17 Pro, iOS 26.6
-- Apple Watch Ultra 2, watchOS 26.6 (23U67)
-
-Builds were distributed through TestFlight and used to record real matches
-across a season before submission. The minimum supported versions are iOS 18.0
-and watchOS 11.0. In addition, an automated interface suite runs on every build
-and drives the app through a full match on the iPhone simulator, and a layout
-suite asserts the watch court is readable at all seven Apple Watch sizes down
-to 40 mm.
-
-NO ACCOUNTS, NO PURCHASES, NO PERMISSIONS
-
-- There is no registration, no login and no account of any kind, so there is no
-  demo account to supply and no account-deletion flow. Nothing to sign in to.
-- The app is free. There is no paid content, no in-app purchase and no
-  subscription.
-- There is no user-generated content that is shared with anyone. Everything
-  recorded stays in the app's own storage on the device.
-- The app requests NO permissions at all. It never asks for location, contacts,
-  camera, microphone, photos, notifications or App Tracking Transparency. There
-  are no purpose strings because nothing is requested.
-
-HOW TO SET UP AND REACH EVERY FEATURE
-
-No credentials and no sample files are needed. From a fresh install:
-
-1. Roster tab. Type a name and a jersey number, tap Add. Do this six or more
-   times. (Six is a volleyball rotation.)
-2. Track tab. Tap "Start game".
-3. Build the rotation: tap an empty box on the court, then tap a player to put
-   them there. Repeat six times. Tapping the player first and then the box works
-   equally well.
-4. Tap the player in the bottom-right box to hand them the ball.
-5. Record serves with the three buttons: OUT, IN, IN - POINT. The rotation
-   advances by itself when a serve is lost. Undo reverses one action at a time.
-6. After five serves by one player a full-screen alert appears; any tap clears
-   it and a sixth serve is still recorded normally.
-7. Game tab shows the running figures. Season tab holds past games, notes, and
-   "Save a copy of everything" / "Restore from a saved copy".
-8. Any past serve can be corrected: Season tab, pick a game, open a serve turn.
-
-APPLE WATCH APP
-
-It mirrors the phone's court over Watch Connectivity and needs a paired watch
-with the phone app open. Swipe up twice on the watch to reach the scoreboard
-page, which works entirely on its own with no phone involved if pairing is not
-convenient during review.
-
-EXTERNAL SERVICES, TOOLS AND PLATFORMS
-
-None. There are no data providers, no authentication service, no payment
-processor, no AI service, no analytics, no advertising SDK, no crash reporter
-and no social login. The app contains no networking code of any kind -- an
-automated test fails the build if any shipped source file so much as names a
-networking API. Nothing recorded leaves the device, which is why the privacy
-answer is "Data Not Collected".
-
-The only link out of the app is an optional "buy me a coffee" tip link, which
-opens in Safari. The app takes no payments and never learns whether it was
-followed.
-
-REGIONAL DIFFERENCES
-
-None. The app functions identically in every region. It has no region-gated
-content, no regional pricing, and no server to vary by territory. It ships in
-English only.
-
-REGULATED INDUSTRY OR THIRD-PARTY MATERIAL
-
-Neither applies. The app is not in a regulated industry and contains no
-protected third-party material. All artwork and text are the developer's own.
-Volleyball's rules are not a licensable work; nothing in the app reproduces any
-league's, federation's or broadcaster's material, and it carries no team names,
-logos or marks.
+The app functions identically in every region, ships in English only, is not in a regulated industry, and contains no third-party material. All artwork and text are the developer's own.
