@@ -359,3 +359,51 @@ workflows:
 
     triggering:
       events: []
+
+  # Which build the version under review carries.
+  #
+  # A rejected version keeps the build it was rejected with, and answering App Review with a
+  # recording of a build that is not attached tells them about an app they cannot open. This
+  # reads the state first and only changes it when told to, by number, so the switch is never
+  # a side effect of looking.
+  store-build:
+    name: The build under review
+    max_build_duration: 20
+    integrations:
+      app_store_connect: RLL_Codemagic_CI_AppManager
+    environment:
+      xcode: latest
+      vars:
+        # Empty means read and report. A number means attach that build to the version.
+        ATTACH_BUILD: ""
+    scripts:
+      - name: What the version carries, and what it could carry
+        script: |
+          set -e
+          APP_ID=6806672687
+
+          echo "=================== THE VERSION ==================="
+          app-store-connect apps app-store-versions "$APP_ID" --json | head -80
+
+          echo
+          echo "=================== BUILDS APPLE HOLDS ==================="
+          app-store-connect builds list --application-id "$APP_ID" --json | head -120
+
+      - name: Attach the build, if one was named
+        script: |
+          set -e
+          APP_ID=6806672687
+
+          if [ -z "$ATTACH_BUILD" ]; then
+            echo "ATTACH_BUILD is empty. Nothing was changed."
+            exit 0
+          fi
+
+          echo "Attaching build $ATTACH_BUILD to the editable version."
+          app-store-connect publish \
+            --application-id "$APP_ID" \
+            --build-version-number "$ATTACH_BUILD" \
+            || echo "Could not attach by that route; see the state printed above."
+
+    triggering:
+      events: []
