@@ -389,23 +389,38 @@ workflows:
           mkdir -p /tmp/asc
           report=/tmp/asc/state.txt
 
+          # The question this workflow exists to answer is "which build is on the version",
+          # and App Store Connect does not print it beside the version. It is held on the
+          # build's side of the relationship, so the only way to read it is to ask each
+          # recent build which version it belongs to and find the one that answers.
           {
-            echo "=================== THE CLI OFFERS ==================="
-            app-store-connect --help 2>&1 | sed -n '/^Available/,$p' | head -60
-            echo
-            echo "--- app-store-versions ---"
-            app-store-connect app-store-versions --help 2>&1 | head -40
-            echo
-            echo "--- builds ---"
-            app-store-connect builds --help 2>&1 | head -40
-
-            echo
             echo "=================== THE VERSION ==================="
-            app-store-connect apps app-store-versions "$APP_ID" 2>&1 | head -80
+            version_id=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((v["id"] for v in d if v["attributes"].get("appStoreState") not in ("READY_FOR_SALE","REPLACED_WITH_NEW_VERSION")), ""))')
+            app-store-connect apps app-store-versions "$APP_ID" 2>&1 | grep -E "Version string|state" || true
+            echo "version id: ${version_id:-<none found>}"
 
             echo
-            echo "=================== BUILDS APPLE HOLDS ==================="
-            app-store-connect apps builds "$APP_ID" 2>&1 | head -120
+            echo "=================== THE BUILD IT CARRIES ==================="
+            newest=$(app-store-connect apps builds "$APP_ID" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); n=sorted((int(b["attributes"]["version"]) for b in d), reverse=True)[:8]; print(" ".join(str(x) for x in n))')
+            echo "checking builds: $newest"
+            found=""
+            for number in $newest; do
+              build_id=$(app-store-connect builds list --app-id "$APP_ID" --build-version-number "$number" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["id"] if d else "")')
+              [ -n "$build_id" ] || continue
+              belongs=$(app-store-connect builds app-store-version "$build_id" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("id","") if isinstance(d,dict) else "")')
+              if [ -n "$belongs" ]; then
+                echo "  build $number -> version $belongs"
+                [ "$belongs" = "$version_id" ] && found="$number"
+              else
+                echo "  build $number -> not on any version"
+              fi
+            done
+            echo
+            if [ -n "$found" ]; then
+              echo "ANSWER: version 1.0 carries build $found"
+            else
+              echo "ANSWER: none of the builds checked is on version ${version_id:-?}"
+            fi
           } | tee "$report"
         ignore_failure: true
 
