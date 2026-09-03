@@ -377,33 +377,67 @@ workflows:
         # Empty means read and report. A number means attach that build to the version.
         ATTACH_BUILD: ""
     scripts:
+      # Everything this learns goes to a file that is published, because Codemagic keeps
+      # no log for a step that failed -- and a step asking questions of a CLI whose exact
+      # subcommands are not yet known is a step that may well fail.
       - name: What the version carries, and what it could carry
         script: |
-          set -e
+          set -u
           APP_ID=6806672687
+          mkdir -p /tmp/asc
+          report=/tmp/asc/state.txt
 
-          echo "=================== THE VERSION ==================="
-          app-store-connect apps app-store-versions "$APP_ID" --json | head -80
+          {
+            echo "=================== THE CLI OFFERS ==================="
+            app-store-connect --help 2>&1 | sed -n '/^Available/,$p' | head -60
+            echo
+            echo "--- app-store-versions ---"
+            app-store-connect app-store-versions --help 2>&1 | head -40
+            echo
+            echo "--- builds ---"
+            app-store-connect builds --help 2>&1 | head -40
 
-          echo
-          echo "=================== BUILDS APPLE HOLDS ==================="
-          app-store-connect builds list --application-id "$APP_ID" --json | head -120
+            echo
+            echo "=================== THE VERSION ==================="
+            app-store-connect apps app-store-versions "$APP_ID" 2>&1 | head -80
+
+            echo
+            echo "=================== BUILDS APPLE HOLDS ==================="
+            app-store-connect apps builds "$APP_ID" 2>&1 | head -120
+          } | tee "$report"
+        ignore_failure: true
 
       - name: Attach the build, if one was named
         script: |
-          set -e
+          set -u
           APP_ID=6806672687
+          mkdir -p /tmp/asc
+          report=/tmp/asc/attach.txt
 
           if [ -z "$ATTACH_BUILD" ]; then
-            echo "ATTACH_BUILD is empty. Nothing was changed."
+            echo "ATTACH_BUILD is empty. Nothing was changed." | tee "$report"
             exit 0
           fi
 
-          echo "Attaching build $ATTACH_BUILD to the editable version."
-          app-store-connect publish \
-            --application-id "$APP_ID" \
-            --build-version-number "$ATTACH_BUILD" \
-            || echo "Could not attach by that route; see the state printed above."
+          {
+            echo "Attaching build $ATTACH_BUILD."
+            echo "--- the build's id ---"
+            build_id=$(app-store-connect builds list --app-id "$APP_ID" --build-version-number "$ATTACH_BUILD" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["id"] if d else "")')
+            echo "build id: ${build_id:-<none found>}"
+            echo "--- the editable version's id ---"
+            version_id=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((v["id"] for v in d if v["attributes"].get("appStoreState") not in ("READY_FOR_SALE","REPLACED_WITH_NEW_VERSION")), ""))')
+            echo "version id: ${version_id:-<none found>}"
+            if [ -n "$build_id" ] && [ -n "$version_id" ]; then
+              echo "--- attach ---"
+              app-store-connect app-store-versions modify "$version_id" --build-id "$build_id" 2>&1
+            else
+              echo "Could not identify both ids, so nothing was changed."
+            fi
+          } | tee "$report"
+        ignore_failure: true
+
+    artifacts:
+      - /tmp/asc/*.txt
 
     triggering:
       events: []
