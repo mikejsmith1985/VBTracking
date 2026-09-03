@@ -182,6 +182,11 @@ workflows:
       # Both suites leave stills and a digest behind. Video was tried and dropped: 134 MB
       # of it, zipped together with the digest by Codemagic, made the one small file that
       # explains a failure take longer to fetch than the build took to produce it.
+      # First, because a simulator that cannot be named leaves xcodebuild with an empty
+      # destination -- an error that reads like nothing at all and costs a whole run.
+      - name: The simulator picker names devices correctly
+        script: ./tests/ci/simulator-picker.test.sh
+
       - name: The phone
         script: ./scripts/ci-run-tests.sh 'iPhone' 'iPhone 17 Pro' VBTracker 'iOS Simulator' /tmp/phone.log
         ignore_failure: true

@@ -18,6 +18,14 @@ platform="$4"
 log="$5"
 
 device=$(./scripts/ci-simulator.sh "$family" "$preferred")
+if [ -z "$device" ]; then
+  # Said here rather than left to xcodebuild, which answers an empty destination with
+  # "missing value for key 'name'" -- a sentence that names neither the family asked
+  # for nor the fact that no device was found.
+  echo "No ${family} simulator could be named, so the ${scheme} suite cannot run." >&2
+  exit 1
+fi
+echo "Running ${scheme} on: ${device}"
 
 results="/tmp/results/$(basename "${log%.log}").xcresult"
 rm -rf "$results"

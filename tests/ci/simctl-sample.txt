@@ -1,0 +1,12 @@
+== Devices ==
+-- iOS 26.0 --
+    iPhone 16e (1A0F9C31-2B44-4E11-9C7A-1D3E5F70AB22) (Shutdown)
+    iPhone 17 (2B1F0D42-3C55-4F22-AD8B-2E4F6081BC33) (Shutdown)
+    iPhone 17 Pro (3C209E53-4D66-4033-BE9C-3F507192CD44) (Booted)
+    iPhone 17 Pro Max (4D31AF64-5E77-4144-CFAD-40618203DE55) (Shutdown)
+-- watchOS 26.0 --
+    Apple Watch SE 3 (40mm) (5E42B075-6F88-4255-D0BE-51729314EF66) (Shutdown)
+    Apple Watch Series 11 (42mm) (6F53C186-7099-4366-E1CF-628394250077) (Shutdown)
+    Apple Watch Ultra 2 (49mm) (7064D297-81AA-4477-F2D0-7394A5361188) (Shutdown)
+-- Unavailable: com.apple.CoreSimulator.SimRuntime.iOS-17-0 --
+    iPhone 14 (8175E3A8-92BB-4588-03E1-84A5B6472299) (Shutdown) (unavailable)
