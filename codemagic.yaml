@@ -41,12 +41,34 @@ workflows:
 
       # `build-for-testing` rather than `build`: it compiles the test targets too, and an
       # interface test that does not compile is a test that never runs.
+      #
+      # The output is kept, because Codemagic keeps no downloadable log for a step that
+      # failed -- which is the only step whose log anybody wants. The errors are reprinted
+      # at the end so the reason is in the build page too, not only in a file to download.
       - name: Compile the phone, the watch, and their tests
         script: |
-          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTracker             -destination 'generic/platform=iOS Simulator'             CODE_SIGNING_ALLOWED=NO
+          set -o pipefail
+          mkdir -p /tmp/logs
+          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTracker             -destination 'generic/platform=iOS Simulator'             CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/logs/phone.log
+          status=$?
+          echo "--- what went wrong, if anything ---"
+          grep -E "error:|warning:.*treated as error|The following build commands failed" /tmp/logs/phone.log | head -40 || true
+          exit $status
+
       - name: Compile the watch on its own
         script: |
-          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTrackerWatch             -destination 'generic/platform=watchOS Simulator'             CODE_SIGNING_ALLOWED=NO
+          set -o pipefail
+          mkdir -p /tmp/logs
+          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTrackerWatch             -destination 'generic/platform=watchOS Simulator'             CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/logs/watch.log
+          status=$?
+          echo "--- what went wrong, if anything ---"
+          grep -E "error:|The following build commands failed" /tmp/logs/watch.log | head -40 || true
+          exit $status
+
+    # Only the lines that matter. A whole xcodebuild log is tens of megabytes and every
+    # artifact is zipped into one download, so keeping it all buries the part worth reading.
+    artifacts:
+      - /tmp/logs/*.log
 
     triggering:
       events: []
