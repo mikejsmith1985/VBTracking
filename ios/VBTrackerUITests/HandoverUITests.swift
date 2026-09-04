@@ -6,16 +6,10 @@
 // opens the share sheet rather than doing nothing.
 import XCTest
 
+@MainActor
 final class HandoverUITests: XCTestCase {
-    private var driver: AppDriver!
-
-    override func setUp() {
-        continueAfterFailure = false
-        driver = AppDriver(test: self)
-        driver.launch()
-    }
-
     func testTheHandoverControlIsReachableOnAFreshPhone() {
+        let driver = AppDriver.launch(self)
         driver.go(to: "season")
 
         let handOver = driver.app.buttons["hand-over"]
@@ -27,6 +21,7 @@ final class HandoverUITests: XCTestCase {
     }
 
     func testHandingOverOpensTheShareSheet() {
+        let driver = AppDriver.launch(self)
         driver.go(to: "season")
 
         let handOver = driver.app.buttons["hand-over"]
@@ -41,6 +36,7 @@ final class HandoverUITests: XCTestCase {
     }
 
     func testSavingACopyAndHandingOverAreDifferentControls() {
+        let driver = AppDriver.launch(self)
         driver.go(to: "season")
 
         XCTAssertTrue(driver.app.buttons["export-data"].waitForExistence(timeout: 5))
