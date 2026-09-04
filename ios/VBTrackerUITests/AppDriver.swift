@@ -254,8 +254,14 @@ struct AppDriver {
         guard let chip = playerChips().first else {
             return XCTFail("the picker must offer somebody to serve")
         }
+
+        // Asked for again by name between the taps. An element bound by index resolves to
+        // whatever sits at that index when it is used, and the first tap rearranges the
+        // hierarchy underneath it -- so the second tap went looking for an index that no
+        // longer held anything and failed with "no matches found".
+        let chipId = chip.identifier
         chip.tap()
-        chip.tap()
+        app.buttons[chipId].tap()
         XCTAssertTrue(
             app.buttons["serve-OUT"].waitForExistence(timeout: 3),
             "two taps on a player must start their turn"

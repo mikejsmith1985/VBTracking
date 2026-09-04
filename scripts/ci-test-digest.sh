@@ -45,6 +45,25 @@ echo
 echo "-------------------- THE COUNT --------------------"
 printf '%s\n' "$lines" | grep -E "^Executed [0-9]+ test" | sort -u || true
 
+
+# Which tests actually ran, and how each one ended. A digest that lists only failures
+# cannot answer "did my new test run at all" -- and a test that never ran looks exactly
+# like a test that passed.
+echo
+echo "-------------------- EVERY TEST, AND HOW IT ENDED --------------------"
+verdicts=$(printf '%s
+' "$lines" | sed -nE "s/^Test Case '-\[[A-Za-z0-9_]*\.?([A-Za-z0-9_]+) ([A-Za-z0-9_]+)\]' (passed|failed).*/\1.\2 \3/p" | sort -u)
+if [ -n "$verdicts" ]; then
+  printf '%s
+' "$verdicts"
+  echo
+  echo "passed: $(printf '%s
+' "$verdicts" | grep -c ' passed$')   failed: $(printf '%s
+' "$verdicts" | grep -c ' failed$')"
+else
+  echo "No test reported a verdict, so none of them ran."
+fi
+
 # When every section above came up empty the run still failed, and the digest has said
 # nothing at all -- which is exactly what happened to the phone suite. The tail of the log
 # is printed as a last resort so a failure can never be silent again.

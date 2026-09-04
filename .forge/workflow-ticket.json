@@ -1,23 +1,23 @@
 {
-  "taskId": "recall-radar-hybrid-search",
-  "branch": "feature/hybrid-search",
-  "startedAt": "2026-09-03T23:14:43.3183507Z",
-  "updatedAt": "2026-09-03T23:14:52.1984373Z",
+  "taskId": "recall-radar-evaluation",
+  "branch": "feature/evaluation",
+  "startedAt": "2026-09-04T11:50:53.9945167Z",
+  "updatedAt": "2026-09-04T11:51:04.4280662Z",
   "gates": [
     {
       "gate": "branch-created",
-      "passedAt": "2026-09-03T23:14:43.3183507Z",
-      "evidence": "feature/hybrid-search worktree at C:\\ProjectsWin\\recall-radar-wt-search, based on main"
+      "passedAt": "2026-09-04T11:50:53.995185Z",
+      "evidence": "feature/evaluation worktree at C:\\ProjectsWin\\recall-radar-wt-eval, based on main"
     },
     {
       "gate": "tests-written",
-      "passedAt": "2026-09-03T23:14:48.0613961Z",
-      "evidence": "211 unit and 39 integration tests covering three retrieval modes, filters, vehicle isolation, HTTP contract, embeddings and provider outages"
+      "passedAt": "2026-09-04T11:50:59.4345092Z",
+      "evidence": "276 unit and 78 integration tests including ground-truth derivation, per-mode scoring, determinism, and the eval endpoint"
     },
     {
       "gate": "tests-passed",
-      "passedAt": "2026-09-03T23:14:52.1984373Z",
-      "evidence": "Unit 211/211 cold and warm, integration 39/39; live API verified against the real 3,634-chunk corpus"
+      "passedAt": "2026-09-04T11:51:04.4280662Z",
+      "evidence": "Unit 276/276, integration 78/78; live eval on the real corpus scored 80 cases with sparse recall@10 0.125"
     }
   ]
 }

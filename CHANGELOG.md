@@ -29,6 +29,15 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- **The watch can be handed a court to draw, so its layout requirements are actually
+  tested.** The interface suite has always launched the watch with `-uiTestCourt` and the
+  watch has never read it: a court arrives from a paired phone, and a build machine has
+  none, so eight tests measuring the on-deck box and the dash-not-zero rule were failing on
+  an empty screen. The argument is now honoured, the same way the phone honours
+  `-uiTestFreshStore` -- unreachable by using the app, read once at start-up, inert on a
+  real watch.
+
+
 - **The two figures under a jersey number are readable from a wrist.** Serve-in percentage
   and points sat at 13-16pt in secondary and tertiary grey -- the dimmest things on a screen
   that gets one second of attention, across a gym, at arm's length. Both are larger and both
