@@ -14,9 +14,9 @@ All notable changes to this project are recorded here.
   restored: everything already on the receiving phone is kept in the order it was recorded,
   and only events it does not already hold are added. An event is recognised by its
   identifier, and one that arrives without a name is named from its own content, so the same
-  file twice adds nothing the second time. If the rulebook would refuse any arriving event --
-  two phones that both recorded the same game -- the whole merge is refused and the log is
-  left exactly as it was, because half a season arriving is worse than none.
+  file twice adds nothing the second time. One thing is refused, and only one: both logs
+  recording the same game, which would say every serve in it happened twice. Everything else
+  joins, the same way the log is loaded from disk.
 
 - **A season can be thrown away, and everything can be erased.** Neither app had any way
   out of its own data: a season entered to try the app out could be emptied game by game

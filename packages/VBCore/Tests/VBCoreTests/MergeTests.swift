@@ -68,17 +68,30 @@ struct MergeTests {
         #expect(replay(raw: second.events).players.contains { $0.id == "p8" })
     }
 
-    @Test("A merge that the rulebook would refuse is refused whole")
-    func refusesRatherThanCorrupt() {
-        // The same season id created twice, which the rulebook will not accept a second
-        // time. Taking the events it does accept would leave a season half arrived.
-        let clashing = [
-            event(.createSeason(id: "s-her", name: "Someone else's", team: "Elsewhere", format: .standard), id: "x1")
-        ]
-        let merged = merge(mine: log(hers), theirs: log(clashing))
+    @Test("Two phones that tracked the same game are refused whole")
+    func refusesRatherThanDouble() {
+        // Both logs hold game g1. Appending one to the other would say every serve in it
+        // happened twice, which is the one merge that cannot be allowed.
+        let hersWithGame = hers + [event(.startGame(id: "g1", seasonId: "s-her", rotatesAtServeLimit: true), id: "h4")]
+        let hisSameGame = [event(.startGame(id: "g1", seasonId: "s-his", rotatesAtServeLimit: true), id: "x1")]
+
+        let merged = merge(mine: log(hersWithGame), theirs: log(hisSameGame))
         #expect(merged.refusal != nil)
-        #expect(merged.events == log(hers))
+        #expect(merged.events == log(hersWithGame))
         #expect(merged.eventsAdded == 0)
+    }
+
+    @Test("A season both phones already know about is not a clash")
+    func sharedSeasonIsHarmless() {
+        // The same season created on both sides. The rulebook ignores the second creation on
+        // replay, and a merge must not be stricter than the log loader is.
+        let alsoHers = [
+            event(.createSeason(id: "s-her", name: "2026 Fall", team: "Riverside", format: .standard), id: "x1"),
+            event(.addPlayer(id: "p9", name: "Quinn", number: "15", seasonId: "s-her"), id: "x2"),
+        ]
+        let merged = merge(mine: log(hers), theirs: log(alsoHers))
+        #expect(merged.refusal == nil)
+        #expect(replay(raw: merged.events).players.contains { $0.id == "p9" })
     }
 
     @Test("Merging into nothing is just taking the whole thing")
@@ -103,5 +116,33 @@ struct MergeTests {
         let first = merge(mine: log(hers), theirs: unnamed)
         let second = merge(mine: first.events, theirs: unnamed)
         #expect(second.eventsAdded == 0)
+    }
+}
+
+/// The case that broke on a real phone: a whole recorded season, arriving on an app that had
+/// just been erased, was refused outright.
+@Suite("A real season arriving on an empty phone")
+struct RealSeasonMergeTests {
+    @Test("A shipped log merges into nothing without being refused")
+    func acceptsARealSeasonOnAFreshInstall() throws {
+        let (events, version) = try Fixture.log("v2-log")
+        let carried = try #require(migrate(events, from: version).events)
+        let named = carried.enumerated().map { index, event in VBCore.named(event, at: index) }
+
+        let merged = merge(mine: [], theirs: named)
+        #expect(merged.refusal == nil)
+        #expect(merged.eventsAdded == named.count)
+    }
+
+    @Test("The same real season twice adds nothing the second time")
+    func refusesToDoubleARealSeason() throws {
+        let (events, version) = try Fixture.log("v2-log")
+        let carried = try #require(migrate(events, from: version).events)
+        let named = carried.enumerated().map { index, event in VBCore.named(event, at: index) }
+
+        let first = merge(mine: [], theirs: named)
+        let second = merge(mine: first.events, theirs: named)
+        #expect(second.eventsAdded == 0)
+        #expect(second.events.count == first.events.count)
     }
 }

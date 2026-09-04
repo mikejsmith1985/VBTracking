@@ -47,10 +47,10 @@ public struct MergeResult: Equatable, Sendable {
 /// are appended in theirs. An event already held is recognised by its identifier and skipped,
 /// so the same file arriving twice adds nothing the second time.
 ///
-/// All or nothing. If the rulebook would refuse any arriving event -- two phones that both
-/// recorded the same game, most likely -- the whole merge is refused and the log is left
-/// exactly as it was. Taking the half that fits would leave a season part arrived, which is
-/// worse than not taking it.
+/// All or nothing, and refused for one reason only: both logs recording the same game.
+/// That is the merge that would double what happened on court. Everything else joins, the
+/// same way the log is loaded from disk -- the rulebook already ignores an event it cannot
+/// accept rather than refusing to start, and a merge must not be stricter than that.
 public func merge(mine: [RawEvent], theirs: [RawEvent]) -> MergeResult {
     let named = theirs.enumerated().map { index, event in VBCore.named(event, at: index) }
     let held = Set(mine.compactMap { $0["eventId"]?.stringValue })
@@ -61,34 +61,49 @@ public func merge(mine: [RawEvent], theirs: [RawEvent]) -> MergeResult {
 
     guard !arriving.isEmpty else { return MergeResult(events: mine) }
 
-    guard let accepted = accepting(mine, arriving) else {
+    let before = replay(raw: mine)
+    if let doubled = gameRecordedTwice(before, arriving) {
         return MergeResult(
             events: mine,
-            refusal: "That season cannot be merged with this one. They record some of the same"
-                + " games, and joining them would double what is on the court."
+            refusal: "Both phones recorded \(doubled). Joining them would double what is on"
+                + " the court, so nothing was changed."
         )
     }
 
-    let before = replay(raw: mine)
-    let after = replay(raw: accepted)
+    let joined = mine + arriving
+    let after = replay(raw: joined)
     return MergeResult(
-        events: accepted,
+        events: joined,
         eventsAdded: arriving.count,
         seasonsAdded: after.seasons.count - before.seasons.count,
         playersAdded: after.players.count - before.players.count
     )
 }
 
-/// The joined log, or nil when the rulebook would refuse any of the arriving events.
+/// Names a game that both logs record, or nil when they record none in common.
 ///
-/// Each arriving event is checked against the state it would actually meet, not against an
-/// empty one, because whether an event is allowed depends entirely on what came before it.
-private func accepting(_ mine: [RawEvent], _ arriving: [RawEvent]) -> [RawEvent]? {
-    var state = replay(raw: mine)
+/// This is the one merge that cannot be allowed: two people tracking the same match produce
+/// two sets of serves for it, and appending one to the other would say every serve happened
+/// twice. Every other overlap is harmless -- a shared roster, a season both phones know
+/// about -- because an event already held is skipped by identifier before this is reached.
+///
+/// Checked by game identity rather than by asking the rulebook whether each event is
+/// allowed. A real log contains events the rulebook itself ignores on replay, so refusing on
+/// the first one of those refused whole seasons that were perfectly good.
+private func gameRecordedTwice(_ mine: AppState, _ arriving: [RawEvent]) -> String? {
+    let held = Set(mine.games.map(\.id))
+    guard !held.isEmpty else { return nil }
+
     for raw in arriving {
-        guard let event = Event(raw: raw) else { return nil }
-        guard isEventValid(state, event) else { return nil }
-        state = applyEvent(state, event)
+        guard let event = Event(raw: raw) else { continue }
+        switch event.kind {
+        case let .startGame(id, _, _) where held.contains(id):
+            return "that game"
+        case let .addHistoricalGame(id, _, context, _, _, _) where held.contains(id):
+            return context.opponent.isEmpty ? "that game" : "the game against \(context.opponent)"
+        default:
+            continue
+        }
     }
-    return mine + arriving
+    return nil
 }
