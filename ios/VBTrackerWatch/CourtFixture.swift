@@ -18,6 +18,14 @@ enum CourtFixture {
     /// Nil is the normal case: a watch on a wrist is handed its court by the phone, and
     /// nothing here changes that.
     static var requested: CourtSnapshot? {
+        // Two channels, because only one of them is certain to arrive. A watchOS app under
+        // XCUITest is launched by a runner rather than directly, and launch arguments have
+        // not always survived that hop; the environment does. Reading both costs nothing
+        // and removes a whole class of "the fixture was never there" from the diagnosis.
+        if let name = ProcessInfo.processInfo.environment["UI_TEST_COURT"], let court = named(name) {
+            return court
+        }
+
         let arguments = ProcessInfo.processInfo.arguments
         guard let flag = arguments.firstIndex(of: "-uiTestCourt"),
             arguments.index(after: flag) < arguments.endIndex

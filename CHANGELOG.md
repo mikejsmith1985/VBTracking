@@ -29,6 +29,12 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- **The watch court is visible to the tests that measure it.** Every box carried an
+  identifier, and none of them could ever be found: a SwiftUI stack is not an accessibility
+  element on its own, so an identifier put on one is never matched. The boxes and the header
+  are now containers in their own right, which is what makes "the on-deck box is the biggest
+  thing on the screen" a claim a machine can check.
+
 - **The watch can be handed a court to draw, so its layout requirements are actually
   tested.** The interface suite has always launched the watch with `-uiTestCourt` and the
   watch has never read it: a court arrives from a paired phone, and a build machine has

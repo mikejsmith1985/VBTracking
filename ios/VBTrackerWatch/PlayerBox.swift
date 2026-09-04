@@ -50,6 +50,12 @@ struct PlayerBox: View {
         .background(background)
         .overlay(border)
         .overlay(alignment: .topLeading) { marker }
+        // A SwiftUI stack is not an accessibility element on its own, so an identifier put
+        // on one is never matched by a test looking for it -- which is why every court
+        // measurement failed on an app that was drawing the court perfectly well.
+        // `.contain` rather than `.combine`: combining would fold the figures into one
+        // label and take the dash away from the test that checks a dash is drawn.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(identifier)
         .accessibilityLabel(spokenLabel)
     }

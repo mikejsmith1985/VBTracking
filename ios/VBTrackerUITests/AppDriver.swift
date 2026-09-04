@@ -247,24 +247,26 @@ struct AppDriver {
     }
 
     /// Hands the ball to the first player offered.
-    ///
-    /// Two taps, not one. While an order is still being built a tap picks a player up so
-    /// they can be placed on the court; tapping them again is what says "no, they serve".
     func chooseFirstServer() {
         guard let chip = playerChips().first else {
             return XCTFail("the picker must offer somebody to serve")
         }
 
-        // Asked for again by name between the taps. An element bound by index resolves to
-        // whatever sits at that index when it is used, and the first tap rearranges the
-        // hierarchy underneath it -- so the second tap went looking for an index that no
-        // longer held anything and failed with "no matches found".
+        // One tap or two, depending on what the court already knows. While an order is
+        // still being built the first tap only picks the player up, and a second is what
+        // says "no, they serve" -- but once six are placed the first tap hands them the
+        // ball outright and the picker closes behind it. Insisting on two taps then meant
+        // reaching for a chip that no longer existed, which is what failed here.
         let chipId = chip.identifier
         chip.tap()
-        app.buttons[chipId].tap()
+
+        if app.buttons["serve-OUT"].waitForExistence(timeout: 2) { return }
+
+        let again = app.buttons[chipId]
+        if again.exists { again.tap() }
         XCTAssertTrue(
             app.buttons["serve-OUT"].waitForExistence(timeout: 3),
-            "two taps on a player must start their turn"
+            "tapping a player must start their turn"
         )
     }
 

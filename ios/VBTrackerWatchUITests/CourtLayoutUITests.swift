@@ -20,6 +20,7 @@ final class CourtLayoutUITests: XCTestCase {
         continueAfterFailure = false
         app = XCUIApplication()
         app.launchArguments = ["-uiTestCourt", "full"]
+        app.launchEnvironment["UI_TEST_COURT"] = "full"
         app.launch()
     }
 
@@ -81,6 +82,7 @@ final class CourtContentUITests: XCTestCase {
     func testAPlayerWhoHasNotServedShowsADashRatherThanZero() {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestCourt", "unserved"]
+        app.launchEnvironment["UI_TEST_COURT"] = "unserved"
         app.launch()
 
         // A dash, never "0%": the player has no percentage, and reporting nought would say
@@ -92,6 +94,7 @@ final class CourtContentUITests: XCTestCase {
     func testWithoutAnOrderNobodyIsNamedAsNext() {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestCourt", "no-order"]
+        app.launchEnvironment["UI_TEST_COURT"] = "no-order"
         app.launch()
 
         XCTAssertTrue(app.otherElements["court-box-serving"].waitForExistence(timeout: 5))
@@ -101,6 +104,7 @@ final class CourtContentUITests: XCTestCase {
     func testAnEmptyPositionIsShownAsEmpty() {
         let app = XCUIApplication()
         app.launchArguments = ["-uiTestCourt", "five"]
+        app.launchEnvironment["UI_TEST_COURT"] = "five"
         app.launch()
 
         XCTAssertTrue(app.otherElements["court-box-serving"].waitForExistence(timeout: 5))

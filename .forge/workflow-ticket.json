@@ -1,23 +1,23 @@
 {
-  "taskId": "recall-radar-evaluation",
-  "branch": "feature/evaluation",
-  "startedAt": "2026-09-04T11:50:53.9945167Z",
-  "updatedAt": "2026-09-04T11:51:04.4280662Z",
+  "taskId": "recall-radar-ux-fixture",
+  "branch": "feature/ux-fixture",
+  "startedAt": "2026-09-04T13:51:15.9570987Z",
+  "updatedAt": "2026-09-04T13:51:26.5236119Z",
   "gates": [
     {
       "gate": "branch-created",
-      "passedAt": "2026-09-04T11:50:53.995185Z",
-      "evidence": "feature/evaluation worktree at C:\\ProjectsWin\\recall-radar-wt-eval, based on main"
+      "passedAt": "2026-09-04T13:51:15.9591498Z",
+      "evidence": "feature/ux-fixture created in the main checkout, no worktree, from main"
     },
     {
       "gate": "tests-written",
-      "passedAt": "2026-09-04T11:50:59.4345092Z",
-      "evidence": "276 unit and 78 integration tests including ground-truth derivation, per-mode scoring, determinism, and the eval endpoint"
+      "passedAt": "2026-09-04T13:51:21.1641141Z",
+      "evidence": "Seeder and scripted-model integration tests added; the three Cypress specs now execute rather than sitting unrun"
     },
     {
       "gate": "tests-passed",
-      "passedAt": "2026-09-04T11:51:04.4280662Z",
-      "evidence": "Unit 276/276, integration 78/78; live eval on the real corpus scored 80 cases with sparse recall@10 0.125"
+      "passedAt": "2026-09-04T13:51:26.5236119Z",
+      "evidence": "Unit 276, integration 86, Cypress 4/4 all specs passed; the suite also proved it fails against an empty database"
     }
   ]
 }

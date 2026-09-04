@@ -62,6 +62,7 @@ private struct Header: View {
                     .foregroundStyle(freshness.isCurrent ? Color.secondary : Color.orange)
             }
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("court-header")
     }
 }
