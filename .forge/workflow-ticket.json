@@ -1,13 +1,18 @@
 {
-  "taskId": "chg-test-evidence-bundle",
-  "branch": "feature/chg-test-evidence-bundle",
-  "startedAt": "2026-09-05T11:12:36.8453428Z",
-  "updatedAt": "2026-09-05T11:12:36.8715738Z",
+  "taskId": "test-evidence-fixversion-picker",
+  "branch": "fix/test-evidence-fixversion-picker",
+  "startedAt": "2026-09-05T12:25:19.2648945Z",
+  "updatedAt": "2026-09-05T12:25:21.0848239Z",
   "gates": [
     {
       "gate": "branch-created",
-      "passedAt": "2026-09-05T11:12:36.8677875Z",
-      "evidence": "feature/chg-test-evidence-bundle created at HEAD ab3cdaeb"
+      "passedAt": "2026-09-05T12:25:19.2654168Z",
+      "evidence": "fix/test-evidence-fixversion-picker created at HEAD 70056cac"
+    },
+    {
+      "gate": "tests-written",
+      "passedAt": "2026-09-05T12:25:21.0848239Z",
+      "evidence": "New testEvidenceScope.test.ts; extended evidenceAttachmentFetch, TestEvidenceSection, App, HomeView, homeCardData, ConnectionBar tests"
     }
   ]
 }

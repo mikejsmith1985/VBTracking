@@ -74,6 +74,13 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **The build no longer uploads with a document-configuration warning.** Declaring the
+  `.vbseason` file type without saying how the app opens one is ITMS-90737, which arrives by
+  email hours after the build has already gone to TestFlight -- the slowest feedback loop in
+  the project. It is answered "not in place": a season that arrives is read once and merged
+  into this app's own log, and the operator's file is never written back to. A test now checks
+  the declarations Apple checks, in a fifth of a second instead of by email.
+
 - **Correcting a serve no longer risks deleting the whole turn.** Every button inside an open
   turn shared one tap target, because buttons in a list row take the row's tap unless each is
   told to be its own. So "Remove last serve" also pressed "Done" and armed "Delete this turn"

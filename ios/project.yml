@@ -70,6 +70,12 @@ targets:
     info:
       path: VBTracker/Info.plist
       properties:
+        # Declaring a document type without this is an ITMS-90737 warning on every upload.
+        # NO, not YES: a season that arrives is read once and merged into this app's own log,
+        # and the file itself is never written back to. Saying the app opens documents in
+        # place would promise an editor it is not, and would leave the operator's own file
+        # open to being changed by an app they only asked to read it.
+        LSSupportsOpeningDocumentsInPlace: false
         CFBundleDocumentTypes:
           - CFBundleTypeName: Volleyball season
             LSHandlerRank: Owner
