@@ -71,30 +71,47 @@ final class PeerLink {
     }
 }
 
+// The radio calls back on its own queue, so every arrival is decoded where it lands and then
+// hops to the main actor carrying only values that can safely cross. `[String: Any]` cannot,
+// which is why nothing here passes the payload itself inward.
 extension PeerLink: PeerDelegate {
-    func peerLinkChanged(_ newState: PeerLinkState) {
-        state = newState
-        // Each phone opens by saying what it has. Whichever is behind then receives the
-        // difference, and neither has to be told in advance which of them is the tracker.
-        if newState.isLive { announceWhatIsHeld() }
+    nonisolated func peerLinkChanged(_ newState: PeerLinkState) {
+        Task { @MainActor in
+            self.state = newState
+            // Each phone opens by saying what it has. Whichever is behind then receives the
+            // difference, and neither has to be told in advance which is the tracker.
+            if newState.isLive { self.announceWhatIsHeld() }
+        }
     }
 
-    func received(fromPeer payload: [String: Any]) {
+    nonisolated func received(fromPeer payload: [String: Any]) {
         // What they hold: send back what they are missing.
         if let held = LinkPayload.decodeHeld(payload) {
-            let missing = PeerSync.eventsToSend(mine: store.heldEvents, theyHold: held)
-            guard !missing.isEmpty else { return }
-            session?.send(LinkPayload.encode(events: missing))
+            Task { @MainActor in self.sendWhatTheyLack(held) }
             return
         }
 
-        // Events: take them, and stop recording on this phone.
         let arriving = LinkPayload.decodeEvents(payload)
         guard !arriving.isEmpty else { return }
+        Task { @MainActor in self.take(arriving) }
+    }
+}
 
-        // Receiving a match makes this the following phone. Two phones both recording the
-        // same game produce two logs of it that cannot be joined afterwards, so the second
-        // one is never allowed to start.
+@MainActor
+extension PeerLink {
+    /// Answers an announcement with the events the other phone has not got.
+    fileprivate func sendWhatTheyLack(_ theyHold: [String]) {
+        let missing = PeerSync.eventsToSend(mine: store.heldEvents, theyHold: theyHold)
+        guard !missing.isEmpty else { return }
+        session?.send(LinkPayload.encode(events: missing))
+    }
+
+    /// Takes a match somebody else is recording.
+    ///
+    /// Receiving one makes this the following phone. Two phones both recording the same game
+    /// produce two logs of it that cannot be joined afterwards, so the second is never
+    /// allowed to start.
+    fileprivate func take(_ arriving: [RawEvent]) {
         role = .following
         store.receive(peerEvents: arriving)
     }
