@@ -35,29 +35,6 @@ public enum PeerRole: Equatable, Sendable {
         }
     }
 
-    /// This phone after sending a match to the other one.
-    ///
-    /// Sending is what makes a phone the tracker. It is the phone with the record, and it
-    /// stays the phone with the record until sharing is stopped.
-    public func afterSending() -> PeerRole { .tracking }
-
-    /// This phone after taking a match from the other one.
-    ///
-    /// A tracker never becomes a follower. The other phone almost always holds something the
-    /// tracker does not -- an older season of its own -- and that arriving used to demote the
-    /// phone doing the recording. From then on neither phone pushed anything, and a game
-    /// thrown away and restarted never reached the second phone at all.
-    public func afterReceiving() -> PeerRole {
-        self == .tracking ? .tracking : .following
-    }
-
-    /// This phone once sharing is switched off.
-    ///
-    /// The only way back to recording for a follower, and deliberately the only way: roles
-    /// hold across the end of a game, because a game thrown away and another started is
-    /// still the same two people at the same match.
-    public func afterStoppingSharing() -> PeerRole { .alone }
-
     /// Why the recording controls are not there, for the one role where they are missing.
     ///
     /// Nil where nothing is missing: a sentence explaining why everything is normal is worse
@@ -68,6 +45,52 @@ public enum PeerRole: Equatable, Sendable {
         case .following:
             "You are following this match on another phone. Only the phone doing the tracking"
                 + " records serves, so the two records cannot disagree."
+        }
+    }
+}
+
+/// Which way the match travels, chosen by the operator before any radio is touched.
+///
+/// Both phones used to advertise AND browse and work out afterwards who was who. Two phones
+/// inviting each other at the same moment is a race: one invitation wins, the other is
+/// refused, and the pair spends its time reconnecting instead of syncing. Deciding first, by
+/// tapping one of two buttons, removes the race and the guessing at once -- and it is also
+/// the clearer thing to hand somebody, because "send" and "receive" say which phone they are
+/// holding without anybody explaining it.
+public enum PeerMode: Equatable, Sendable {
+    /// Not sharing. Every phone, most of the time.
+    case off
+
+    /// This phone has the match and is offering it.
+    case sending
+
+    /// This phone is watching somebody else's match.
+    case receiving
+
+    /// What this phone may do, decided entirely by the mode.
+    ///
+    /// Nothing is inferred from what arrives, so nothing can be inferred wrongly -- which is
+    /// what used to demote the phone doing the recording the moment anything came back.
+    public var role: PeerRole {
+        switch self {
+        case .off: .alone
+        case .sending: .tracking
+        case .receiving: .following
+        }
+    }
+
+    /// Whether this phone makes itself findable. The sender does; nobody else.
+    public var isAdvertising: Bool { self == .sending }
+
+    /// Whether this phone looks for another. The receiver does; nobody else.
+    public var isBrowsing: Bool { self == .receiving }
+
+    /// What to say while waiting for the other phone to appear.
+    public var waitingLabel: String {
+        switch self {
+        case .off: "Not sharing"
+        case .sending: "Waiting for a phone to receive this match\u{2026}"
+        case .receiving: "Looking for a phone sending a match\u{2026}"
         }
     }
 }

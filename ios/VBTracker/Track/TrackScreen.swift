@@ -32,22 +32,21 @@ struct TrackScreen: View {
     }
 
     var body: some View {
+        // A phone receiving somebody else's match has one job: show the court. It records
+        // nothing, so a dock, a picker and a header full of controls are all things that
+        // cannot be used -- and a control that cannot be used is a control somebody taps
+        // anyway and then wonders about.
+        if peers?.role.canRecord == false {
+            FollowingScreen(store: store, peers: peers)
+        } else {
+            trackingBody
+        }
+    }
+
+    private var trackingBody: some View {
         ZStack {
             VStack(spacing: 0) {
                 NoticeBanner(notice: store.notice)
-
-                // A phone following somebody else's match shows the court and records
-                // nothing. Two phones both recording the same game produce two logs of it
-                // that cannot be joined afterwards, so the second one is stopped here --
-                // before it starts, which is the only point at which it can be.
-                if let explanation = peers?.role.explanation {
-                    Text(explanation)
-                        .font(.caption)
-                        .foregroundStyle(.orange)
-                        .padding(.horizontal)
-                        .padding(.bottom, 4)
-                        .accessibilityIdentifier("following-notice")
-                }
 
                 if store.state.roster.isEmpty {
                     EmptyState(

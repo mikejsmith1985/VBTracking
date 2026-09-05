@@ -96,32 +96,28 @@ struct SeasonScreen: View {
                     // assistant coach who both need the figures when only one of them is
                     // tracking. What arrives is merged, so neither phone loses its roster.
                     if let peers {
-                        // Live sharing, beside the one-off hand-over, because the two answer
-                        // the same question at different speeds: send a season once, or keep
-                        // a second phone level with this one all match.
-                        Button(peers.isSharing ? "Stop sharing this match" : "Share this match live") {
-                            peers.toggleSharing()
+                        // Two buttons, not one switch. "Share" left both phones doing the
+                        // same thing and guessing which was which, which is a race on the
+                        // radio and a puzzle for whoever is holding the phone. Naming the
+                        // direction answers both at once.
+                        if peers.isSharing {
+                            Button("Stop sharing") { peers.stop() }
+                                .accessibilityIdentifier("stop-sharing")
+                            Text(peers.state.isLive ? peers.state.label(as: peers.role) : peers.mode.waitingLabel)
+                                .font(.caption)
+                                .foregroundStyle(peers.state.isLive ? Color.green : Color.secondary)
+                        } else {
+                            Button("Send this match to another phone") { peers.startSending() }
+                                .accessibilityIdentifier("send-match")
+                            Button("Receive a match from another phone") { peers.startReceiving() }
+                                .accessibilityIdentifier("receive-match")
+                            Text("Keeps two phones in the gym level with each other, so an assistant coach sees the same figures on their own watch. The phone sending keeps the record; the phone receiving only watches. Bluetooth only — nothing goes over the internet.")
+                                .font(.caption).foregroundStyle(.secondary)
                         }
-                        .accessibilityIdentifier("share-live")
-
-                        Text(
-                            peers.isSharing
-                                ? peers.state.label(as: peers.role)
-                                : "Keeps a second phone in the gym level with this one, so an assistant coach sees the same figures on their own watch. Bluetooth only — nothing goes over the internet."
-                        )
-                        .font(.caption)
-                        .foregroundStyle(peers.state.isLive ? Color.green : Color.secondary)
 
                         if let explanation = peers.role.explanation {
                             Text(explanation).font(.caption).foregroundStyle(.orange)
                         }
-                    }
-
-                    if lockScreen != nil {
-                        Toggle("Show the court on the lock screen", isOn: $isOnLockScreen)
-                            .accessibilityIdentifier("lock-screen-court")
-                        Text("Puts the six on court on the lock screen while a match is running. It shows figures only while they are current — when they stop arriving it says so rather than leaving old ones on screen.")
-                            .font(.caption).foregroundStyle(.secondary)
                     }
 
                     Button("Send this season to another phone") { isHandingOver = true }

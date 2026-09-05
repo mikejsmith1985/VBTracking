@@ -150,51 +150,6 @@ struct PeerConversationTests {
     }
 }
 
-/// Who is the tracker, once two phones have been talking for a while.
-///
-/// Reported from a real match: the tracker threw a game away, started another, and the
-/// second phone stayed connected, stayed read-only, and stopped receiving anything. Both
-/// phones had quietly decided they were the follower, and a follower never pushes.
-@Suite("Which phone stays the tracker")
-struct PeerRoleSettlingTests {
-    @Test("Sending a match makes this phone the tracker")
-    func sendingMakesYouTheTracker() {
-        #expect(PeerRole.alone.afterSending() == .tracking)
-        #expect(PeerRole.tracking.afterSending() == .tracking)
-    }
-
-    @Test("Receiving a match makes a phone that is not tracking the follower")
-    func receivingMakesYouTheFollower() {
-        #expect(PeerRole.alone.afterReceiving() == .following)
-        #expect(PeerRole.following.afterReceiving() == .following)
-    }
-
-    @Test("A phone that has sent a match never becomes the follower")
-    func theTrackerNeverFlips() {
-        // The other phone almost always has something the tracker has not got -- an older
-        // season of its own -- and that used to arrive and silently demote the phone doing
-        // the recording. From then on neither phone pushed anything.
-        #expect(PeerRole.tracking.afterReceiving() == .tracking)
-    }
-
-    @Test("Roles hold across the end of a match")
-    func rolesSurviveAGameEnding() {
-        // A game thrown away and another started is still the same two people at the same
-        // match. Sharing continues until somebody stops it, which is the only thing they
-        // asked for by tapping the button.
-        var tracker = PeerRole.alone.afterSending()
-        tracker = tracker.afterReceiving()
-        tracker = tracker.afterSending()
-        #expect(tracker == .tracking, "ending a game does not hand the record to the other phone")
-    }
-
-    @Test("Only stopping sharing puts a phone back on its own")
-    func stoppingReturnsYouToAlone() {
-        #expect(PeerRole.following.afterStoppingSharing() == .alone)
-        #expect(PeerRole.tracking.afterStoppingSharing() == .alone)
-    }
-}
-
 @Suite("What the sharing row says")
 struct PeerLabelTests {
     private let joined = PeerLinkState.connected(peerName: "Mike's iPhone")

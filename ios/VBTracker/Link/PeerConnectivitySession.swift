@@ -34,7 +34,11 @@ public final class PeerConnectivitySession: NSObject, PeerSession, @unchecked Se
 
     /// `displayName` is what the other phone shows the operator, so it is the device's own
     /// name -- "Mike's iPhone" -- rather than an identifier nobody could match to a person.
-    public init(displayName: String, delegate: any PeerDelegate) {
+    /// Which job this phone does. One each, never both.
+    private let mode: PeerMode
+
+    public init(displayName: String, mode: PeerMode, delegate: any PeerDelegate) {
+        self.mode = mode
         self.identity = MCPeerID(displayName: displayName)
         // Encrypted because it costs nothing here and a season is a list of children's names.
         self.session = MCSession(peer: identity, securityIdentity: nil, encryptionPreference: .required)
@@ -43,22 +47,28 @@ public final class PeerConnectivitySession: NSObject, PeerSession, @unchecked Se
         session.delegate = self
     }
 
-    /// Starts looking, and starts being findable.
+    /// Starts the one job this phone does.
     ///
-    /// Both at once, because either phone may be the one that starts sharing first and
-    /// neither operator should have to know which of them is "the host".
+    /// The sender makes itself findable; the receiver does the finding. Both used to do both,
+    /// and two phones inviting each other at the same moment is a race -- one invitation
+    /// wins, the other is refused, and the pair spends its time reconnecting. It joined
+    /// perhaps one time in five.
     public func start() {
-        let advertiser = MCNearbyServiceAdvertiser(
-            peer: identity, discoveryInfo: nil, serviceType: Self.serviceType
-        )
-        advertiser.delegate = self
-        advertiser.startAdvertisingPeer()
-        self.advertiser = advertiser
+        if mode.isAdvertising {
+            let advertiser = MCNearbyServiceAdvertiser(
+                peer: identity, discoveryInfo: nil, serviceType: Self.serviceType
+            )
+            advertiser.delegate = self
+            advertiser.startAdvertisingPeer()
+            self.advertiser = advertiser
+        }
 
-        let browser = MCNearbyServiceBrowser(peer: identity, serviceType: Self.serviceType)
-        browser.delegate = self
-        browser.startBrowsingForPeers()
-        self.browser = browser
+        if mode.isBrowsing {
+            let browser = MCNearbyServiceBrowser(peer: identity, serviceType: Self.serviceType)
+            browser.delegate = self
+            browser.startBrowsingForPeers()
+            self.browser = browser
+        }
 
         delegate?.peerLinkChanged(.looking)
     }
@@ -108,9 +118,9 @@ extension PeerConnectivitySession: MCSessionDelegate {
 }
 
 extension PeerConnectivitySession: MCNearbyServiceAdvertiserDelegate {
-    /// Accepted without asking, because sharing was already switched on by hand.
+    /// Accepted without asking, because sending was already switched on by hand.
     ///
-    /// Turning sharing on IS the consent: a second prompt a moment later asks the same
+    /// Tapping "send this match" IS the consent: a second prompt a moment later asks the same
     /// question again, and a coach at the side of a court would learn to dismiss it.
     public func advertiser(
         _ advertiser: MCNearbyServiceAdvertiser,

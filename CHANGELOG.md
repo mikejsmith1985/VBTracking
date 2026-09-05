@@ -70,6 +70,21 @@ All notable changes to this project are recorded here.
 
 ### Changed
 
+- **Sharing a match now says which way it travels, and that is also why it connects.** One
+  "Share this match live" button left both phones doing the same thing and working out
+  afterwards who was who. Two phones inviting each other at the same moment is a race on the
+  radio -- one invitation wins, the other is refused, and the pair spends its time
+  reconnecting rather than syncing; it joined perhaps one time in five. There are two buttons
+  now, "Send this match" and "Receive a match". The sender makes itself findable, the receiver
+  does the finding, and everything else about a phone's behaviour follows from that one
+  choice. Nothing is inferred from what arrives, so nothing can be inferred wrongly.
+
+- **The receiving phone shows the board and nothing else.** It kept a full tracking screen it
+  could not use -- outcome buttons, the picker, undo, a header of controls. A control that
+  cannot be used is a control somebody taps anyway and then wonders about, and on a sideline
+  that wondering costs a rotation. What is left is the court, the bench, and a button to go
+  full screen.
+
 - **Holding the phone's screen awake is confined rather than banned.** The restraint rule
   banned `isIdleTimerDisabled` outright, alongside the APIs that suppress the wearer's
   notifications. On a phone it suppresses nothing -- it keeps the display lit. The rule that
