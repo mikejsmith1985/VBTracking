@@ -103,7 +103,7 @@ struct SeasonScreen: View {
 
                         Text(
                             peers.isSharing
-                                ? peers.state.label
+                                ? peers.state.label(as: peers.role)
                                 : "Keeps a second phone in the gym level with this one, so an assistant coach sees the same figures on their own watch. Bluetooth only — nothing goes over the internet."
                         )
                         .font(.caption)

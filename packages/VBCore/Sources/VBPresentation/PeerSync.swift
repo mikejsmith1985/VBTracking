@@ -35,6 +35,29 @@ public enum PeerRole: Equatable, Sendable {
         }
     }
 
+    /// This phone after sending a match to the other one.
+    ///
+    /// Sending is what makes a phone the tracker. It is the phone with the record, and it
+    /// stays the phone with the record until sharing is stopped.
+    public func afterSending() -> PeerRole { .tracking }
+
+    /// This phone after taking a match from the other one.
+    ///
+    /// A tracker never becomes a follower. The other phone almost always holds something the
+    /// tracker does not -- an older season of its own -- and that arriving used to demote the
+    /// phone doing the recording. From then on neither phone pushed anything, and a game
+    /// thrown away and restarted never reached the second phone at all.
+    public func afterReceiving() -> PeerRole {
+        self == .tracking ? .tracking : .following
+    }
+
+    /// This phone once sharing is switched off.
+    ///
+    /// The only way back to recording for a follower, and deliberately the only way: roles
+    /// hold across the end of a game, because a game thrown away and another started is
+    /// still the same two people at the same match.
+    public func afterStoppingSharing() -> PeerRole { .alone }
+
     /// Why the recording controls are not there, for the one role where they are missing.
     ///
     /// Nil where nothing is missing: a sentence explaining why everything is normal is worse
@@ -76,6 +99,21 @@ public enum PeerLinkState: Equatable, Sendable {
         case .off: "Not sharing"
         case .looking: "Looking for another phone\u{2026}"
         case let .connected(peerName): "Sharing with \(peerName)"
+        }
+    }
+}
+
+extension PeerLinkState {
+    /// What the row says, with which phone is keeping the record.
+    ///
+    /// "Sharing with Mike's iPhone" alone does not say which way the match is travelling,
+    /// and the two phones behave completely differently -- one records and one cannot.
+    public func label(as role: PeerRole) -> String {
+        guard case let .connected(peerName) = self else { return label }
+        switch role {
+        case .tracking: return "Sharing with \(peerName) \u{2014} you are recording"
+        case .following: return "Following \(peerName) \u{2014} they are recording"
+        case .alone: return "Sharing with \(peerName)"
         }
     }
 }

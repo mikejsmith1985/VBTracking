@@ -55,8 +55,9 @@ final class PeerLink {
         state = .off
         peerHolds = []
         // Back to recording. A phone that stops following is a phone on its own again, and
-        // leaving it read-only would strand whoever put it down.
-        role = .alone
+        // leaving it read-only would strand whoever put it down. This is deliberately the
+        // ONLY way out of a role: sharing lasts until somebody stops it.
+        role = role.afterStoppingSharing()
     }
 
     /// Announces what this phone holds, so the other sends only the difference.
@@ -72,7 +73,7 @@ final class PeerLink {
     /// Called on every change, which is what makes this live: a serve recorded here is on the
     /// coach's wrist in the seconds she has to decide on a substitution.
     private func offerWhatIsNew() {
-        guard state.isLive, role != .following else { return }
+        guard state.isLive, role.canRecord else { return }
         push()
     }
 
@@ -86,6 +87,9 @@ final class PeerLink {
         guard !missing.isEmpty else { return }
         session?.send(LinkPayload.encode(events: missing))
         peerHolds.formUnion(PeerSync.identifiersHeld(missing))
+        // Sending is what makes this the tracker, and it stays the tracker until sharing is
+        // stopped -- through the end of a game and into the next one.
+        role = role.afterSending()
     }
 }
 
@@ -134,7 +138,7 @@ extension PeerLink {
     /// produce two logs of it that cannot be joined afterwards, so the second is never
     /// allowed to start.
     fileprivate func take(_ arriving: [RawEvent]) {
-        role = .following
+        role = role.afterReceiving()
         peerHolds.formUnion(PeerSync.identifiersHeld(arriving))
         store.receive(peerEvents: arriving)
     }

@@ -200,11 +200,23 @@ public final class Store {
     @discardableResult
     public func receive(peerEvents incoming: [RawEvent]) -> Bool {
         let merged = merge(mine: events, theirs: incoming)
-        guard merged.refusal == nil, merged.eventsAdded > 0 else { return false }
+
+        // A refusal is said out loud. It used to be swallowed, so a match that could not be
+        // joined looked exactly like a match that had not moved -- the second phone sat
+        // there connected, read-only, and silently a match behind.
+        if let refusal = merged.refusal {
+            notice = Notice(text: refusal, isFailure: true)
+            return false
+        }
+        guard merged.eventsAdded > 0 else { return false }
 
         do {
             try log.replace(with: merged.events)
         } catch {
+            notice = Notice(
+                text: (error as? LogFileError)?.message ?? "That could not be saved.",
+                isFailure: true
+            )
             return false
         }
 

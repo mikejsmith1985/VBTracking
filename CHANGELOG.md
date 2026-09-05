@@ -111,6 +111,22 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **A shared match keeps syncing through the end of a game and into the next one.** Throwing
+  a game away and starting another left the second phone connected, read-only, and receiving
+  nothing. Both phones had quietly decided they were the follower: the other phone almost
+  always holds something the tracker does not -- an older season of its own -- and that
+  arriving demoted the phone doing the recording, after which neither pushed anything. A
+  phone that has sent a match is the tracker and stays the tracker; the only way out of a
+  role is stopping sharing, which is the one thing the operator actually asked for by tapping
+  the button.
+
+- **A match that cannot be joined now says so.** The refusal was swallowed, so a merge the
+  rulebook would not allow looked exactly like a match that had not moved.
+
+- **The sharing row says which phone is recording.** "Sharing with Mike's iPhone" did not say
+  which way the match was travelling, and the two phones behave completely differently -- one
+  records and one cannot.
+
 - **A shared match now keeps up, instead of syncing once and stopping.** The first exchange
   worked and nothing after it did: on every change the tracking phone announced the
   identifiers it held, which asks the other phone to send back what IT is missing -- and a
