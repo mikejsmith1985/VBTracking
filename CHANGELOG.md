@@ -94,6 +94,19 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **A shared match now keeps up, instead of syncing once and stopping.** The first exchange
+  worked and nothing after it did: on every change the tracking phone announced the
+  identifiers it held, which asks the other phone to send back what IT is missing -- and a
+  phone that is following has nothing to send. A tracker has to push what it owes, not ask
+  about it. It now remembers what the other phone is known to hold, sends only the
+  difference, and forgets all of it when the link drops so a reconnect starts the
+  conversation again.
+
+- **A phone following somebody else's match no longer shows recording buttons.** It was told
+  in words that only the tracking phone records, and then offered OUT, IN and IN-POINT
+  anyway. The controls come off rather than grey out: a disabled button still invites the
+  tap.
+
 - **The build no longer uploads with a document-configuration warning.** Declaring the
   `.vbseason` file type without saying how the app opens one is ITMS-90737, which arrives by
   email hours after the build has already gone to TestFlight -- the slowest feedback loop in

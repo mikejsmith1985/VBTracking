@@ -14,6 +14,9 @@ struct Dock: View {
     @Binding var isPickerRequested: Bool
     @Binding var isChoosingLineup: Bool
     let onServe: (Outcome) -> Void
+    /// False on a phone following somebody else's match. The controls come off rather than
+    /// grey out: a disabled button still invites the tap, and the tap does nothing.
+    var canRecord = true
 
     var body: some View {
         VStack(spacing: 8) {
@@ -26,7 +29,7 @@ struct Dock: View {
 
             switch dock.content {
             case .outcomes:
-                OutcomeControls(onServe: onServe)
+                if canRecord { OutcomeControls(onServe: onServe) }
             case .picker:
                 CourtPicker(store: store, armed: $armed, isPickerRequested: $isPickerRequested)
             case .nothing:

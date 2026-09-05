@@ -66,7 +66,8 @@ struct TrackScreen: View {
                         armed: $armed,
                         isPickerRequested: $isPickerRequested,
                         isChoosingLineup: $isChoosingLineup,
-                        onServe: record
+                        onServe: record,
+                        canRecord: peers?.role.canRecord ?? true
                     )
                 }
             }

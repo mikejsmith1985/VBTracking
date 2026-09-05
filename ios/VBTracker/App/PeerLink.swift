@@ -21,6 +21,11 @@ final class PeerLink {
     private let deviceName: String
     private var session: (any PeerSession)?
 
+    /// What the other phone is known to hold: what it announced, plus everything sent to it
+    /// since. Without this the tracker had no idea what to push and announced its own
+    /// identifiers instead -- which asks the follower for events, and a follower has none.
+    private var peerHolds: Set<String> = []
+
     init(store: Store, deviceName: String) {
         self.store = store
         self.deviceName = deviceName
@@ -48,6 +53,7 @@ final class PeerLink {
         session?.stop()
         session = nil
         state = .off
+        peerHolds = []
         // Back to recording. A phone that stops following is a phone on its own again, and
         // leaving it read-only would strand whoever put it down.
         role = .alone
@@ -61,13 +67,25 @@ final class PeerLink {
         session?.send(LinkPayload.encode(held: PeerSync.identifiersHeld(store.heldEvents)))
     }
 
-    /// Sends whatever the other phone has not said it holds.
+    /// Sends whatever the other phone is not known to hold.
     ///
-    /// Called on every change, and the far side takes each event exactly once by identifier,
-    /// so sending one twice costs a little radio and nothing else.
+    /// Called on every change, which is what makes this live: a serve recorded here is on the
+    /// coach's wrist in the seconds she has to decide on a substitution.
     private func offerWhatIsNew() {
         guard state.isLive, role != .following else { return }
-        announceWhatIsHeld()
+        push()
+    }
+
+    /// Sends the difference and remembers having sent it.
+    ///
+    /// Delivery is reliable, so an event sent is an event arrived or a connection dropped --
+    /// and a drop clears what is remembered, so reconnecting starts the conversation again
+    /// rather than trusting a record of a link that is gone.
+    private func push() {
+        let missing = PeerSync.eventsToSend(mine: store.heldEvents, theyHold: peerHolds)
+        guard !missing.isEmpty else { return }
+        session?.send(LinkPayload.encode(events: missing))
+        peerHolds.formUnion(PeerSync.identifiersHeld(missing))
     }
 }
 
@@ -80,7 +98,12 @@ extension PeerLink: PeerDelegate {
             self.state = newState
             // Each phone opens by saying what it has. Whichever is behind then receives the
             // difference, and neither has to be told in advance which is the tracker.
-            if newState.isLive { self.announceWhatIsHeld() }
+            if newState.isLive {
+                self.announceWhatIsHeld()
+            } else {
+                // A link that went away takes what was known about the far side with it.
+                self.peerHolds = []
+            }
         }
     }
 
@@ -101,9 +124,8 @@ extension PeerLink: PeerDelegate {
 extension PeerLink {
     /// Answers an announcement with the events the other phone has not got.
     fileprivate func sendWhatTheyLack(_ theyHold: [String]) {
-        let missing = PeerSync.eventsToSend(mine: store.heldEvents, theyHold: theyHold)
-        guard !missing.isEmpty else { return }
-        session?.send(LinkPayload.encode(events: missing))
+        peerHolds = Set(theyHold)
+        push()
     }
 
     /// Takes a match somebody else is recording.
@@ -113,6 +135,7 @@ extension PeerLink {
     /// allowed to start.
     fileprivate func take(_ arriving: [RawEvent]) {
         role = .following
+        peerHolds.formUnion(PeerSync.identifiersHeld(arriving))
         store.receive(peerEvents: arriving)
     }
 }

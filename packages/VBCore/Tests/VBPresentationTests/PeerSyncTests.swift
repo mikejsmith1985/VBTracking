@@ -97,3 +97,55 @@ struct PeerFreshnessTests {
         #expect(PeerLinkState.off.isLive == false)
     }
 }
+
+/// The conversation itself, one step at a time.
+///
+/// The first sync worked and nothing after it did: the tracker announced its own identifiers
+/// on every change, which asks the far side to send what IT is missing -- and a follower has
+/// nothing to send. What a tracker owes has to be pushed, not asked about.
+@Suite("Keeping a second phone level, serve by serve")
+struct PeerConversationTests {
+    private func event(_ id: String) -> RawEvent {
+        ["eventId": .string(id), "t": .string("RECORD_SERVE")]
+    }
+
+    @Test("The first exchange sends everything the other phone lacks")
+    func catchesAFreshPhoneUp() {
+        let mine = [event("a"), event("b")]
+        let sent = PeerSync.eventsToSend(mine: mine, theyHold: [])
+        #expect(sent.count == 2)
+    }
+
+    @Test("Once sent, the same events are never sent again")
+    func doesNotResend() {
+        let mine = [event("a"), event("b")]
+        var peerHolds = Set<String>()
+
+        let first = PeerSync.eventsToSend(mine: mine, theyHold: peerHolds)
+        peerHolds.formUnion(PeerSync.identifiersHeld(first))
+
+        #expect(PeerSync.eventsToSend(mine: mine, theyHold: peerHolds).isEmpty)
+    }
+
+    @Test("A serve recorded after the catch-up is the only thing that travels")
+    func sendsOnlyTheNewServe() {
+        var mine = [event("a"), event("b")]
+        var peerHolds = Set<String>()
+        peerHolds.formUnion(PeerSync.identifiersHeld(PeerSync.eventsToSend(mine: mine, theyHold: peerHolds)))
+
+        mine.append(event("c"))
+        let next = PeerSync.eventsToSend(mine: mine, theyHold: peerHolds)
+
+        #expect(next.map(PeerSync.identifier) == ["c"], "one serve, not the season again")
+    }
+
+    @Test("Forgetting the far side resends everything, which is what a reconnect needs")
+    func startsOverAfterADrop() {
+        let mine = [event("a"), event("b"), event("c")]
+        var peerHolds = Set(PeerSync.identifiersHeld(mine))
+        #expect(PeerSync.eventsToSend(mine: mine, theyHold: peerHolds).isEmpty)
+
+        peerHolds = []
+        #expect(PeerSync.eventsToSend(mine: mine, theyHold: peerHolds).count == 3)
+    }
+}
