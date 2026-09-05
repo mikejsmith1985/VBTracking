@@ -57,7 +57,7 @@ workflows:
               grep -nE "public (final )?class Activity|protocol ActivityAttributes|associatedtype ContentState|func update|func end|func request|: Sendable" "$file" | head -60
               break
             done
-          } 2>&1 | tee /tmp/logs/activitykit.txt
+          } 2>&1 | tee /tmp/logs/activitykit.log
         ignore_failure: true
 
       # `build-for-testing` rather than `build`: it compiles the test targets too, and an
