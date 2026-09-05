@@ -145,3 +145,36 @@ final class TurnCorrectionUITests: XCTestCase {
         driver.photograph("16-turn-survives-an-armed-delete")
     }
 }
+
+/// The board, full screen, for a phone propped up beside the court.
+@MainActor
+final class SidelineUITests: XCTestCase {
+    private let squad = [
+        (number: "5", name: "Aria"), (number: "7", name: "Bea"), (number: "9", name: "Cass"),
+        (number: "11", name: "Dee"), (number: "13", name: "Eve"), (number: "15", name: "Fay"),
+        (number: "21", name: "Gus"),
+    ]
+
+    func testTheBoardOpensAndCloses() {
+        let driver = AppDriver.launch(self)
+        driver.addPlayers(squad)
+        driver.go(to: "track")
+        driver.app.buttons["Start game"].tap()
+        driver.buildFullRotation()
+
+        let open = driver.app.buttons["open-sideline"]
+        XCTAssertTrue(open.waitForExistence(timeout: 5), "the board must be reachable while tracking")
+        open.tap()
+
+        let close = driver.app.buttons["close-sideline"]
+        XCTAssertTrue(close.waitForExistence(timeout: 5), "the board must open")
+        driver.photograph("17-the-board-full-screen")
+
+        // A phone left on this screen would stay lit all night, so the way out has to work.
+        close.tap()
+        XCTAssertTrue(
+            driver.app.buttons["open-sideline"].waitForExistence(timeout: 5),
+            "the board must close again"
+        )
+    }
+}

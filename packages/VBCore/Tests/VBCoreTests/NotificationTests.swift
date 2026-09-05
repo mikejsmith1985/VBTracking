@@ -30,12 +30,48 @@ struct NotificationTests {
         "WKExtendedRuntimeSession",
         "WKExtendedRuntimeSessionDelegate",
         "HKWorkoutSession",
-        "isIdleTimerDisabled",
         "setInterruptionLevel",
         "UNUserNotificationCenter",
         "INFocusStatusCenter",
         "requestAuthorization",
     ]
+
+    /// Holding the phone's screen awake. Allowed in exactly one file, which must also give
+    /// it back.
+    ///
+    /// Not on the list above, because on a phone it suppresses nothing -- it keeps the
+    /// display lit and no notification is affected. The rule that list enforces is about the
+    /// WATCH, where holding the screen means an extended runtime session, and several of
+    /// those suppress the wearer's notifications for their duration.
+    ///
+    /// So it is confined rather than banned: one file, which is the board somebody props up
+    /// beside the court, and that file has to release it too.
+    private static let screenHoldOwner = "SidelineScreen.swift"
+
+    @Test("Holding the screen awake is confined to the one screen that does it")
+    func confinesTheScreenHold() throws {
+        for file in ShippedSources.files() {
+            let code = try ShippedSources.code(of: file)
+            guard code.contains("isIdleTimerDisabled") else { continue }
+            #expect(
+                file.lastPathComponent == Self.screenHoldOwner,
+                Comment(rawValue: "\(file.lastPathComponent) holds the screen; only \(Self.screenHoldOwner) may")
+            )
+        }
+    }
+
+    @Test("Whatever holds the screen gives it back")
+    func givesTheScreenBack() throws {
+        let owner = ShippedSources.files().first { $0.lastPathComponent == Self.screenHoldOwner }
+        guard let owner else { return }
+
+        let code = try ShippedSources.code(of: owner)
+        // A phone that stays lit after somebody puts it away is a flat battery by the third
+        // set, and nothing on screen would say why.
+        #expect(code.contains("isIdleTimerDisabled = true"))
+        #expect(code.contains("isIdleTimerDisabled = false"), "the screen must be released again")
+        #expect(code.contains("onDisappear"), "released when the screen goes away, not on a timer")
+    }
 
     @Test("No shipped file so much as names a way to take over notifications")
     func namesNoSilencingAPI() throws {

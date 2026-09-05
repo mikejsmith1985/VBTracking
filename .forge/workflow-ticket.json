@@ -1,18 +1,13 @@
 {
-  "taskId": "test-evidence-fixversion-picker",
-  "branch": "fix/test-evidence-fixversion-picker",
-  "startedAt": "2026-09-05T12:25:19.2648945Z",
-  "updatedAt": "2026-09-05T12:25:21.0848239Z",
+  "taskId": "glance-and-keep-awake",
+  "branch": "feature/live-sync",
+  "startedAt": "2026-09-05T14:32:44.7044653Z",
+  "updatedAt": "2026-09-05T14:32:44.7076778Z",
   "gates": [
     {
       "gate": "branch-created",
-      "passedAt": "2026-09-05T12:25:19.2654168Z",
-      "evidence": "fix/test-evidence-fixversion-picker created at HEAD 70056cac"
-    },
-    {
-      "gate": "tests-written",
-      "passedAt": "2026-09-05T12:25:21.0848239Z",
-      "evidence": "New testEvidenceScope.test.ts; extended evidenceAttachmentFetch, TestEvidenceSection, App, HomeView, homeCardData, ConnectionBar tests"
+      "passedAt": "2026-09-05T14:32:44.7054899Z",
+      "evidence": "feature/live-sync; the glance is fed by the same peer link"
     }
   ]
 }

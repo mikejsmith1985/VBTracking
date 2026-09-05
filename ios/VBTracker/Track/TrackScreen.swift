@@ -14,6 +14,8 @@ struct TrackScreen: View {
 
     /// The operator asked to change server mid-turn. Their override, nothing else's.
     @State private var isPickerRequested = false
+    /// The board, full screen, for a phone propped up beside the court.
+    @State private var isShowingSideline = false
 
     /// What the operator has picked up: a player waiting for a spot, or a spot waiting for
     /// a player. Both directions arrange the rotation, because before a match people think
@@ -77,11 +79,35 @@ struct TrackScreen: View {
                     self.alert = nil
                 }
             }
+
+            // Bottom-left, out of the way of the three outcome buttons: this is opened
+            // between rallies, never during one.
+            VStack {
+                Spacer()
+                HStack {
+                    Button {
+                        isShowingSideline = true
+                    } label: {
+                        Image(systemName: "rectangle.inset.filled.on.rectangle")
+                            .font(.title3)
+                            .padding(10)
+                            .background(Circle().fill(.thinMaterial))
+                    }
+                    .accessibilityLabel("Show the board full screen")
+                    .accessibilityIdentifier("open-sideline")
+                    Spacer()
+                }
+                .padding(.leading, 10)
+                .padding(.bottom, 4)
+            }
         }
         .keyboardDismissable()
         .sheet(isPresented: $isNamingGame) { GameNameSheet(store: store, isPresented: $isNamingGame) }
         .sheet(isPresented: $isEndingMatch) { EndMatchSheet(store: store, isPresented: $isEndingMatch) }
         .sheet(isPresented: $isChoosingLineup) { LineupSheet(store: store, isPresented: $isChoosingLineup) }
+        // Full screen rather than a sheet: the whole point is every pixel, read from a metre
+        // away, with no tab bar or grabber taking a strip of it.
+        .fullScreenCover(isPresented: $isShowingSideline) { SidelineScreen(store: store) }
     }
 
     /// Records one serve, and raises the five-serve alert when it is the fifth.

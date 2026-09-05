@@ -6,6 +6,15 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **The board, full screen, for a phone propped up beside the court.** Somebody coaching who
+  would rather glance at a phone than a wrist wants more than the next server: they want
+  everybody available and what each has done tonight. The six on court are drawn large enough
+  to read from a metre away, with the bench beside them in jersey order carrying the same
+  figures. The screen is kept awake while it is open and released the moment it closes -- a
+  phone that stays lit after somebody puts it away is a flat battery by the third set.
+  Nothing on it is tappable but the way out, because a phone lying on a scorer's table gets
+  knocked and a mis-tap must not be able to record anything.
+
 - **A match can be shared live with a second phone, over Bluetooth, with no internet.** One
   person tracks and another coaches, and the coach's watch pairs to the coach's phone and to
   nothing else -- so the court cannot travel from the tracker's phone to the coach's wrist. It
@@ -51,6 +60,14 @@ All notable changes to this project are recorded here.
   arm on the first tap and commit on the second, like every other destructive control.
 
 ### Changed
+
+- **Holding the phone's screen awake is confined rather than banned.** The restraint rule
+  banned `isIdleTimerDisabled` outright, alongside the APIs that suppress the wearer's
+  notifications. On a phone it suppresses nothing -- it keeps the display lit. The rule that
+  list enforces is about the watch, where holding the screen means an extended runtime
+  session and several of those do silence notifications. So it is allowed in exactly one
+  file, the board, and a second test fails the build unless that file gives the screen back
+  when it closes.
 
 - **"No networking" now means no internet, not no radios, and each radio is confined to one
   file.** The offline test banned `MultipeerConnectivity` outright, which would have banned
