@@ -99,6 +99,35 @@ struct ProjectConfigurationTests {
         )
     }
 
+    @Test("An extension declares its extension point where Apple reads it")
+    func nestsTheExtensionPoint() throws {
+        let project = try Self.projectFile
+        guard project.contains("type: app-extension") else { return }
+
+        // ITMS-90348. A build setting is a flat key/value pair, so writing this as an
+        // INFOPLIST_KEY_ puts it at the top level of the plist -- where the archive
+        // succeeds, the upload is refused, and the whole cloud build has already been
+        // spent. It belongs inside an NSExtension dictionary.
+        //
+        // Comments are dropped first, because the comment beside the fix names the very
+        // setting the fix removed, and matching that would fail on the explanation.
+        let declarations = Self.withoutComments(project)
+        #expect(
+            !declarations.contains("INFOPLIST_KEY_NSExtensionPointIdentifier"),
+            "a build setting cannot nest a key inside NSExtension"
+        )
+        #expect(project.contains("NSExtension:"))
+        #expect(project.contains("NSExtensionPointIdentifier:"))
+    }
+
+    /// The project file with every comment line taken out.
+    private static func withoutComments(_ project: String) -> String {
+        project
+            .components(separatedBy: .newlines)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("#") }
+            .joined(separator: "\n")
+    }
+
     /// Every bundle identifier the project declares, in the order they appear.
     private static func bundleIdentifiers(in project: String) -> [String] {
         project.components(separatedBy: .newlines).compactMap { line in

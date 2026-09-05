@@ -139,10 +139,18 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.mikejsmith.vbtracker.glance
         INFOPLIST_KEY_CFBundleDisplayName: Serve Tracker
-        INFOPLIST_KEY_NSExtensionPointIdentifier: com.apple.widgetkit-extension
         SKIP_INSTALL: YES
         ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+    # An extension point is a nested key, and a build setting cannot nest. Written as
+    # INFOPLIST_KEY_NSExtensionPointIdentifier it lands at the top level of the plist,
+    # where the archive is happy and the App Store is not: the upload was refused with
+    # ITMS-90348 after a clean build, which is the slowest way possible to find out.
+    info:
+      path: VBTrackerGlance/Info.plist
+      properties:
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
     # No entitlements, and specifically no App Group. A Live Activity is handed its state by
     # the app through ActivityKit; it never opens the log itself. Claiming the group anyway
     # asked Apple for a provisioning profile with a capability nobody had granted this
