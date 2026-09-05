@@ -74,6 +74,15 @@ All notable changes to this project are recorded here.
 
 ### Fixed
 
+- **Correcting a serve no longer risks deleting the whole turn.** Every button inside an open
+  turn shared one tap target, because buttons in a list row take the row's tap unless each is
+  told to be its own. So "Remove last serve" also pressed "Done" and armed "Delete this turn"
+  -- and the next correction fired the delete that was already armed, taking every serve in
+  the turn with it. Each button is its own target now, and the delete disarms itself the
+  moment anything else is touched, so a confirmation can never be answered by a different
+  button minutes later.
+
+
 - **An out serve stays inside its own mark.** The cross was a fixed 16px bar hung past both
   edges of the 8px mark and turned 45 degrees, so it drew across the mark beside it and over
   the border of its own turn -- two turns side by side read as one block, and the figures

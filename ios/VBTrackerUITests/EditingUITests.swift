@@ -79,3 +79,69 @@ final class EditingUITests: XCTestCase {
         driver.photograph("14-editing-from-the-game-tab")
     }
 }
+
+/// Correcting a serve turn, which is where a mis-tap costs recorded data.
+@MainActor
+final class TurnCorrectionUITests: XCTestCase {
+    private let squad = [
+        (number: "5", name: "Aria"), (number: "7", name: "Bea"), (number: "9", name: "Cass"),
+        (number: "11", name: "Dee"), (number: "13", name: "Eve"), (number: "15", name: "Fay"),
+    ]
+
+    /// A game with one finished turn in it, sitting open in the serve record.
+    private func openTheFirstTurn(_ driver: AppDriver) {
+        driver.addPlayers(squad)
+        driver.go(to: "track")
+        driver.app.buttons["Start game"].tap()
+        driver.buildFullRotation()
+        driver.chooseFirstServer()
+        driver.app.buttons["serve-IN-POINT"].tap()
+        driver.app.buttons["serve-IN-POINT"].tap()
+        driver.app.buttons["serve-OUT"].tap()
+
+        driver.go(to: "season")
+        let row = driver.app.buttons.containing(NSPredicate(format: "label CONTAINS 'in'")).firstMatch
+        XCTAssertTrue(row.waitForExistence(timeout: 5))
+        row.tap()
+
+        let record = driver.app.buttons["open-record"]
+        XCTAssertTrue(record.waitForExistence(timeout: 5))
+        record.tap()
+
+        let turn = driver.app.buttons["turn-0-0"]
+        XCTAssertTrue(turn.waitForExistence(timeout: 5), "the first turn must be listed")
+        turn.tap()
+    }
+
+    func testRemovingAServeLeavesTheEditorOpen() {
+        let driver = AppDriver.launch(self)
+        openTheFirstTurn(driver)
+
+        let drop = driver.app.buttons["drop-serve"]
+        XCTAssertTrue(drop.waitForExistence(timeout: 5))
+        drop.tap()
+
+        XCTAssertTrue(
+            driver.app.buttons["drop-serve"].waitForExistence(timeout: 3),
+            "removing a serve must not close the editor: the next correction is usually on the same turn"
+        )
+        driver.photograph("15-turn-after-dropping-a-serve")
+    }
+
+    func testCorrectingAServeNeverDeletesTheTurn() {
+        let driver = AppDriver.launch(self)
+        openTheFirstTurn(driver)
+
+        // Arm the delete, then think better of it and correct a serve instead. The turn must
+        // survive: a delete armed by one tap must never be fired by a different button.
+        driver.app.buttons["delete-turn"].tap()
+        driver.app.buttons["cycle-serve-0"].tap()
+
+        XCTAssertTrue(
+            driver.app.buttons["turn-0-0"].waitForExistence(timeout: 5)
+                || driver.app.buttons["drop-serve"].exists,
+            "the turn must still exist after a correction, armed delete or not"
+        )
+        driver.photograph("16-turn-survives-an-armed-delete")
+    }
+}

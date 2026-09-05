@@ -1,23 +1,13 @@
 {
-  "taskId": "recall-radar-ux-fixture",
-  "branch": "feature/ux-fixture",
-  "startedAt": "2026-09-04T13:51:15.9570987Z",
-  "updatedAt": "2026-09-04T13:51:26.5236119Z",
+  "taskId": "chg-test-evidence-bundle",
+  "branch": "feature/chg-test-evidence-bundle",
+  "startedAt": "2026-09-05T11:12:36.8453428Z",
+  "updatedAt": "2026-09-05T11:12:36.8715738Z",
   "gates": [
     {
       "gate": "branch-created",
-      "passedAt": "2026-09-04T13:51:15.9591498Z",
-      "evidence": "feature/ux-fixture created in the main checkout, no worktree, from main"
-    },
-    {
-      "gate": "tests-written",
-      "passedAt": "2026-09-04T13:51:21.1641141Z",
-      "evidence": "Seeder and scripted-model integration tests added; the three Cypress specs now execute rather than sitting unrun"
-    },
-    {
-      "gate": "tests-passed",
-      "passedAt": "2026-09-04T13:51:26.5236119Z",
-      "evidence": "Unit 276, integration 86, Cypress 4/4 all specs passed; the suite also proved it fails against an empty database"
+      "passedAt": "2026-09-05T11:12:36.8677875Z",
+      "evidence": "feature/chg-test-evidence-bundle created at HEAD ab3cdaeb"
     }
   ]
 }
