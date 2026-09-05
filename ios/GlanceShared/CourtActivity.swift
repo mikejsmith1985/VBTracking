@@ -12,9 +12,14 @@ import Foundation
 import VBPresentation
 
 /// The Live Activity for a match in progress.
-public struct CourtActivityAttributes: ActivityAttributes {
+public struct CourtActivityAttributes: ActivityAttributes, Sendable {
     /// The part that changes as the match goes on.
-    public struct ContentState: Codable, Hashable {
+    ///
+    /// `Sendable` is load-bearing, not decoration. Without it `Activity` is not sendable
+    /// either, and every call that updates or ends one is refused by Swift 6 as a value
+    /// crossing isolation -- with the error pointing at the activity rather than at the
+    /// missing conformance three files away.
+    public struct ContentState: Codable, Hashable, Sendable {
         /// The court exactly as the wrist would receive it, including when it was captured.
         public var court: CourtSnapshot
 
