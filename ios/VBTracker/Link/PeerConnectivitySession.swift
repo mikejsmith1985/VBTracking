@@ -7,6 +7,11 @@
 // Multipeer Connectivity is Bluetooth and peer-to-peer Wi-Fi between devices in the same
 // room. No router, no internet, no account, and nothing that works at a distance. It is the
 // only reason a season can reach a second phone in a gym with no signal.
+//
+// It lives in the phone's own folder rather than in `Shared`, because `Shared` is compiled
+// into the watch app too and watchOS has no MultipeerConnectivity at all -- the watch built
+// against it and could not resolve the module. The protocol it satisfies stays in `Shared`,
+// which is the half both apps can see.
 import Foundation
 import MultipeerConnectivity
 import VBPresentation

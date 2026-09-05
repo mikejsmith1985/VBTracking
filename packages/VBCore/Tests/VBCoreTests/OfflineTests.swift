@@ -96,7 +96,7 @@ struct OfflineTests {
         // the same room. It needs no router, no internet and no account -- which is the whole
         // reason it is the way a season reaches a second phone, rather than a server.
         let peer = ShippedSources.repository
-            .appendingPathComponent("ios/Shared/Link/PeerConnectivitySession.swift")
+            .appendingPathComponent("ios/VBTracker/Link/PeerConnectivitySession.swift")
         let source = try String(contentsOf: peer, encoding: .utf8)
 
         #expect(source.contains("import MultipeerConnectivity"))
