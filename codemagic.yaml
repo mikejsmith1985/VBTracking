@@ -39,27 +39,6 @@ workflows:
           brew install xcodegen
           cd ios && xcodegen generate
 
-      # A one-off: read what the SDK actually declares rather than guessing at it from a
-      # compiler error. Three attempts went at one ActivityKit error before this.
-      - name: What ActivityKit actually declares
-        script: |
-          set -o pipefail
-          mkdir -p /tmp/logs
-          sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
-          interface="$sdk/System/Library/Frameworks/ActivityKit.framework/Modules/ActivityKit.swiftmodule"
-          {
-            echo "=== where ==="
-            ls "$interface" 2>&1 | head
-            echo
-            echo "=== Activity, ActivityAttributes, update, end ==="
-            for file in "$interface"/*.swiftinterface; do
-              [ -f "$file" ] || continue
-              grep -nE "public (final )?class Activity|protocol ActivityAttributes|associatedtype ContentState|func update|func end|func request|: Sendable" "$file" | head -60
-              break
-            done
-          } 2>&1 | tee /tmp/logs/activitykit.log
-        ignore_failure: true
-
       # `build-for-testing` rather than `build`: it compiles the test targets too, and an
       # interface test that does not compile is a test that never runs.
       #

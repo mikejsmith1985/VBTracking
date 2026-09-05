@@ -48,10 +48,10 @@ $report.Add("build: $BuildId")
 $report.Add('')
 foreach ($step in $build.buildActions) { $report.Add("  $($step.name): $($step.status)") }
 
-# The logs are only fetched when something went wrong, and only the error lines are kept. A
-# whole xcodebuild log is tens of megabytes and the answer is four lines of it.
+# The artefact is always read. A whole xcodebuild log is tens of megabytes and only its error
+# lines are worth keeping, but anything else in there was put there deliberately to be read.
 $artefact = $build.artefacts | Select-Object -First 1
-if ($artefact -and $build.status -ne 'finished') {
+if ($artefact) {
     $folder = Join-Path ([System.IO.Path]::GetTempPath()) "watch-$BuildId"
     Remove-Item -Recurse -Force $folder -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force $folder | Out-Null
@@ -62,14 +62,20 @@ if ($artefact -and $build.status -ne 'finished') {
             $hits = Select-String -Path $file.FullName -Pattern 'error:' |
                 Select-Object -ExpandProperty Line -Unique |
                 Select-Object -First 25
-            if ($hits -or $file.Extension -eq '.txt') {
-                $report.Add('')
-                $report.Add("--- $($file.Name) ---")
+            # An xcodebuild log is only worth its error lines. Anything else in the artefact
+            # was put there deliberately to be read, so it is printed whether it mentions an
+            # error or not -- a filter that hid such a file cost two whole builds.
+            $isBuildLog = $file.Name -in 'phone.log', 'watch.log'
+            $report.Add('')
+            $report.Add("--- $($file.Name) ---")
+            if ($isBuildLog) {
                 if ($hits) {
                     $hits | ForEach-Object { $report.Add($_) }
                 } else {
-                    Get-Content $file.FullName | Select-Object -First 60 | ForEach-Object { $report.Add($_) }
+                    $report.Add('(no error lines)')
                 }
+            } else {
+                Get-Content $file.FullName | Select-Object -First 80 | ForEach-Object { $report.Add($_) }
             }
         }
     } catch {
