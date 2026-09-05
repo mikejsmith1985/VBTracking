@@ -48,6 +48,23 @@ $report.Add("build: $BuildId")
 $report.Add('')
 foreach ($step in $build.buildActions) { $report.Add("  $($step.name): $($step.status)") }
 
+# A failed step keeps no downloadable artefact, but it does keep a log behind its own URL,
+# and that is where the reason lives. Publishing has no artefact at all -- the upload that
+# was refused for a misplaced plist key was invisible in everything else this script read,
+# and finding it by hand cost a round trip that this loop exists to avoid.
+foreach ($step in $build.buildActions | Where-Object { $_.status -ne 'success' -and $_.logUrl }) {
+    $report.Add('')
+    $report.Add("--- log: $($step.name) ---")
+    try {
+        $log = (Invoke-WebRequest -Uri $step.logUrl -Headers $headers).Content
+        $plain = ($log -replace '<[^>]+>', '') -replace "`e\[[0-9;]*m", ''
+        $lines = $plain -split "`r?`n" | Where-Object { $_.Trim() }
+        $lines | Select-Object -Last 60 | ForEach-Object { $report.Add($_) }
+    } catch {
+        $report.Add("could not read the step log: $($_.Exception.Message)")
+    }
+}
+
 # The artefact is always read. A whole xcodebuild log is tens of megabytes and only its error
 # lines are worth keeping, but anything else in there was put there deliberately to be read.
 $artefact = $build.artefacts | Select-Object -First 1
