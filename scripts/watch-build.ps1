@@ -67,8 +67,15 @@ foreach ($step in $build.buildActions | Where-Object { $_.status -ne 'success' -
 
 # The artefact is always read. A whole xcodebuild log is tens of megabytes and only its error
 # lines are worth keeping, but anything else in there was put there deliberately to be read.
-$artefact = $build.artefacts | Select-Object -First 1
+# The artefact carrying the logs, by name -- not whichever happens to be first. A build that
+# got far enough to produce an .app.zip put it at the head of the list, so "first" fetched a
+# built application instead of the log that said why the next step failed, and the report came
+# back empty on a failed compile.
+$artefact = $build.artefacts | Where-Object { $_.name -like '*_artifacts.zip' } | Select-Object -First 1
+if (-not $artefact) { $artefact = $build.artefacts | Where-Object { $_.name -notlike '*.app.zip' } | Select-Object -First 1 }
 if ($artefact) {
+    $report.Add('')
+    $report.Add("reading artefact: $($artefact.name)")
     $folder = Join-Path ([System.IO.Path]::GetTempPath()) "watch-$BuildId"
     Remove-Item -Recurse -Force $folder -ErrorAction SilentlyContinue
     New-Item -ItemType Directory -Force $folder | Out-Null

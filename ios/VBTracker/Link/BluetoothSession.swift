@@ -28,8 +28,12 @@ public final class BluetoothSession: NSObject, PeerSession, @unchecked Sendable 
     /// Both halves of the pair must agree on these. They are arbitrary and permanent: change
     /// one and an old build stops being able to find a new one.
     private enum Wire {
-        static let service = CBUUID(string: "8A3C1B42-6F1E-4C7A-9D22-0F5B7E41C9A6")
-        static let channel = CBUUID(string: "8A3C1B43-6F1E-4C7A-9D22-0F5B7E41C9A6")
+        // Computed, not stored. `CBUUID` is a class Core Bluetooth never declared Sendable,
+        // and a stored static of a non-Sendable type is shared mutable state as far as
+        // Swift 6 is concerned. Building one per use costs nothing, and it asserts nothing
+        // about a framework type that only Apple can make true.
+        static var service: CBUUID { CBUUID(string: "8A3C1B42-6F1E-4C7A-9D22-0F5B7E41C9A6") }
+        static var channel: CBUUID { CBUUID(string: "8A3C1B43-6F1E-4C7A-9D22-0F5B7E41C9A6") }
         /// Handed back to iOS when it relaunches the app for a Bluetooth event, so the app
         /// takes up the connection it already had instead of starting over.
         static let restoreSending = "com.mikejsmith.vbtracker.peripheral"
@@ -119,8 +123,11 @@ public final class BluetoothSession: NSObject, PeerSession, @unchecked Sendable 
 
     /// Sends to whichever phone is joined. Does nothing when none is.
     public func send(_ payload: [String: Any]) {
+        // Flattened here, on the caller's thread, and deliberately not inside the hop below:
+        // a property list dictionary is not Sendable and may not cross to the radio queue.
+        // `Data` is, so the message is made first and only the message travels.
+        guard let message = LinkPayload.data(from: payload) else { return }
         radio.async { [self] in
-            guard let message = LinkPayload.data(from: payload) else { return }
             nextMessageId &+= 1
             let frames = LinkFraming.frames(for: message, messageId: nextMessageId, chunkSize: chunkSize())
             guard !frames.isEmpty else { return }
