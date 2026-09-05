@@ -11,6 +11,7 @@ struct VBTrackerApp: App {
     @State private var store = Store(directory: AppPaths.storeDirectory)
     @State private var link: PhoneLink?
     @State private var peers: PeerLink?
+    @State private var lockScreen = CourtActivityHost()
     @State private var tab = Tab.track
 
     var body: some Scene {
@@ -31,7 +32,7 @@ struct VBTrackerApp: App {
                     .tabItem { Label("Game", systemImage: "list.number") }
                     .tag(Tab.game)
 
-                SeasonScreen(store: store, peers: peers)
+                SeasonScreen(store: store, peers: peers, lockScreen: lockScreen)
                     .tabItem { Label("Season", systemImage: "calendar") }
                     .tag(Tab.season)
 
@@ -50,6 +51,11 @@ struct VBTrackerApp: App {
                 // by hand, and until it is, no radio is touched and no permission is asked
                 // for. A phone that never shares never sees the local-network prompt.
                 peers = PeerLink(store: store, deviceName: UIDevice.current.name)
+
+                // The lock screen follows the record like the wrist does, and is switched on
+                // by hand: a lock screen is somebody's own, and an app that puts itself there
+                // uninvited is one they turn off entirely.
+                store.observe { state in lockScreen.follow(state) }
             }
             // A season sent from another phone. The file arrives here whether the app was
             // running or not, and it is merged rather than restored: the person receiving it

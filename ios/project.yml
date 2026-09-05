@@ -37,6 +37,9 @@ targets:
     sources:
       - path: VBTracker
       - path: Shared
+      # Its own folder rather than `Shared`, because `Shared` is compiled into the watch app
+      # too and watchOS has no ActivityKit -- the same trap the phone-to-phone radio fell in.
+      - path: GlanceShared
     dependencies:
       - package: VBCore
         product: VBCore
@@ -45,6 +48,8 @@ targets:
       - package: VBCore
         product: VBPresentation
       - target: VBTrackerWatch
+        embed: true
+      - target: VBTrackerGlance
         embed: true
     settings:
       base:
@@ -70,6 +75,9 @@ targets:
     info:
       path: VBTracker/Info.plist
       properties:
+        # Without this the app may not start a Live Activity at all, and the request fails
+        # quietly rather than loudly.
+        NSSupportsLiveActivities: true
         # Sharing a match with a second phone. iOS refuses a local-network connection
         # without this string, and shows it verbatim in the prompt -- so it says what the
         # radio is for and, just as importantly, what it is not.
@@ -109,6 +117,35 @@ targets:
       properties:
         # Derived from the bundle id, per the global naming rule. A later widget or
         # complication reads the same log rather than keeping a second copy of it.
+        com.apple.security.application-groups:
+          - group.com.mikejsmith.vbtracker
+
+  # --- The lock screen ---------------------------------------------------------
+  #
+  # A Live Activity, not a widget. A widget refreshes on a timeline the system decides, and a
+  # court that updates when iOS feels like it is a court nobody may act on.
+  VBTrackerGlance:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: VBTrackerGlance
+      - path: GlanceShared
+    dependencies:
+      - package: VBCore
+        product: VBCore
+      - package: VBCore
+        product: VBPresentation
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.mikejsmith.vbtracker.glance
+        INFOPLIST_KEY_CFBundleDisplayName: Serve Tracker
+        INFOPLIST_KEY_NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        SKIP_INSTALL: YES
+        ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+    entitlements:
+      path: VBTrackerGlance/VBTrackerGlance.entitlements
+      properties:
         com.apple.security.application-groups:
           - group.com.mikejsmith.vbtracker
 

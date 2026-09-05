@@ -6,6 +6,15 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **The court on the lock screen, and it never shows a figure it cannot vouch for.** A Live
+  Activity rather than a widget: a widget refreshes on a timeline the system decides, and a
+  court that updates when iOS feels like it is a court nobody may act on. The six on court
+  appear with the on-deck box largest, and who serves next shows in the Dynamic Island. The
+  moment the figures stop arriving the boxes are removed entirely -- not dimmed, not greyed,
+  not marked stale, but gone, replaced by a line saying to open the app. A percentage on a
+  lock screen is read as a percentage however it is styled, and a coach reading a frozen one
+  has no way to know it froze. It is switched on by hand and ends the moment the match does.
+
 - **The board, full screen, for a phone propped up beside the court.** Somebody coaching who
   would rather glance at a phone than a wrist wants more than the next server: they want
   everybody available and what each has done tonight. The six on court are drawn large enough

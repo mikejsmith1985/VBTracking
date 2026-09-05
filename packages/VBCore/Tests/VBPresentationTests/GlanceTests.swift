@@ -99,3 +99,31 @@ struct GlanceTests {
         #expect(Glance(court: unordered, now: captured.addingTimeInterval(1)).onDeckNumber == nil)
     }
 }
+
+/// A court has to be hashable to ride a Live Activity: ActivityKit only carries a state that
+/// can be compared for equality by value, so it knows whether the lock screen changed.
+@Suite("A court can travel to the lock screen")
+struct CourtSnapshotHashingTests {
+    private func court(sequence: Int) -> CourtSnapshot {
+        CourtSnapshot(
+            sequence: sequence,
+            capturedAt: Date(timeIntervalSince1970: 1_788_000_000),
+            scopeLabel: "Match 1",
+            hasOrder: true,
+            slots: [SnapshotSlot(court: 1, number: "4", inPercentage: 0.5, points: 1, isServing: false, isOnDeck: true)],
+            serveLimit: nil,
+            acknowledgedEventIds: []
+        )
+    }
+
+    @Test("The same court hashes the same, so an unchanged lock screen is left alone")
+    func sameCourtSameHash() {
+        #expect(court(sequence: 1) == court(sequence: 1))
+        #expect(court(sequence: 1).hashValue == court(sequence: 1).hashValue)
+    }
+
+    @Test("A court that moved is a different court")
+    func movedCourtDiffers() {
+        #expect(court(sequence: 1) != court(sequence: 2))
+    }
+}

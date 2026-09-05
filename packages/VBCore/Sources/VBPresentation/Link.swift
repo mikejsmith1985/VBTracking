@@ -10,7 +10,7 @@ import Foundation
 import VBCore
 
 /// One box, as it travels to the wrist.
-public struct SnapshotSlot: Equatable, Codable, Sendable {
+public struct SnapshotSlot: Hashable, Codable, Sendable {
     public var court: Int
     public var number: String?
 
@@ -45,7 +45,7 @@ public struct SnapshotSlot: Equatable, Codable, Sendable {
 /// The watch cannot work this out for itself: the phone holds the record, and the count of
 /// a turn is on the phone. So the phone says it, and says it in numbers a box can draw
 /// without a roster.
-public struct ServeLimitNotice: Equatable, Codable, Sendable {
+public struct ServeLimitNotice: Hashable, Codable, Sendable {
     /// Who has just finished their five.
     public var finishedNumber: String?
 
@@ -100,7 +100,7 @@ public struct ServeLimitNotice: Equatable, Codable, Sendable {
 /// The court, as it travels to the wrist.
 ///
 /// Figures, not the log: the watch draws six boxes and has no use for a season.
-public struct CourtSnapshot: Equatable, Codable, Sendable {
+public struct CourtSnapshot: Hashable, Codable, Sendable {
     /// Increases by one per snapshot. The watch discards anything not newer than it holds,
     /// because snapshots can arrive out of order and the older one must never win.
     public var sequence: Int

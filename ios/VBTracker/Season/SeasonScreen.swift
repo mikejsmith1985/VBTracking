@@ -12,6 +12,9 @@ struct SeasonScreen: View {
     @Bindable var store: Store
     /// Nil until the app has finished starting up. Sharing is not offered before then.
     var peers: PeerLink?
+    /// The court on the lock screen, switched on by hand.
+    var lockScreen: CourtActivityHost?
+    @State private var isOnLockScreen = false
     @State private var isImporting = false
     @State private var isHandingOver = false
     @State private var isExporting = false
@@ -114,6 +117,13 @@ struct SeasonScreen: View {
                         }
                     }
 
+                    if lockScreen != nil {
+                        Toggle("Show the court on the lock screen", isOn: $isOnLockScreen)
+                            .accessibilityIdentifier("lock-screen-court")
+                        Text("Puts the six on court on the lock screen while a match is running. It shows figures only while they are current — when they stop arriving it says so rather than leaving old ones on screen.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+
                     Button("Send this season to another phone") { isHandingOver = true }
                         .accessibilityIdentifier("hand-over")
                     Text("Sends it over AirDrop. The other phone keeps what it already has and adds what it does not.")
@@ -156,6 +166,10 @@ struct SeasonScreen: View {
             }
             .sheet(isPresented: $isExporting) { ExportSheet(store: store, isPresented: $isExporting) }
             .sheet(isPresented: $isHandingOver) { HandoverSheet(store: store) }
+            .onChange(of: isOnLockScreen) { _, wanted in
+                lockScreen?.isEnabled = wanted
+                if wanted { lockScreen?.follow(store.state) }
+            }
             .fileImporter(isPresented: $isImporting, allowedContentTypes: [.item]) { result in
                 // No file-type filter at all: iOS saves a JSON file from Safari as
                 // ".json.txt", and a filter greys out the file the phone just wrote. The
