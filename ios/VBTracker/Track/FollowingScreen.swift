@@ -50,13 +50,24 @@ struct FollowingScreen: View {
         .fullScreenCover(isPresented: $isShowingBoard) { SidelineScreen(store: store) }
     }
 
-    /// Says whose match this is, so nobody wonders where the buttons went.
+    /// Says whose match this is, so nobody wonders where the buttons went, and says the one
+    /// thing about this phone that is not obvious: it has to stay on.
+    ///
+    /// iOS suspends an app the moment the phone locks and the link goes with it. The screen
+    /// is held awake so it will not happen by itself, but a hand on the side button still
+    /// does it, and a court that stopped moving looks exactly like a court where nobody has
+    /// served yet.
     private var banner: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "eye")
-            Text(peers?.role.explanation ?? "Watching another phone's match.")
-                .font(.caption)
-            Spacer()
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(spacing: 6) {
+                Image(systemName: "eye")
+                Text(peers?.role.explanation ?? "Watching another phone's match.")
+                    .font(.caption)
+                Spacer()
+            }
+            Text("Leave this phone unlocked. Locking it stops the match arriving.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
         }
         .foregroundStyle(.orange)
         .padding(.horizontal, 12)

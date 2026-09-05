@@ -44,9 +44,11 @@ struct NotificationTests {
     /// WATCH, where holding the screen means an extended runtime session, and several of
     /// those suppress the wearer's notifications for their duration.
     ///
-    /// So it is confined rather than banned: one file, which is the board somebody props up
-    /// beside the court, and that file has to release it too.
-    private static let screenHoldOwner = "SidelineScreen.swift"
+    /// So it is confined rather than banned: one file, which counts who is asking and is the
+    /// only place the idle timer is touched. Two things ask -- the board somebody props up
+    /// beside the court, and a phone receiving a match, which iOS would otherwise suspend
+    /// mid-set -- and they overlap, so whoever asks must also give it back.
+    private static let screenHoldOwner = "AwakeScreen.swift"
 
     @Test("Holding the screen awake is confined to the one screen that does it")
     func confinesTheScreenHold() throws {
@@ -67,10 +69,27 @@ struct NotificationTests {
 
         let code = try ShippedSources.code(of: owner)
         // A phone that stays lit after somebody puts it away is a flat battery by the third
-        // set, and nothing on screen would say why.
-        #expect(code.contains("isIdleTimerDisabled = true"))
-        #expect(code.contains("isIdleTimerDisabled = false"), "the screen must be released again")
-        #expect(code.contains("onDisappear"), "released when the screen goes away, not on a timer")
+        // set, and nothing on screen would say why. The owner both takes the screen and
+        // gives it back; nothing else may.
+        #expect(code.contains("hold("), "the one owner is what everybody else asks")
+        #expect(code.contains("release("), "the screen must be released again")
+        #expect(code.contains("isIdleTimerDisabled"), "the owner is the file that sets it")
+    }
+
+    @Test("Nobody takes the screen without a matching way of giving it back")
+    func pairsEveryHold() throws {
+        // Two things want the screen kept on -- the board, and a phone receiving a match --
+        // and they overlap. Whichever one lets go last is the one that matters, so a hold
+        // with no release is a phone that never sleeps again until it is force quit.
+        for file in ShippedSources.files() {
+            let code = try ShippedSources.code(of: file)
+            guard file.lastPathComponent != Self.screenHoldOwner else { continue }
+            guard code.contains("AwakeScreen.hold(") else { continue }
+            #expect(
+                code.contains("AwakeScreen.release("),
+                Comment(rawValue: "\(file.lastPathComponent) holds the screen and never gives it back")
+            )
+        }
     }
 
     @Test("No shipped file so much as names a way to take over notifications")

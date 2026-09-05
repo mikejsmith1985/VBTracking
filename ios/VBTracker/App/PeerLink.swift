@@ -50,6 +50,25 @@ final class PeerLink {
     /// Watches a match another phone is sending.
     func startReceiving() { start(in: .receiving) }
 
+    /// Puts the radio away while the app is not on screen, and picks it up again after.
+    ///
+    /// Nothing survives a suspension, so the choice is between a link that is known to be
+    /// gone and a link that merely looks alive. The row said "connected" for as long as the
+    /// phone was locked, and the figures behind it were as old as the lock.
+    func appWentAway() {
+        guard mode != .off else { return }
+        session?.stop()
+        session = nil
+        state = .looking
+        peerHolds = []
+    }
+
+    /// Starts the same job again after the app comes back.
+    func appCameBack() {
+        guard mode != .off, session == nil else { return }
+        start(in: mode)
+    }
+
     /// Stops sharing, whichever way it was going.
     ///
     /// The only way out of a role, deliberately: a game thrown away and another started is
@@ -61,11 +80,19 @@ final class PeerLink {
         mode = .off
         state = .off
         peerHolds = []
+        AwakeScreen.release(.receiving)
     }
 
     private func start(in wanted: PeerMode) {
         stop()
         mode = wanted
+
+        // A receiver is held awake for as long as it is receiving. iOS suspends an app the
+        // moment the phone locks, and Multipeer Connectivity disconnects with it -- Apple
+        // drops the session by design -- so a receiver allowed to doze off is a receiver
+        // that quietly stops receiving. The hold is taken here rather than at the button,
+        // because coming back from a suspension takes this path too.
+        if wanted == .receiving { AwakeScreen.hold(.receiving) }
 
         let session = PeerConnectivitySession(displayName: deviceName, mode: wanted, delegate: self)
         self.session = session

@@ -13,6 +13,7 @@ struct VBTrackerApp: App {
     @State private var peers: PeerLink?
     @State private var lockScreen = CourtActivityHost()
     @State private var tab = Tab.track
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
@@ -65,6 +66,21 @@ struct VBTrackerApp: App {
             .onOpenURL { url in
                 store.receive(fileAt: url)
                 tab = .season
+            }
+            // The radio does not survive the app leaving the screen: iOS suspends the app
+            // and Multipeer Connectivity disconnects the session with it. Nothing here can
+            // change that, so what it does instead is admit it and start again on the way
+            // back. Before this, a phone that had been locked came back showing a link that
+            // was not there, and figures that had stopped moving when the screen went dark.
+            .onChange(of: scenePhase) { _, phase in
+                switch phase {
+                case .active: peers?.appCameBack()
+                // Background only. `.inactive` is also a pulled-down Control Centre or a
+                // notification banner, and dropping a working link for a banner would be a
+                // worse bug than the one this fixes.
+                case .background: peers?.appWentAway()
+                default: break
+                }
             }
         }
     }

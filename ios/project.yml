@@ -20,7 +20,11 @@ settings:
     # Info.plist at all -- which fails at the very last step, after everything compiled.
     GENERATE_INFOPLIST_FILE: YES
     DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
-    MARKETING_VERSION: "1.0"
+    # 1.1, not 1.0. Version 1.0 is sitting in the review queue with build 25 attached, and
+    # everything since -- the second phone, the lock screen, the board -- is a feature
+    # release. Uploading it under 1.0 would not disturb that submission, but it would leave
+    # both trains sharing a version number, where reselecting a build is one mis-click.
+    MARKETING_VERSION: "1.1"
     CURRENT_PROJECT_VERSION: "1"
     # Warnings are not advice. A season of real data is riding on this.
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
