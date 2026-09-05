@@ -61,7 +61,7 @@ struct OfflineTests {
     /// here, in front of this comment, rather than one that happens quietly.
     private static let localFrameworks = [
         "import WatchConnectivity": "WatchConnectivitySession.swift",
-        "import MultipeerConnectivity": "PeerConnectivitySession.swift",
+        "import CoreBluetooth": "BluetoothSession.swift",
     ]
 
     @Test("Nothing imports a framework that reaches the internet")
@@ -92,14 +92,14 @@ struct OfflineTests {
 
     @Test("The phone-to-phone link reaches the next phone and nothing further")
     func thePeerLinkIsLocal() throws {
-        // Multipeer Connectivity is Bluetooth and peer-to-peer Wi-Fi between two devices in
+        // Core Bluetooth is a radio between two devices in
         // the same room. It needs no router, no internet and no account -- which is the whole
         // reason it is the way a season reaches a second phone, rather than a server.
         let peer = ShippedSources.repository
-            .appendingPathComponent("ios/VBTracker/Link/PeerConnectivitySession.swift")
+            .appendingPathComponent("ios/VBTracker/Link/BluetoothSession.swift")
         let source = try String(contentsOf: peer, encoding: .utf8)
 
-        #expect(source.contains("import MultipeerConnectivity"))
+        #expect(source.contains("import CoreBluetooth"))
         for api in Self.networkingAPIs {
             #expect(!source.contains(api), Comment(rawValue: "the peer link names \(api)"))
         }

@@ -50,20 +50,13 @@ final class PeerLink {
     /// Watches a match another phone is sending.
     func startReceiving() { start(in: .receiving) }
 
-    /// Puts the radio away while the app is not on screen, and picks it up again after.
+    /// Starts the job again if it is not running.
     ///
-    /// Nothing survives a suspension, so the choice is between a link that is known to be
-    /// gone and a link that merely looks alive. The row said "connected" for as long as the
-    /// phone was locked, and the figures behind it were as old as the lock.
-    func appWentAway() {
-        guard mode != .off else { return }
-        session?.stop()
-        session = nil
-        state = .looking
-        peerHolds = []
-    }
-
-    /// Starts the same job again after the app comes back.
+    /// Nothing is stopped when the app leaves the screen, and that is the whole point of the
+    /// Bluetooth link: iOS wakes a suspended app for a connection event, so a match keeps
+    /// arriving at a phone that is locked in somebody's pocket. This is only a safety net for
+    /// the case where the radio was never started -- being switched on while the app was
+    /// away, say.
     func appCameBack() {
         guard mode != .off, session == nil else { return }
         start(in: mode)
@@ -86,7 +79,7 @@ final class PeerLink {
         stop()
         mode = wanted
 
-        let session = PeerConnectivitySession(displayName: deviceName, mode: wanted, delegate: self)
+        let session = BluetoothSession(displayName: deviceName, mode: wanted, delegate: self)
         self.session = session
         session.start()
     }

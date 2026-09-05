@@ -44,14 +44,29 @@ struct ProjectConfigurationTests {
     func explainsEveryRadio() throws {
         let project = try Self.projectFile
 
-        // A local-network connection without this string does not prompt and does not fail
-        // loudly -- it simply never finds anybody, which is the hardest kind of broken.
-        if project.contains("NSBonjourServices") {
-            #expect(project.contains("NSLocalNetworkUsageDescription"))
+        // Bluetooth without this string does not prompt and does not fail loudly -- it
+        // simply never finds anybody, which is the hardest kind of broken.
+        if project.contains("CBCentralManager") || project.contains("bluetooth-central") {
+            #expect(project.contains("NSBluetoothAlwaysUsageDescription"))
         }
-        if project.contains("NSLocalNetworkUsageDescription") {
-            #expect(project.contains("NSBonjourServices"), "a usage string with no service finds nobody")
+        if project.contains("NSBluetoothAlwaysUsageDescription") {
+            #expect(
+                project.contains("bluetooth-central"),
+                "a usage string with no background mode stops the moment the phone locks"
+            )
         }
+    }
+
+    @Test("A link meant to survive a locked phone says so in both directions")
+    func declaresBothBluetoothModes() throws {
+        let project = try Self.projectFile
+        guard project.contains("UIBackgroundModes") else { return }
+
+        // One phone advertises and the other scans, so the pair needs both modes. With only
+        // one declared, exactly half the link keeps working when a phone is pocketed -- and
+        // which half depends on which phone, which is the worst way for this to fail.
+        #expect(project.contains("bluetooth-central"), "the receiving phone scans")
+        #expect(project.contains("bluetooth-peripheral"), "the sending phone advertises")
     }
 
     @Test("Export compliance is answered at build time, on both apps")

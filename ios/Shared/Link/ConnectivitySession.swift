@@ -112,7 +112,7 @@ public enum LinkPayload {
         payload[LinkKey.heldEventIds] as? [String]
     }
 
-    /// Multipeer carries `Data`, not a property list, so a payload is flattened once here
+    /// The phone-to-phone link carries `Data`, not a property list, so a payload is flattened here
     /// rather than at every call site.
     ///
     /// The values are `Data` and arrays of `String` only, which is what makes a plain

@@ -67,20 +67,13 @@ struct VBTrackerApp: App {
                 store.receive(fileAt: url)
                 tab = .season
             }
-            // The radio does not survive the app leaving the screen: iOS suspends the app
-            // and Multipeer Connectivity disconnects the session with it. Nothing here can
-            // change that, so what it does instead is admit it and start again on the way
-            // back. Before this, a phone that had been locked came back showing a link that
-            // was not there, and figures that had stopped moving when the screen went dark.
+            // Nothing is torn down when the app leaves the screen. The Bluetooth link is
+            // allowed to keep running while the app is suspended, which is the entire reason
+            // it replaced Multipeer: a locked phone in a pocket goes on receiving the match.
+            // This only picks the radio up again if it was never started.
             .onChange(of: scenePhase) { _, phase in
-                switch phase {
-                case .active: peers?.appCameBack()
-                // Background only. `.inactive` is also a pulled-down Control Centre or a
-                // notification banner, and dropping a working link for a banner would be a
-                // worse bug than the one this fixes.
-                case .background: peers?.appWentAway()
-                default: break
-                }
+                guard phase == .active else { return }
+                peers?.appCameBack()
             }
         }
     }

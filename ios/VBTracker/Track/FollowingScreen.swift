@@ -51,12 +51,10 @@ struct FollowingScreen: View {
     }
 
     /// Says whose match this is, so nobody wonders where the buttons went, and says the one
-    /// thing about this phone that is not obvious: it has to stay on.
+    /// thing about this phone that is worth knowing: it can go in a pocket.
     ///
-    /// iOS suspends an app the moment the phone locks and the link goes with it. The screen
-    /// is held awake so it will not happen by itself, but a hand on the side button still
-    /// does it, and a court that stopped moving looks exactly like a court where nobody has
-    /// served yet.
+    /// Worth saying out loud because the opposite is what people expect. Every app they have
+    /// used stops when the screen locks, so without this nobody would think to try.
     private var banner: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
@@ -65,7 +63,7 @@ struct FollowingScreen: View {
                     .font(.caption)
                 Spacer()
             }
-            Text("Leave this phone unlocked. Locking it stops the match arriving.")
+            Text("Keeps up in your pocket. The match arrives with the phone locked.")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }

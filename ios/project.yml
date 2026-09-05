@@ -82,17 +82,20 @@ targets:
         # Without this the app may not start a Live Activity at all, and the request fails
         # quietly rather than loudly.
         NSSupportsLiveActivities: true
-        # Sharing a match with a second phone. iOS refuses a local-network connection
-        # without this string, and shows it verbatim in the prompt -- so it says what the
-        # radio is for and, just as importantly, what it is not.
-        NSLocalNetworkUsageDescription: >-
-          Serve Tracker uses the local network to share the match with a second phone in the
-          same gym, so an assistant coach sees the same figures. Nothing is sent over the
-          internet and nothing leaves the two devices.
-        # The service both phones look for. Without it the browser finds nobody, silently.
-        NSBonjourServices:
-          - _vb-serve._tcp
-          - _vb-serve._udp
+        # Sharing a match with a second phone. iOS refuses Bluetooth without this string and
+        # shows it verbatim in the prompt -- so it says what the radio is for and, just as
+        # importantly, what it is not.
+        NSBluetoothAlwaysUsageDescription: >-
+          Serve Tracker uses Bluetooth to share the match with a second phone in the same gym,
+          so an assistant coach sees the same figures on her own phone and watch. Nothing is
+          sent over the internet and nothing leaves the two devices.
+        # The two modes that let the match keep arriving at a phone that is locked in
+        # somebody's pocket. Without them iOS suspends the app and the radio stops with it,
+        # which is the whole reason this link is Bluetooth and not Multipeer: a coach cannot
+        # hold a phone awake in her hand for two hours to see the next server.
+        UIBackgroundModes:
+          - bluetooth-central
+          - bluetooth-peripheral
         # Declaring a document type without this is an ITMS-90737 warning on every upload.
         # NO, not YES: a season that arrives is read once and merged into this app's own log,
         # and the file itself is never written back to. Saying the app opens documents in
