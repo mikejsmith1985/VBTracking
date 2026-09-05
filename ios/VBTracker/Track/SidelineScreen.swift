@@ -10,6 +10,7 @@
 // on a scorer's table gets knocked, and a mis-tap on this screen must not be able to record
 // anything.
 import SwiftUI
+import UIKit
 import VBCore
 import VBPresentation
 
@@ -52,10 +53,11 @@ struct SidelineScreen: View {
         }
         .preferredColorScheme(.dark)
         .statusBarHidden()
-        // Kept awake only while this is on screen, and asked for by name: a phone that is
-        // also receiving a match keeps its own hold when this closes.
-        .onAppear { AwakeScreen.hold(.board) }
-        .onDisappear { AwakeScreen.release(.board) }
+        // Kept awake only while this is on screen. Setting it anywhere wider would leave a
+        // phone lit in somebody's bag -- which is exactly what holding it for the whole time
+        // a phone was receiving did, pocket included.
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
 
     private func header(_ sideline: Sideline) -> some View {

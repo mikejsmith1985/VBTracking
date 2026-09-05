@@ -80,19 +80,11 @@ final class PeerLink {
         mode = .off
         state = .off
         peerHolds = []
-        AwakeScreen.release(.receiving)
     }
 
     private func start(in wanted: PeerMode) {
         stop()
         mode = wanted
-
-        // A receiver is held awake for as long as it is receiving. iOS suspends an app the
-        // moment the phone locks, and Multipeer Connectivity disconnects with it -- Apple
-        // drops the session by design -- so a receiver allowed to doze off is a receiver
-        // that quietly stops receiving. The hold is taken here rather than at the button,
-        // because coming back from a suspension takes this path too.
-        if wanted == .receiving { AwakeScreen.hold(.receiving) }
 
         let session = PeerConnectivitySession(displayName: deviceName, mode: wanted, delegate: self)
         self.session = session
