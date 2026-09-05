@@ -6,6 +6,17 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **A game can be corrected after it was played, including one copied from paper.** The
+  figures on a paper sheet were drawn as text and could only be read, so a transcription with
+  numbers in the wrong row was permanent on the phone -- the web app had been able to fix one
+  since release 002. They are fields now, and a player the transcription missed can be added
+  by filling in both boxes. A box left empty stays a dash rather than becoming a nought,
+  because a nought would say they served and missed serves they never took.
+
+- **The Game tab reaches every game in the season, and offers to correct the one it shows.**
+  It showed only the game being tracked, so the moment a game ended the tab went empty and
+  the figures for what had just happened were reachable only from the Season tab.
+
 - **A season can be handed to another phone, and what arrives is merged.** A coach and an
   assistant coach at the same match need the same figures, and only one of them is tracking.
   "Send this season to another phone" writes the same bytes a backup holds under an extension
@@ -28,6 +39,16 @@ All notable changes to this project are recorded here.
   arm on the first tap and commit on the second, like every other destructive control.
 
 ### Changed
+
+- **An edit saves when you leave the field, not only when you leave the screen.** The game
+  form dispatched its changes from `onDisappear` alone, which does not reliably fire when the
+  operator switches tabs -- so a correction typed and then left by any route but the Back
+  button was thrown away without a word. It now saves when a field is finished with, when the
+  app leaves the foreground, and on the way out.
+
+- **The serve record is named for what it opens.** The one way into the serve-by-serve
+  history read "Serve record - 47/62 in", which looks like a statistic somebody put on a row
+  rather than a way in. The count moved to the caption underneath it.
 
 - **The watch court is visible to the tests that measure it.** Every box carried an
   identifier, and none of them could ever be found: a SwiftUI stack is not an accessibility

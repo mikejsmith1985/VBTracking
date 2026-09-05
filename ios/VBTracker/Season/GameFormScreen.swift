@@ -13,6 +13,10 @@ struct GameFormScreen: View {
 
     @State private var context = GameContext()
     @State private var notes = GameNotes()
+    @State private var paperRows: [PaperRow] = []
+    /// Which field is being typed in, so leaving one is a moment to save.
+    @FocusState private var isTyping: Bool
+    @Environment(\.scenePhase) private var scenePhase
     @State private var isConfirmingDiscard = false
     @State private var isShowingRecord = false
     @State private var scope = Scope.game
@@ -37,11 +41,17 @@ struct GameFormScreen: View {
             if let game {
                 if game.kind == .tracked {
                     Section {
-                        Button("Serve record — \(game.summary.servesIn)/\(game.summary.serves) in") {
+                        // Named for what it opens, not for what it counts. As
+                        // "Serve record — 47/62 in" it read as a statistic somebody had
+                        // put on a row, and the one way into the serve-by-serve history went
+                        // unfound.
+                        Button {
                             isShowingRecord = true
+                        } label: {
+                            Label("Serve record — every turn", systemImage: "list.bullet.rectangle")
                         }
                         .accessibilityIdentifier("open-record")
-                        Text("See every turn, and correct anything mis-entered.")
+                        Text("\(game.summary.servesIn) of \(game.summary.serves) serves in. Tap to see every turn and correct anything mis-entered.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
                 }
@@ -77,9 +87,9 @@ struct GameFormScreen: View {
                     // One field per row. iOS gives a date field a minimum width of its own
                     // and overflows whatever column it is given.
                     DatePicker("Date", selection: dateBinding, displayedComponents: .date)
-                    TextField("Opposing team", text: $context.opponent)
-                    TextField("Location", text: $context.location)
-                    TextField("Court", text: $context.court)
+                    TextField("Opposing team", text: $context.opponent).focused($isTyping)
+                    TextField("Location", text: $context.location).focused($isTyping)
+                    TextField("Court", text: $context.court).focused($isTyping)
                 }
 
                 if game.kind == .tracked {
@@ -97,7 +107,7 @@ struct GameFormScreen: View {
                     }
                 } else {
                     Section("Serves — copied from paper") {
-                        PaperFigures(store: store, game: game)
+                        PaperFigures(rows: $paperRows, onCommit: savePaper)
                     }
                 }
 
@@ -129,21 +139,63 @@ struct GameFormScreen: View {
         .navigationDestination(isPresented: $isShowingRecord) {
             ServeRecordScreen(store: store, gameId: gameId)
         }
-        .onAppear {
-            context = game?.context ?? GameContext()
-            notes = game?.notes ?? GameNotes()
-        }
+        .onAppear(perform: load)
+        // Three moments, because any one of them alone loses work. Leaving a field covers
+        // typing and then tapping elsewhere on the screen; the scene leaving the foreground
+        // covers the home gesture and the app switcher; and `onDisappear` covers Back. It
+        // used to be the last of those on its own, and `onDisappear` does not reliably fire
+        // when the operator switches tabs -- so a correction left by any route but one was
+        // thrown away without a word.
+        .onChange(of: isTyping) { _, nowTyping in if !nowTyping { save() } }
+        .onChange(of: scenePhase) { _, phase in if phase != .active { save() } }
         .onDisappear(perform: save)
     }
 
-    /// Saves on the way out rather than behind a button.
+    /// Reads the record into the fields.
+    private func load() {
+        context = game?.context ?? GameContext()
+        notes = game?.notes ?? GameNotes()
+        paperRows = game.map { game in
+            PaperSheet.rows(roster: seasonRoster(of: game), entries: game.entries)
+        } ?? []
+    }
+
+    /// Saves whatever has changed.
     ///
-    /// Every field here is a correction to a record of something that already happened, so
-    /// there is nothing to confirm — and a Save button is one more thing to forget.
+    /// Called when a field is finished with, and again on the way out. It used to be called
+    /// ONLY on the way out, and `onDisappear` does not reliably fire when the operator
+    /// switches tabs rather than tapping Back -- so a correction typed and then left by any
+    /// route but one was silently thrown away.
+    ///
+    /// Every field here corrects a record of something that already happened, so there is
+    /// nothing to confirm and no Save button to forget. Saving twice costs nothing: each
+    /// dispatch is guarded by whether the value actually moved.
     private func save() {
         guard let game else { return }
         if context != game.context { store.dispatch(.setGameContext(gameId: gameId, context: context)) }
         if notes != game.notes { store.dispatch(.setGameNotes(gameId: gameId, notes: notes)) }
+        savePaper()
+    }
+
+    /// Sends a corrected paper sheet, if it says anything the record does not.
+    ///
+    /// A game from paper carries its figures on the game itself rather than in turns, so
+    /// correcting one means resending the whole sheet -- context, notes and result with it,
+    /// which is what `editHistoricalGame` takes. Half-typed rows are left out by
+    /// `PaperSheet`, so a row abandoned mid-thought cannot become a nought.
+    private func savePaper() {
+        guard let game, game.kind == .historical else { return }
+        guard PaperSheet.hasChanges(paperRows, against: game.entries) else { return }
+
+        store.dispatch(
+            .editHistoricalGame(
+                id: gameId,
+                context: context,
+                entries: PaperSheet.entries(from: paperRows),
+                notes: notes,
+                result: .value(game.recordedResult)
+            )
+        )
     }
 
     private var dateBinding: Binding<Date> {
@@ -169,22 +221,56 @@ struct GameFormScreen: View {
 
 /// Serves in and out, per player. Nothing else: nothing else was written down.
 private struct PaperFigures: View {
-    let store: Store
-    let game: Game
+    @Binding var rows: [PaperRow]
+    let onCommit: () -> Void
 
     var body: some View {
-        ForEach(store.state.members(ofSeason: game.seasonId), id: \.id) { member in
-            let entry = game.entries.first { $0.playerId == member.id }
-            HStack {
-                Text(text(number: member.number)).font(.headline.monospacedDigit()).frame(width: 30)
-                Text(member.name).font(.subheadline)
-                Spacer()
-                Text("\(entry?.servesIn ?? 0) in").font(.caption.monospacedDigit())
-                Text("\(entry?.servesOut ?? 0) out").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+        ForEach($rows) { $row in
+            HStack(spacing: 8) {
+                Text(text(number: row.number)).font(.headline.monospacedDigit()).frame(width: 30)
+                Text(row.name).font(.subheadline).lineLimit(1)
+                Spacer(minLength: 4)
+                CountField("in", value: $row.servesIn, onCommit: onCommit)
+                CountField("out", value: $row.servesOut, onCommit: onCommit)
             }
         }
-        Text("Points, turns and time on court were never written down for this game, so they show as dashes rather than as zero.")
+        Text("Type over a figure to correct it. A player with nothing written down for them shows a dash, not a zero — fill in both boxes to add them.")
             .font(.caption).foregroundStyle(.secondary)
+    }
+}
+
+/// One serve count, which is a number or is genuinely nothing.
+///
+/// Bound to `Int?` rather than to a string with a nought in it: an empty box means the sheet
+/// said nothing about this player, and turning that into `0` on the way in would claim they
+/// served and missed serves they never took.
+private struct CountField: View {
+    let label: String
+    @Binding var value: Int?
+    let onCommit: () -> Void
+
+    @FocusState private var isFocused: Bool
+
+    init(_ label: String, value: Binding<Int?>, onCommit: @escaping () -> Void) {
+        self.label = label
+        self._value = value
+        self.onCommit = onCommit
+    }
+
+    var body: some View {
+        HStack(spacing: 3) {
+            TextField(missingFigure, value: $value, format: .number)
+                .keyboardType(.numberPad)
+                .multilineTextAlignment(.trailing)
+                .font(.body.monospacedDigit())
+                .frame(width: 38)
+                .accessibilityIdentifier("paper-\(label)")
+                // Saved when the field is finished with, not only when the screen goes away.
+                .focused($isFocused)
+                .onSubmit(onCommit)
+                .onChange(of: isFocused) { _, nowFocused in if !nowFocused { onCommit() } }
+            Text(label).font(.caption2).foregroundStyle(.secondary).frame(width: 22, alignment: .leading)
+        }
     }
 }
 

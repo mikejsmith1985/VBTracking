@@ -12,10 +12,28 @@ import VBPresentation
 struct GameScreen: View {
     @Bindable var store: Store
     @State private var scope = Scope.match
+    /// Which game is being looked at, or nil for whichever is being tracked right now.
+    @State private var chosenGameId: String?
+    @State private var isEditing = false
 
     enum Scope: String, CaseIterable { case match, game }
 
-    private var game: Game? { store.state.currentGame }
+    /// Every game this season, newest first, because a game just finished is the one most
+    /// likely to be wanted.
+    private var games: [Game] {
+        guard let seasonId = store.state.activeSeasonId else { return [] }
+        return store.state.games(inSeason: seasonId)
+            .sorted { ($0.context.date ?? "") > ($1.context.date ?? "") }
+    }
+
+    /// The game on screen: the one chosen, else the one being tracked, else the newest.
+    ///
+    /// The tab used to show `currentGame` and nothing else, so the moment a game ended there
+    /// was no way to look at its figures from here at all -- the whole tab went empty.
+    private var game: Game? {
+        if let chosenGameId, let chosen = store.state.game(id: chosenGameId) { return chosen }
+        return store.state.currentGame ?? games.first
+    }
 
     var body: some View {
         NavigationStack {
@@ -26,6 +44,26 @@ struct GameScreen: View {
                             Text(title(of: game)).font(.headline)
                             Text(subtitle(of: game)).font(.caption).foregroundStyle(.secondary)
                         }
+
+                        // The way to a game that is not the live one, and the way to correct
+                        // whichever is on screen. Both were only ever reachable from the
+                        // Season tab, which is not where somebody looking at a game's
+                        // figures thinks to go.
+                        if games.count > 1 {
+                            Picker("Game", selection: chosenBinding) {
+                                ForEach(games, id: \.id) { each in
+                                    Text(title(of: each)).tag(each.id)
+                                }
+                            }
+                            .accessibilityIdentifier("choose-game")
+                        }
+
+                        Button {
+                            isEditing = true
+                        } label: {
+                            Label("Edit this game", systemImage: "square.and.pencil")
+                        }
+                        .accessibilityIdentifier("edit-game")
                     }
 
                     if game.kind == .historical {
@@ -62,7 +100,20 @@ struct GameScreen: View {
                 }
             }
             .navigationTitle("Game")
+            .navigationDestination(isPresented: $isEditing) {
+                if let game {
+                    GameFormScreen(store: store, gameId: game.id)
+                }
+            }
         }
+    }
+
+    /// The chosen game, defaulting to whatever is on screen so the picker never shows blank.
+    private var chosenBinding: Binding<String> {
+        Binding(
+            get: { chosenGameId ?? game?.id ?? "" },
+            set: { chosenGameId = $0 }
+        )
     }
 }
 
