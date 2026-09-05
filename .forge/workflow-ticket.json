@@ -1,28 +1,18 @@
 {
-  "taskId": "live-sync-multipeer",
-  "branch": "feature/live-sync",
-  "startedAt": "2026-09-05T12:01:17.4959485Z",
-  "updatedAt": "2026-09-05T12:08:33.4153003Z",
+  "taskId": "test-evidence-fixversion-picker",
+  "branch": "fix/test-evidence-fixversion-picker",
+  "startedAt": "2026-09-05T12:25:19.2648945Z",
+  "updatedAt": "2026-09-05T12:25:21.0848239Z",
   "gates": [
     {
       "gate": "branch-created",
-      "passedAt": "2026-09-05T12:01:17.496686Z",
-      "evidence": "feature/live-sync created at HEAD 84adc31"
+      "passedAt": "2026-09-05T12:25:19.2654168Z",
+      "evidence": "fix/test-evidence-fixversion-picker created at HEAD 70056cac"
     },
     {
       "gate": "tests-written",
-      "passedAt": "2026-09-05T12:07:40.2623961Z",
-      "evidence": "PeerSyncTests.swift adds 14 rule tests; OfflineTests gains a per-file radio confinement test and a peer-link locality test"
-    },
-    {
-      "gate": "tests-passed",
-      "passedAt": "2026-09-05T12:07:45.077419Z",
-      "evidence": "vbcore-test.ps1: 436 tests in 75 suites passed in 0.23s"
-    },
-    {
-      "gate": "brief-published",
-      "passedAt": "2026-09-05T12:08:33.4153003Z",
-      "evidence": "brief brief-live-sync-multipeer published for task live-sync-multipeer"
+      "passedAt": "2026-09-05T12:25:21.0848239Z",
+      "evidence": "New testEvidenceScope.test.ts; extended evidenceAttachmentFetch, TestEvidenceSection, App, HomeView, homeCardData, ConnectionBar tests"
     }
   ]
 }
