@@ -39,8 +39,11 @@ final class CourtActivityHost {
             acknowledgedEventIds: []
         )
 
-        if let activity {
-            Task { await activity.update(ActivityContent(state: .init(court: snapshot), staleDate: nil)) }
+        // The work stays on the main actor. An activity handed to a plain `Task` is a value
+        // crossing isolation, which Swift 6 refuses outright -- and there is nothing to gain
+        // by leaving: updating a lock screen is not work worth another thread.
+        if activity != nil {
+            Task { @MainActor in await self.update(with: snapshot) }
         } else {
             start(with: snapshot, opponent: state.currentGame?.context.opponent ?? "")
         }
@@ -51,9 +54,19 @@ final class CourtActivityHost {
     /// `.immediate` rather than letting it linger: a finished match on a lock screen is a
     /// court that will never move again, which is the exact thing this is built not to show.
     func end() {
+        guard activity != nil else { return }
+        Task { @MainActor in await self.finish() }
+    }
+
+    private func update(with snapshot: CourtSnapshot) async {
+        guard let activity else { return }
+        await activity.update(ActivityContent(state: .init(court: snapshot), staleDate: nil))
+    }
+
+    private func finish() async {
         guard let activity else { return }
         self.activity = nil
-        Task { await activity.end(nil, dismissalPolicy: .immediate) }
+        await activity.end(nil, dismissalPolicy: .immediate)
     }
 
     private func start(with snapshot: CourtSnapshot, opponent: String) {
