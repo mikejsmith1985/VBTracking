@@ -21,7 +21,7 @@ final class PhoneLink {
 
         // Every accepted event redraws the wrist, substitutions included -- so the coach's
         // decision is never one serve out of date.
-        store.onChange = { [weak self] state in
+        store.observe { [weak self] state in
             self?.send(state)
         }
         send(store.state)

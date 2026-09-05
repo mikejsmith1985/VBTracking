@@ -1,13 +1,28 @@
 {
-  "taskId": "chg-test-evidence-bundle",
-  "branch": "feature/chg-test-evidence-bundle",
-  "startedAt": "2026-09-05T11:12:36.8453428Z",
-  "updatedAt": "2026-09-05T11:12:36.8715738Z",
+  "taskId": "live-sync-multipeer",
+  "branch": "feature/live-sync",
+  "startedAt": "2026-09-05T12:01:17.4959485Z",
+  "updatedAt": "2026-09-05T12:08:33.4153003Z",
   "gates": [
     {
       "gate": "branch-created",
-      "passedAt": "2026-09-05T11:12:36.8677875Z",
-      "evidence": "feature/chg-test-evidence-bundle created at HEAD ab3cdaeb"
+      "passedAt": "2026-09-05T12:01:17.496686Z",
+      "evidence": "feature/live-sync created at HEAD 84adc31"
+    },
+    {
+      "gate": "tests-written",
+      "passedAt": "2026-09-05T12:07:40.2623961Z",
+      "evidence": "PeerSyncTests.swift adds 14 rule tests; OfflineTests gains a per-file radio confinement test and a peer-link locality test"
+    },
+    {
+      "gate": "tests-passed",
+      "passedAt": "2026-09-05T12:07:45.077419Z",
+      "evidence": "vbcore-test.ps1: 436 tests in 75 suites passed in 0.23s"
+    },
+    {
+      "gate": "brief-published",
+      "passedAt": "2026-09-05T12:08:33.4153003Z",
+      "evidence": "brief brief-live-sync-multipeer published for task live-sync-multipeer"
     }
   ]
 }

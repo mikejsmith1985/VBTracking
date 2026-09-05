@@ -1,0 +1,38 @@
+{
+  "briefId": "brief-chg-test-evidence-bundle",
+  "sessionId": "",
+  "taskId": "chg-test-evidence-bundle",
+  "headline": "Release Management can now zip every Jira attachment in a release and attach it to the ServiceNow change as test evidence.",
+  "whatChanged": "New \"Attach test evidence\" section under a loaded CHG: seeded key list → one Jira search → per-issue attachment table → zip (folder per issue + MANIFEST.txt) attached to the change via the relay, or downloaded. The relay bookmarklet gained a base64 body path so a file can cross the JSON envelope; the bridge forwards the new fields and accepts a 110 MB body on that one route.",
+  "whyItChanged": "QE attaches reports to Jira issues as testing finishes; before CAB someone had to download each file by hand and re-upload it to the CHG. One action now does it, with a manifest a reviewer can read.",
+  "whatCouldBreak": "An operator on the OLD bookmarklet would JSON-post the base64 text under the zip's name. The upload compares ServiceNow's recorded size with the bytes sent and says \"re-install the bookmarklet\" when they differ, but the bad attachment must be deleted by hand. Whether this instance's attachment API accepts the relayed request (ACL, size cap) is unverified until production.",
+  "decisions": [
+    {
+      "chose": "Write the zip with the already-shipped cfb library",
+      "insteadOf": "Adding jszip/fflate or a hand-written zip writer",
+      "because": "Framework-first: cfb (a SheetJS dependency in client package.json) writes standard ZIPs, verified by round-trip and Expand-Archive. No new dependency, no format code to maintain.",
+      "openQuestion": "cfb's zip writer is a side capability of a CFB library; if a future zip needs zip64 or streaming it will not stretch."
+    },
+    {
+      "chose": "Extend the relay bookmarklet with a base64 upload path",
+      "insteadOf": "Uploading through the server-side /snow-proxy",
+      "because": "ServiceNow writes need the Okta browser session that only the bookmarklet tab has; the server proxy has no cookies. The SharePoint relay already established base64 in the other direction.",
+      "openQuestion": "Every operator must re-install the bookmarklet once, and the app cannot detect an old one except by the size check after a bad upload."
+    },
+    {
+      "chose": "Home the section on Release Management beside CAB Prep, scope from keys the change names",
+      "insteadOf": "A button on the Create CHG result step keyed to the fixVersion",
+      "because": "Evidence lands on Jira after the change exists; the loaded-change surface works for any CHG at any time and reuses the CAB scope pattern the operator already knows.",
+      "openQuestion": "A change whose description does not list its keys (not Toolbox-created) needs the keys pasted in by hand; a fixVersion picker could be added later."
+    },
+    {
+      "chose": "Refuse to attach bundles over 75 MB but still allow download",
+      "insteadOf": "No limit, or chunked upload",
+      "because": "The zip travels as base64 inside JSON through a local bridge; past that size the round trip looks hung and instance caps commonly bite. Download-and-attach-by-hand keeps the operator unblocked.",
+      "openQuestion": "75 MB is a judgement call, not a measured instance limit."
+    }
+  ],
+  "isRoutine": false,
+  "filesTouched": 22,
+  "publishedAt": "2026-09-05T11:36:11.8128006Z"
+}

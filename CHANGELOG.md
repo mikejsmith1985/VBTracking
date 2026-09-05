@@ -6,6 +6,18 @@ All notable changes to this project are recorded here.
 
 ### Added
 
+- **A match can be shared live with a second phone, over Bluetooth, with no internet.** One
+  person tracks and another coaches, and the coach's watch pairs to the coach's phone and to
+  nothing else -- so the court cannot travel from the tracker's phone to the coach's wrist. It
+  goes phone to phone over Multipeer Connectivity, and the coach's phone feeds her own watch
+  by the link that already exists, which is why the watch app needed no change at all. Each
+  phone announces the identifiers it holds and is sent only the difference, so a season is
+  never put on the air to ask what is missing. A phone that receives a match stops recording:
+  two phones both recording the same game produce two logs of it that cannot be joined
+  afterwards, and refusing to start the second is the only point at which that is
+  preventable. Sharing is switched on by hand, so a phone that never shares never sees the
+  local-network prompt.
+
 - **A game can be corrected after it was played, including one copied from paper.** The
   figures on a paper sheet were drawn as text and could only be read, so a transcription with
   numbers in the wrong row was permanent on the phone -- the web app had been able to fix one
@@ -39,6 +51,14 @@ All notable changes to this project are recorded here.
   arm on the first tap and commit on the second, like every other destructive control.
 
 ### Changed
+
+- **"No networking" now means no internet, not no radios, and each radio is confined to one
+  file.** The offline test banned `MultipeerConnectivity` outright, which would have banned
+  the phone-to-phone link the release needs -- by the same logic that would have banned the
+  watch. Frameworks that reach the internet are still banned everywhere; the two that reach
+  only the next device in the room are allowed in exactly one file apiece, and a test fails
+  the build if either appears anywhere else or if the peer link so much as names a networking
+  API.
 
 - **An edit saves when you leave the field, not only when you leave the screen.** The game
   form dispatched its changes from `onDisappear` alone, which does not reliably fire when the

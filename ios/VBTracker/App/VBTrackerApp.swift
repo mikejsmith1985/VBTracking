@@ -3,12 +3,14 @@
 // Four tabs, the same four the web app shipped with, because the operator has been using
 // them all season and the names are in their hands already: Track, Game, Season, Roster.
 import SwiftUI
+import UIKit
 import VBCore
 
 @main
 struct VBTrackerApp: App {
     @State private var store = Store(directory: AppPaths.storeDirectory)
     @State private var link: PhoneLink?
+    @State private var peers: PeerLink?
     @State private var tab = Tab.track
 
     var body: some Scene {
@@ -21,7 +23,7 @@ struct VBTrackerApp: App {
             // is ignored outright. Fixing it properly means leaving `.tabItem` behind, which
             // is a change worth making on a machine that can run it and watch what happens.
             TabView(selection: $tab) {
-                TrackScreen(store: store)
+                TrackScreen(store: store, peers: peers)
                     .tabItem { Label("Track", systemImage: "record.circle") }
                     .tag(Tab.track)
 
@@ -29,7 +31,7 @@ struct VBTrackerApp: App {
                     .tabItem { Label("Game", systemImage: "list.number") }
                     .tag(Tab.game)
 
-                SeasonScreen(store: store)
+                SeasonScreen(store: store, peers: peers)
                     .tabItem { Label("Season", systemImage: "calendar") }
                     .tag(Tab.season)
 
@@ -44,6 +46,10 @@ struct VBTrackerApp: App {
                 // no watch paired must behave exactly as it does with one.
                 guard link == nil else { return }
                 link = PhoneLink(store: store)
+                // Built but not started: sharing a match with a second phone is switched on
+                // by hand, and until it is, no radio is touched and no permission is asked
+                // for. A phone that never shares never sees the local-network prompt.
+                peers = PeerLink(store: store, deviceName: UIDevice.current.name)
             }
             // A season sent from another phone. The file arrives here whether the app was
             // running or not, and it is merged rather than restored: the person receiving it

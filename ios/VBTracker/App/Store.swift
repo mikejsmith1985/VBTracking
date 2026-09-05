@@ -37,7 +37,21 @@ public final class Store {
 
     /// Called after every accepted event, so the wrist can be told without the store
     /// knowing what a wrist is.
-    public var onChange: ((AppState) -> Void)?
+    /// Told whenever the record moves. More than one, because two links listen: the wrist,
+    /// and a second phone sharing the match. A single slot meant whichever was built last
+    /// silently replaced the other.
+    private var observers: [(AppState) -> Void] = []
+
+    /// Registers a listener for the life of the app. There is no way to remove one: both
+    /// links live as long as the app does, and an unregister nobody calls is a method that
+    /// only ever goes wrong.
+    public func observe(_ listener: @escaping (AppState) -> Void) {
+        observers.append(listener)
+    }
+
+    private func notify() {
+        for listener in observers { listener(state) }
+    }
 
     public init(directory: URL, now: @escaping () -> Date = Date.init) {
         self.log = LogFile(url: directory.appendingPathComponent("log.jsonl"))
@@ -106,7 +120,7 @@ public final class Store {
 
         events = merged.log
         state = replay(raw: events)
-        onChange?(state)
+        notify()
         return merged.accepted
     }
 
@@ -118,7 +132,7 @@ public final class Store {
             events.removeLast()
             state = replay(raw: events)
             notice = nil
-            onChange?(state)
+            notify()
         } catch {
             notice = Notice(text: (error as? LogFileError)?.message ?? "That could not be undone.", isFailure: true)
         }
@@ -170,7 +184,33 @@ public final class Store {
         events = imported.events
         state = replay(raw: events)
         notice = Notice(text: "Restored \(imported.events.count) recorded actions.", isFailure: false)
-        onChange?(state)
+        notify()
+        return true
+    }
+
+    /// The log as it stands, for a second phone to compare against its own.
+    public var heldEvents: [RawEvent] { events }
+
+    /// Takes events sent by another phone at the same match.
+    ///
+    /// The same merge a season handed over by AirDrop goes through, so an event already held
+    /// is skipped by identifier and two phones that both recorded the same game are refused
+    /// whole. Silent on success: this arrives while somebody is watching a match, and a
+    /// notice per serve would cover the court.
+    @discardableResult
+    public func receive(peerEvents incoming: [RawEvent]) -> Bool {
+        let merged = merge(mine: events, theirs: incoming)
+        guard merged.refusal == nil, merged.eventsAdded > 0 else { return false }
+
+        do {
+            try log.replace(with: merged.events)
+        } catch {
+            return false
+        }
+
+        events = merged.events
+        state = replay(raw: events)
+        notify()
         return true
     }
 
@@ -243,7 +283,7 @@ public final class Store {
         events = merged.events
         state = replay(raw: events)
         notice = Notice(text: arrivalWording(merged), isFailure: false)
-        onChange?(state)
+        notify()
         return true
     }
 
@@ -284,7 +324,7 @@ public final class Store {
         events = []
         state = replay(raw: events)
         notice = Notice(text: "Everything was erased.", isFailure: false)
-        onChange?(state)
+        notify()
         return true
     }
 
@@ -313,7 +353,7 @@ public final class Store {
         events.append(event)
         state = replay(raw: events)
         notice = nil
-        onChange?(state)
+        notify()
         return true
     }
 

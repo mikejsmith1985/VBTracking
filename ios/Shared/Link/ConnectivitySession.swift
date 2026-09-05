@@ -32,6 +32,32 @@ public enum LinkKey {
     public static let snapshot = "snapshot"
     public static let events = "events"
     public static let confirmedEventIds = "confirmedEventIds"
+    /// Phone to phone: the identifiers a phone already holds, so the other sends only the
+    /// difference rather than the season.
+    public static let heldEventIds = "heldEventIds"
+}
+
+/// The link between two phones in the same room.
+///
+/// Separate from `ConnectivitySession` because the two links answer different questions. The
+/// watch link has exactly one peer, always the same one, paired at the factory of the
+/// relationship; this one has to find a phone that may not be there, may be somebody else's,
+/// and can leave halfway through a match.
+public protocol PeerSession: AnyObject, Sendable {
+    /// Starts looking, and starts being findable.
+    func start()
+
+    /// Stops both, and drops any phone already joined.
+    func stop()
+
+    /// Sends to whichever phone is joined. Does nothing when none is.
+    func send(_ payload: [String: Any])
+}
+
+/// What arrives from the other phone.
+public protocol PeerDelegate: AnyObject, Sendable {
+    func received(fromPeer payload: [String: Any])
+    func peerLinkChanged(_ state: PeerLinkState)
 }
 
 /// Encoding the two payloads.
@@ -75,5 +101,29 @@ public enum LinkPayload {
 
     public static func decodeConfirmed(_ payload: [String: Any]) -> Set<String> {
         Set(payload[LinkKey.confirmedEventIds] as? [String] ?? [])
+    }
+
+    /// What a phone holds, announced so the other sends only what is missing.
+    public static func encode(held ids: [String]) -> [String: Any] {
+        [LinkKey.heldEventIds: ids]
+    }
+
+    public static func decodeHeld(_ payload: [String: Any]) -> [String]? {
+        payload[LinkKey.heldEventIds] as? [String]
+    }
+
+    /// Multipeer carries `Data`, not a property list, so a payload is flattened once here
+    /// rather than at every call site.
+    ///
+    /// The values are `Data` and arrays of `String` only, which is what makes a plain
+    /// property-list serialisation enough -- and keeps the wire format something a person
+    /// can read in a debugger.
+    public static func data(from payload: [String: Any]) -> Data? {
+        try? PropertyListSerialization.data(fromPropertyList: payload, format: .binary, options: 0)
+    }
+
+    public static func payload(from data: Data) -> [String: Any]? {
+        let decoded = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)
+        return decoded as? [String: Any]
     }
 }

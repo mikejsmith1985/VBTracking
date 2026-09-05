@@ -70,6 +70,17 @@ targets:
     info:
       path: VBTracker/Info.plist
       properties:
+        # Sharing a match with a second phone. iOS refuses a local-network connection
+        # without this string, and shows it verbatim in the prompt -- so it says what the
+        # radio is for and, just as importantly, what it is not.
+        NSLocalNetworkUsageDescription: >-
+          Serve Tracker uses the local network to share the match with a second phone in the
+          same gym, so an assistant coach sees the same figures. Nothing is sent over the
+          internet and nothing leaves the two devices.
+        # The service both phones look for. Without it the browser finds nobody, silently.
+        NSBonjourServices:
+          - _vb-serve._tcp
+          - _vb-serve._udp
         CFBundleDocumentTypes:
           - CFBundleTypeName: Volleyball season
             LSHandlerRank: Owner

@@ -49,18 +49,59 @@ struct OfflineTests {
         }
     }
 
-    @Test("Nothing imports a networking framework")
-    func importsNoNetworkingFramework() throws {
-        let frameworks = ["import Network", "import CloudKit", "import CFNetwork", "import MultipeerConnectivity"]
+    /// The frameworks that reach the internet. None of these is ever allowed anywhere.
+    private static let internetFrameworks = ["import Network", "import CloudKit", "import CFNetwork"]
 
+    /// The frameworks that reach another device in the same room, and the one file each is
+    /// allowed in.
+    ///
+    /// Offline means no internet, not no radios. Both of these are peer to peer: no router,
+    /// no account, no server, and nothing that works at a distance. They are still confined
+    /// to a single file apiece, so adding a second use is a decision somebody has to make
+    /// here, in front of this comment, rather than one that happens quietly.
+    private static let localFrameworks = [
+        "import WatchConnectivity": "WatchConnectivitySession.swift",
+        "import MultipeerConnectivity": "PeerConnectivitySession.swift",
+    ]
+
+    @Test("Nothing imports a framework that reaches the internet")
+    func importsNoNetworkingFramework() throws {
         for file in ShippedSources.files() {
             let source = try String(contentsOf: file, encoding: .utf8)
-            for framework in frameworks {
+            for framework in Self.internetFrameworks {
                 #expect(
                     !source.contains(framework),
                     Comment(rawValue: "\(file.lastPathComponent) has \(framework)")
                 )
             }
+        }
+    }
+
+    @Test("A radio that reaches the next device is confined to the one file that owns it")
+    func keepsEachLocalLinkInItsOwnFile() throws {
+        for file in ShippedSources.files() {
+            let source = try String(contentsOf: file, encoding: .utf8)
+            for (framework, owner) in Self.localFrameworks where source.contains(framework) {
+                #expect(
+                    file.lastPathComponent == owner,
+                    Comment(rawValue: "\(file.lastPathComponent) has \(framework); only \(owner) may")
+                )
+            }
+        }
+    }
+
+    @Test("The phone-to-phone link reaches the next phone and nothing further")
+    func thePeerLinkIsLocal() throws {
+        // Multipeer Connectivity is Bluetooth and peer-to-peer Wi-Fi between two devices in
+        // the same room. It needs no router, no internet and no account -- which is the whole
+        // reason it is the way a season reaches a second phone, rather than a server.
+        let peer = ShippedSources.repository
+            .appendingPathComponent("ios/Shared/Link/PeerConnectivitySession.swift")
+        let source = try String(contentsOf: peer, encoding: .utf8)
+
+        #expect(source.contains("import MultipeerConnectivity"))
+        for api in Self.networkingAPIs {
+            #expect(!source.contains(api), Comment(rawValue: "the peer link names \(api)"))
         }
     }
 

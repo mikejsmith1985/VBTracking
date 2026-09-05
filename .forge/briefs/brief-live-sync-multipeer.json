@@ -1,0 +1,32 @@
+{
+  "briefId": "brief-live-sync-multipeer",
+  "sessionId": "tab-107-0xs7q4wng",
+  "taskId": "live-sync-multipeer",
+  "headline": "A match can now be shared live with a second phone over Bluetooth, with no internet involved.",
+  "whatChanged": "New PeerSync rules decide who may record and what travels. A PeerConnectivitySession wraps Multipeer Connectivity; a PeerLink announces held event identifiers and merges what comes back. Season gains a live-sharing control; Track tells a following phone why it is read-only. The offline test narrowed from \"no radios\" to \"no internet\".",
+  "whyItChanged": "The operator tracks the match; his wife coaches. Her watch pairs to her phone and to nothing else, so the court cannot reach her wrist from his phone. Phone to phone is the only path, and her phone then feeds her own watch by the link that already ships.",
+  "whatCouldBreak": "The transport is untested: MCSession cannot be built on Windows and there is no Mac here, so only the rules are proven. It also adds a Local Network permission prompt, which changes answers already given to App Review for 1.0 — this must not ship until 1.0 clears.",
+  "decisions": [
+    {
+      "chose": "The receiving phone stops recording the moment it takes a match",
+      "insteadOf": "Letting both phones record and reconciling the two logs afterwards",
+      "because": "Two logs of the same game cannot be joined - appending one to the other would say every serve happened twice, which the AirDrop merge already refuses. Refusing to start the second log is the only point at which it is preventable.",
+      "openQuestion": "A follower who wants to take over tracking must stop sharing first. Acceptable, or should there be a hand-back?"
+    },
+    {
+      "chose": "Phones exchange event identifiers and send only the difference",
+      "insteadOf": "Sending the whole log and letting the far side dedupe",
+      "because": "A season is thousands of events. Putting the whole record on the air every few seconds to ask what is missing is all cost, and the merge already recognises an event by its identifier.",
+      "openQuestion": "Identifier lists still grow with the season. A high-water mark would be smaller but harder to get right when events arrive out of order."
+    },
+    {
+      "chose": "Narrow the offline ban to internet frameworks, confining each radio to one file",
+      "insteadOf": "Leaving MultipeerConnectivity banned outright",
+      "because": "The project's own rule is 'offline means no internet, not no radios' - the same logic that permits WatchConnectivity permits this. One file apiece makes a second use a decision somebody makes deliberately.",
+      "openQuestion": "The ban is now per-file rather than absolute, a slightly weaker guarantee in exchange for the feature."
+    }
+  ],
+  "isRoutine": false,
+  "filesTouched": 11,
+  "publishedAt": "2026-09-05T12:08:33.4129552Z"
+}

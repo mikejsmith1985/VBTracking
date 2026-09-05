@@ -10,6 +10,8 @@ import VBPresentation
 
 struct SeasonScreen: View {
     @Bindable var store: Store
+    /// Nil until the app has finished starting up. Sharing is not offered before then.
+    var peers: PeerLink?
     @State private var isImporting = false
     @State private var isHandingOver = false
     @State private var isExporting = false
@@ -90,6 +92,28 @@ struct SeasonScreen: View {
                     // A backup is for getting a season back; this is for a coach and an
                     // assistant coach who both need the figures when only one of them is
                     // tracking. What arrives is merged, so neither phone loses its roster.
+                    if let peers {
+                        // Live sharing, beside the one-off hand-over, because the two answer
+                        // the same question at different speeds: send a season once, or keep
+                        // a second phone level with this one all match.
+                        Button(peers.isSharing ? "Stop sharing this match" : "Share this match live") {
+                            peers.toggleSharing()
+                        }
+                        .accessibilityIdentifier("share-live")
+
+                        Text(
+                            peers.isSharing
+                                ? peers.state.label
+                                : "Keeps a second phone in the gym level with this one, so an assistant coach sees the same figures on their own watch. Bluetooth only — nothing goes over the internet."
+                        )
+                        .font(.caption)
+                        .foregroundStyle(peers.state.isLive ? Color.green : Color.secondary)
+
+                        if let explanation = peers.role.explanation {
+                            Text(explanation).font(.caption).foregroundStyle(.orange)
+                        }
+                    }
+
                     Button("Send this season to another phone") { isHandingOver = true }
                         .accessibilityIdentifier("hand-over")
                     Text("Sends it over AirDrop. The other phone keeps what it already has and adds what it does not.")
