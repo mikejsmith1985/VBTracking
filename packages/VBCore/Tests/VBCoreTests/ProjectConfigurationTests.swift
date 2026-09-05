@@ -62,4 +62,50 @@ struct ProjectConfigurationTests {
         let answers = project.components(separatedBy: "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption").count - 1
         #expect(answers >= 2, "the phone and the watch each need it")
     }
+
+    @Test("Every bundle the build signs has a signing step that asks for its profile")
+    func fetchesAProfileForEveryBundle() throws {
+        let project = try Self.projectFile
+        let pipeline = try String(
+            contentsOf: ShippedSources.repository.appendingPathComponent("codemagic.yaml"),
+            encoding: .utf8
+        )
+
+        // A target added without a call of its own is not a compile error and not a test
+        // failure: the archive gets most of the way through and then refuses that one
+        // target for want of a provisioning profile. That is a whole cloud build to find
+        // out, which is why it is found here instead.
+        for identifier in Self.bundleIdentifiers(in: project) {
+            #expect(
+                pipeline.contains("\"\(identifier)\""),
+                "codemagic.yaml never asks for a profile for \(identifier)"
+            )
+        }
+    }
+
+    @Test("Nothing claims an App Group it never opens")
+    func claimsNoUnusedAppGroup() throws {
+        let project = try Self.projectFile
+        guard project.contains("VBTrackerGlance:") else { return }
+
+        // The lock screen extension is handed its state by the app through ActivityKit and
+        // never opens the log itself. Claiming the group anyway asked Apple for a capability
+        // this identifier had never been granted, and the archive refused outright.
+        let glance = project.components(separatedBy: "VBTrackerGlance:")[1]
+        let untilTheNextTarget = glance.components(separatedBy: "\n  VBTrackerWatch:")[0]
+        #expect(
+            !untilTheNextTarget.contains("application-groups"),
+            "the lock screen extension reads nothing from the group it would be claiming"
+        )
+    }
+
+    /// Every bundle identifier the project declares, in the order they appear.
+    private static func bundleIdentifiers(in project: String) -> [String] {
+        project.components(separatedBy: .newlines).compactMap { line in
+            let key = "PRODUCT_BUNDLE_IDENTIFIER:"
+            guard let range = line.range(of: key) else { return nil }
+            let value = line[range.upperBound...].trimmingCharacters(in: .whitespaces)
+            return value.isEmpty ? nil : value
+        }
+    }
 }

@@ -143,11 +143,10 @@ targets:
         SKIP_INSTALL: YES
         ITSAppUsesNonExemptEncryption: NO
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
-    entitlements:
-      path: VBTrackerGlance/VBTrackerGlance.entitlements
-      properties:
-        com.apple.security.application-groups:
-          - group.com.mikejsmith.vbtracker
+    # No entitlements, and specifically no App Group. A Live Activity is handed its state by
+    # the app through ActivityKit; it never opens the log itself. Claiming the group anyway
+    # asked Apple for a provisioning profile with a capability nobody had granted this
+    # identifier, and the archive refused outright.
 
   # --- Watch ------------------------------------------------------------------
   VBTrackerWatch:

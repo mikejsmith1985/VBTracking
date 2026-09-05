@@ -99,18 +99,22 @@ workflows:
       #
       # Declaring `ios_signing` only looks for profiles that are already there, and on a
       # brand new App ID there are none -- the first build died in under a second saying so.
-      # `--create` makes the certificate and both profiles once, and finds them every time
-      # after. Two bundle ids, because the watch app is signed as its own bundle.
+      # `--create` makes the certificate and every profile once, and finds them every time
+      # after. One call per signed bundle: the phone, the watch it carries, and the lock
+      # screen extension. A bundle with no call of its own gets no profile, and the archive
+      # fails on that one target alone -- which is exactly how the lock screen first failed.
       - name: Sign, creating the profiles the first time
         script: |
-          app-store-connect fetch-signing-files "com.mikejsmith.vbtracker" \
-            --type IOS_APP_STORE \
-            --create \
-            --certificate-key @env:CERTIFICATE_PRIVATE_KEY
-          app-store-connect fetch-signing-files "com.mikejsmith.vbtracker.watchapp" \
-            --type IOS_APP_STORE \
-            --create \
-            --certificate-key @env:CERTIFICATE_PRIVATE_KEY
+          for bundle in \
+            "com.mikejsmith.vbtracker" \
+            "com.mikejsmith.vbtracker.watchapp" \
+            "com.mikejsmith.vbtracker.glance"
+          do
+            app-store-connect fetch-signing-files "$bundle" \
+              --type IOS_APP_STORE \
+              --create \
+              --certificate-key @env:CERTIFICATE_PRIVATE_KEY
+          done
           keychain initialize
           keychain add-certificates
           xcode-project use-profiles
