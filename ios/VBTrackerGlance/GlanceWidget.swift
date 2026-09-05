@@ -84,7 +84,9 @@ struct LockScreenCourt: View {
             }
             Text(glance.age)
                 .font(.caption2)
-                .foregroundStyle(glance.isVouchedFor ? .secondary : .orange)
+                // Named as Colors on both sides: `.secondary` alone is a hierarchical style,
+                // not a colour, and the two cannot share a ternary.
+                .foregroundStyle(glance.isVouchedFor ? Color.secondary : Color.orange)
         }
     }
 }
