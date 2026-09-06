@@ -4,6 +4,7 @@
 // once delivery — so this file is only the wiring. That is deliberate: it is the one file
 // in the app that cannot be tested anywhere but on a paired device.
 import Foundation
+import VBPresentation
 import WatchConnectivity
 
 /// `WCSession`, behind the protocol the rest of the app talks to.
