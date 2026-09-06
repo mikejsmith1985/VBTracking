@@ -49,7 +49,10 @@ final class PhoneLink {
             serveLimit: ServeLimitNotice.raised(by: state),
             // And what the phone holds, so a serve recorded on the wrist stops showing as
             // unsent the moment the court that includes it arrives.
-            acknowledgedEventIds: store.acknowledgedEventIds
+            acknowledgedEventIds: store.acknowledgedEventIds,
+            // The rally score rides along with the court it belongs to, so the wrist never
+            // shows one that belongs to a different moment.
+            score: state.currentMatch?.rallyScore
         )
         session.send(context: LinkPayload.encode(snapshot: snapshot))
     }

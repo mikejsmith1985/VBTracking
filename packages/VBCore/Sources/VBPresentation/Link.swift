@@ -135,6 +135,13 @@ public struct CourtSnapshot: Hashable, Codable, Sendable {
     /// and capped so a season does not travel to a wrist that only needs the last few.
     public var acknowledgedEventIds: [String]
 
+    /// The rally score, or nil when nobody has been keeping it.
+    ///
+    /// Nil is the ordinary case and shows nothing at all on the wrist. A score half-known --
+    /// our points with the opposition's missing -- would say they had scored nothing, which
+    /// is the one thing a scoreboard must never say.
+    public var score: Scoreboard?
+
     public init(
         sequence: Int,
         capturedAt: Date,
@@ -142,7 +149,8 @@ public struct CourtSnapshot: Hashable, Codable, Sendable {
         hasOrder: Bool,
         slots: [SnapshotSlot],
         serveLimit: ServeLimitNotice? = nil,
-        acknowledgedEventIds: [String] = []
+        acknowledgedEventIds: [String] = [],
+        score: Scoreboard? = nil
     ) {
         self.sequence = sequence
         self.capturedAt = capturedAt
@@ -151,6 +159,7 @@ public struct CourtSnapshot: Hashable, Codable, Sendable {
         self.slots = slots
         self.serveLimit = serveLimit
         self.acknowledgedEventIds = acknowledgedEventIds
+        self.score = score
     }
 
     /// Reads a court that may have been written by a different build.
@@ -173,6 +182,9 @@ public struct CourtSnapshot: Hashable, Codable, Sendable {
         // landed.
         self.acknowledgedEventIds =
             try container.decodeIfPresent([String].self, forKey: .acknowledgedEventIds) ?? []
+        // Absent from a phone that predates the scoreboard, which is a court with no score
+        // rather than a court that failed to arrive.
+        self.score = try container.decodeIfPresent(Scoreboard.self, forKey: .score)
     }
 
     /// Builds the snapshot the wrist should be showing.
@@ -181,7 +193,8 @@ public struct CourtSnapshot: Hashable, Codable, Sendable {
         sequence: Int,
         capturedAt: Date,
         serveLimit: ServeLimitNotice? = nil,
-        acknowledgedEventIds: [String] = []
+        acknowledgedEventIds: [String] = [],
+        score: Scoreboard? = nil
     ) {
         self.sequence = sequence
         self.capturedAt = capturedAt
@@ -189,6 +202,7 @@ public struct CourtSnapshot: Hashable, Codable, Sendable {
         self.hasOrder = court.hasOrder
         self.serveLimit = serveLimit
         self.acknowledgedEventIds = acknowledgedEventIds
+        self.score = score
         self.slots = court.slots.map { slot in
             SnapshotSlot(
                 court: slot.position.rawValue,

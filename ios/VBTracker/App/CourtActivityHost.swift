@@ -50,7 +50,8 @@ final class CourtActivityHost: @unchecked Sendable {
             // No alert ever rides this. The wrist already buzzes for the serve limit, and a
             // second buzz for the same rotation would train the coach to ignore both.
             serveLimit: nil,
-            acknowledgedEventIds: []
+            acknowledgedEventIds: [],
+            score: state.currentMatch?.rallyScore
         )
         let content = ActivityContent(state: CourtActivityAttributes.ContentState(court: snapshot), staleDate: nil)
 
