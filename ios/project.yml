@@ -111,11 +111,12 @@ targets:
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: com.mikejsmith.vbtracker.season
             UTTypeDescription: Volleyball season
-            # It is JSON underneath, and saying so lets anything that reads JSON still open
-            # it. The app is only claiming this one extension, not every JSON file on the
-            # phone.
+            # Deliberately NOT public.json, though it is JSON underneath. Saying so let
+            # every app that reads JSON claim the file, so AirDropping a season landed as a
+            # document with an "open with" in front of it rather than opening this app. One
+            # owner and no chooser is worth more than being readable by a text editor.
             UTTypeConformsTo:
-              - public.json
+              - public.data
             UTTypeTagSpecification:
               public.filename-extension:
                 - vbseason

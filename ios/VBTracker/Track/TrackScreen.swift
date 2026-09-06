@@ -28,6 +28,7 @@ struct TrackScreen: View {
     @State private var isNamingGame = false
     /// The share sheet carrying an invitation to watch this match.
     @State private var isInviting = false
+    @Environment(\.scenePhase) private var scenePhase
 
     private var dock: DockState {
         DockState(state: store.state, isPickerRequested: isPickerRequested, canUndo: store.canUndo)
@@ -49,6 +50,7 @@ struct TrackScreen: View {
         ZStack {
             VStack(spacing: 0) {
                 NoticeBanner(notice: store.notice)
+                if let peers { NearbyOffer(peers: peers) }
 
                 if store.state.roster.isEmpty {
                     EmptyState(
@@ -113,6 +115,15 @@ struct TrackScreen: View {
         // Full screen rather than a sheet: the whole point is every pixel, read from a metre
         // away, with no tab bar or grabber taking a strip of it.
         .fullScreenCover(isPresented: $isShowingSideline) { SidelineScreen(store: store) }
+        // Listening costs a radio and stops the moment this screen does. It is what makes the
+        // other phone's whole setup one tap, so it starts without being asked -- but it never
+        // runs behind the operator's back on some other tab.
+        .onAppear { peers?.listen() }
+        .onDisappear { peers?.stopListening() }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return peers?.stopListening() ?? () }
+            peers?.listen()
+        }
     }
 
     /// Records one serve, and raises the five-serve alert when it is the fifth.

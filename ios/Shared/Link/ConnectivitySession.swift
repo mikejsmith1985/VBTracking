@@ -62,6 +62,10 @@ public protocol PeerSession: AnyObject, Sendable {
 public protocol PeerDelegate: AnyObject, Sendable {
     func received(fromPeer payload: [String: Any])
     func peerLinkChanged(_ state: PeerLinkState)
+
+    /// A phone nearby is advertising a match. Only ever called while listening, and never
+    /// followed by a connection: noticing somebody is not joining them.
+    func noticedNearby(id: String, name: String)
 }
 
 /// Encoding the two payloads.

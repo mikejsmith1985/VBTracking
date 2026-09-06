@@ -70,9 +70,20 @@ public final class BluetoothSession: NSObject, PeerSession, @unchecked Sendable 
     private var peer: CBPeripheral?
     private var peerChannel: CBCharacteristic?
 
-    public init(displayName: String, mode: PeerMode, delegate: any PeerDelegate) {
+    /// The one phone this session may join, when the operator picked it off a list of what
+    /// is nearby. Nil means the first phone found will do, which is what a receiver with no
+    /// choice offered to it has always done.
+    private let wantedPeer: UUID?
+
+    public init(
+        displayName: String,
+        mode: PeerMode,
+        wantedPeer: UUID? = nil,
+        delegate: any PeerDelegate
+    ) {
         self.displayName = displayName
         self.mode = mode
+        self.wantedPeer = wantedPeer
         self.delegate = delegate
         super.init()
     }
@@ -302,7 +313,21 @@ extension BluetoothSession: CBCentralManagerDelegate {
         advertisementData: [String: Any],
         rssi: NSNumber
     ) {
+        // Listening is noticing, not joining. The name is what the operator is offered, and
+        // nothing at all happens to the other phone until they tap it.
+        guard mode.joinsWhatItFinds else {
+            let name = advertisementData[CBAdvertisementDataLocalNameKey] as? String
+            return delegate?.noticedNearby(
+                id: peripheral.identifier.uuidString,
+                name: name ?? peripheral.name ?? ""
+            )
+        }
+
         guard peer == nil else { return }
+        // When a phone was picked off a list, only that phone will do. Joining whichever
+        // answered first would put the other court's match on this screen.
+        if let wantedPeer, peripheral.identifier != wantedPeer { return }
+
         // Held onto deliberately: Core Bluetooth lets go of a peripheral nobody is keeping,
         // and the connection dies with it before it is ever made.
         peer = peripheral
@@ -346,7 +371,12 @@ extension BluetoothSession: CBCentralManagerDelegate {
     /// the app is in the background, which is the one condition this whole file exists for.
     private func look(with manager: CBCentralManager) {
         guard manager.state == .poweredOn else { return }
-        manager.scanForPeripherals(withServices: [Wire.service], options: nil)
+        // A listener asks for every advertisement, not just the first from each phone: it is
+        // how it learns that a phone is still there, and so when one has gone. The option is
+        // ignored in the background, which is fine -- listening only happens on screen.
+        let options: [String: Any]? =
+            mode.joinsWhatItFinds ? nil : [CBCentralManagerScanOptionAllowDuplicatesKey: true]
+        manager.scanForPeripherals(withServices: [Wire.service], options: options)
     }
 }
 

@@ -67,13 +67,21 @@ public enum PeerMode: Equatable, Sendable {
     /// This phone is watching somebody else's match.
     case receiving
 
+    /// This phone is doing nothing in particular, and noticing whether anybody nearby is
+    /// sharing a match.
+    ///
+    /// It listens and never answers: no connection is made, nothing is exchanged, and the
+    /// phone stays a perfectly ordinary recording phone. All it produces is a name to offer,
+    /// which is what replaced sending a file across the room to answer "which phone".
+    case listening
+
     /// What this phone may do, decided entirely by the mode.
     ///
     /// Nothing is inferred from what arrives, so nothing can be inferred wrongly -- which is
     /// what used to demote the phone doing the recording the moment anything came back.
     public var role: PeerRole {
         switch self {
-        case .off: .alone
+        case .off, .listening: .alone
         case .sending: .tracking
         case .receiving: .following
         }
@@ -82,13 +90,23 @@ public enum PeerMode: Equatable, Sendable {
     /// Whether this phone makes itself findable. The sender does; nobody else.
     public var isAdvertising: Bool { self == .sending }
 
-    /// Whether this phone looks for another. The receiver does; nobody else.
-    public var isBrowsing: Bool { self == .receiving }
+    /// Whether this phone looks for another. The receiver joins one; the listener only
+    /// notices them.
+    public var isBrowsing: Bool { self == .receiving || self == .listening }
+
+    /// Whether this phone joins what it finds, rather than only noticing it.
+    public var joinsWhatItFinds: Bool { self == .receiving }
+
+    /// Whether the operator has actually put this phone into a shared match.
+    ///
+    /// Listening is not sharing: nothing has been agreed, nothing is being sent, and a
+    /// screen must not offer to stop something that never started.
+    public var isSharing: Bool { self == .sending || self == .receiving }
 
     /// What to say while waiting for the other phone to appear.
     public var waitingLabel: String {
         switch self {
-        case .off: "Not sharing"
+        case .off, .listening: "Not sharing"
         case .sending: "Waiting for a phone to receive this match\u{2026}"
         case .receiving: "Looking for a phone sending a match\u{2026}"
         }

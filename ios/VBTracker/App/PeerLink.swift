@@ -63,8 +63,45 @@ final class PeerLink {
         }
     }
 
-    /// Whether sharing is switched on at all.
-    var isSharing: Bool { mode != .off }
+    /// Whether sharing is switched on at all. Listening is not sharing.
+    var isSharing: Bool { mode.isSharing }
+
+    /// Phones nearby that are sharing a match, freshest sightings only.
+    private(set) var nearby = NearbyPhones()
+
+    /// What to offer on screen, or nil when there is nothing worth saying.
+    func nearbyOffer(at moment: Date = Date()) -> String? {
+        guard mode == .listening else { return nil }
+        return nearby.offer(at: moment)
+    }
+
+    /// The phones to list, when the operator opens the offer.
+    func nearbyPhones(at moment: Date = Date()) -> [NearbyPhone] {
+        guard mode == .listening else { return [] }
+        return nearby.current(at: moment)
+    }
+
+    /// Quietly notices whether anybody nearby is sharing. Nothing is joined and nothing is
+    /// sent; all it produces is a name to offer.
+    ///
+    /// This is what replaced AirDropping a file to answer "which phone". A phone sharing a
+    /// match is already saying its name into the room.
+    func listen() {
+        guard mode == .off else { return }
+        start(in: .listening)
+    }
+
+    /// Stops listening, without disturbing a phone that is actually sharing.
+    func stopListening() {
+        guard mode == .listening else { return }
+        stop()
+    }
+
+    /// Joins the phone the operator picked out of what is nearby.
+    func watch(_ phone: NearbyPhone) {
+        invitedBy = phone.shownName
+        start(in: .receiving, joining: UUID(uuidString: phone.id))
+    }
 
     /// Offers this phone's match to another one.
     func startSending() { start(in: .sending) }
@@ -124,13 +161,19 @@ final class PeerLink {
         expectedSender = nil
         invitedBy = nil
         isPeerVouchedFor = false
+        nearby.forgetAll()
     }
 
-    private func start(in wanted: PeerMode) {
+    private func start(in wanted: PeerMode, joining chosen: UUID? = nil) {
         stop()
         mode = wanted
 
-        let session = BluetoothSession(displayName: deviceName, mode: wanted, delegate: self)
+        let session = BluetoothSession(
+            displayName: deviceName,
+            mode: wanted,
+            wantedPeer: chosen,
+            delegate: self
+        )
         self.session = session
         session.start()
     }
@@ -171,6 +214,10 @@ final class PeerLink {
 extension PeerLink: PeerDelegate {
     nonisolated func peerLinkChanged(_ newState: PeerLinkState) {
         Task { @MainActor in self.linkChanged(to: newState) }
+    }
+
+    nonisolated func noticedNearby(id: String, name: String) {
+        Task { @MainActor in self.nearby.noticed(id: id, name: name, at: Date()) }
     }
 
     nonisolated func received(fromPeer payload: [String: Any]) {
