@@ -153,6 +153,24 @@ final class PeerLink {
     /// still the same two people at the same match, and sharing lasts until somebody says
     /// otherwise.
     func stop() {
+        // A phone that is sharing says so before it goes. Left to the radio alone, the far
+        // side cannot tell "he stopped" from "he walked to the other end of the gym" -- and
+        // it must not give up on the second, so it would sit on a court that never moves
+        // again until somebody noticed and left by hand.
+        guard mode == .sending, state.isLive, let leaving = session else { return tearDown() }
+        leaving.send(LinkPayload.encodeFarewell())
+
+        // A moment for the frame to reach the radio before the radio is taken away. Nothing
+        // here can wait on a Bluetooth write. A farewell that is lost anyway costs only the
+        // old behaviour, which the far side survives.
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(400))
+            self?.tearDown()
+        }
+    }
+
+    /// Puts everything down. The end of every way out of sharing.
+    private func tearDown() {
         session?.stop()
         session = nil
         mode = .off
@@ -221,6 +239,11 @@ extension PeerLink: PeerDelegate {
     }
 
     nonisolated func received(fromPeer payload: [String: Any]) {
+        if LinkPayload.isFarewell(payload) {
+            Task { @MainActor in self.theyStoppedSharing() }
+            return
+        }
+
         if let introduction = LinkPayload.decodeIntroduction(payload) {
             Task { @MainActor in self.consider(introduction) }
             return
@@ -288,6 +311,18 @@ extension PeerLink {
         stop()
         expectedSender = invitedCode
         start(in: wanted)
+    }
+
+    /// The phone doing the recording has finished.
+    ///
+    /// Watching stops by itself. Being told to leave a mode somebody never chose to enter --
+    /// they tapped "watch" once, half an hour ago -- is a chore, and until they did it their
+    /// screen showed a court that had stopped moving and did not say why.
+    fileprivate func theyStoppedSharing() {
+        guard mode == .receiving else { return }
+        let who = invitedBy ?? "The other phone"
+        stop()
+        store.say("\(who) stopped sharing the match.")
     }
 
     /// Answers an announcement with the events the other phone has not got.

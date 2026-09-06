@@ -18,6 +18,10 @@ public protocol ConnectivitySession: AnyObject, Sendable {
 
     /// Queues events for delivery. Guaranteed, in order, and it survives going out of range.
     func transfer(userInfo: [String: Any])
+
+    /// What the phone can find out about the watch beside it. Read rather than assumed: a
+    /// watch app that never installed looks exactly like one that is simply asleep.
+    var watchState: WatchState { get }
 }
 
 /// What arrives.
@@ -39,6 +43,9 @@ public enum LinkKey {
     /// can tell it apart from somebody else's match at the next court.
     public static let senderCode = "senderCode"
     public static let senderName = "senderName"
+    /// Phone to phone: the sending phone saying it has finished, so the watching phone stops
+    /// watching by itself rather than sitting on a court that will never move again.
+    public static let sharingEnded = "sharingEnded"
 }
 
 /// The link between two phones in the same room.
@@ -122,6 +129,17 @@ public enum LinkPayload {
             LinkKey.senderCode: introduction.senderCode,
             LinkKey.senderName: introduction.senderName,
         ]
+    }
+
+    /// A sending phone saying it has stopped. Said out loud rather than left to the radio,
+    /// because a link that simply drops is a phone at the far end of the gym -- worth waiting
+    /// for -- and one that has stopped is not.
+    public static func encodeFarewell() -> [String: Any] {
+        [LinkKey.sharingEnded: true]
+    }
+
+    public static func isFarewell(_ payload: [String: Any]) -> Bool {
+        payload[LinkKey.sharingEnded] as? Bool == true
     }
 
     public static func decodeIntroduction(_ payload: [String: Any]) -> Introduction? {

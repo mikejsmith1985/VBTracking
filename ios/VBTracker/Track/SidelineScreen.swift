@@ -95,18 +95,18 @@ private struct CourtCard: View {
     var body: some View {
         VStack(spacing: 2) {
             Text(text(number: slot.number))
-                .font(.system(size: 46, weight: .heavy, design: .rounded))
-                .minimumScaleFactor(0.4)
+                .font(.system(size: 74, weight: .heavy, design: .rounded))
+                .minimumScaleFactor(0.5)
                 .lineLimit(1)
 
             if slot.number != nil {
                 Text(text(percentage: slot.inPercentage))
-                    .font(.system(size: 20, weight: .semibold).monospacedDigit())
+                    .font(.system(size: 34, weight: .bold).monospacedDigit())
                 HStack(alignment: .firstTextBaseline, spacing: 2) {
                     Text(text(count: slot.points))
-                        .font(.system(size: 18, weight: .semibold).monospacedDigit())
+                        .font(.system(size: 28, weight: .semibold).monospacedDigit())
                         .foregroundStyle(.secondary)
-                    Text("pts").font(.system(size: 12)).foregroundStyle(.tertiary)
+                    Text("pts").font(.system(size: 15)).foregroundStyle(.tertiary)
                 }
             }
         }
@@ -140,7 +140,7 @@ private struct CourtCard: View {
 
     private func corner(_ word: String, _ tint: Color) -> some View {
         Text(word)
-            .font(.system(size: 10, weight: .bold))
+            .font(.system(size: 13, weight: .bold))
             .foregroundStyle(tint)
             .padding(.horizontal, 5)
             .padding(.vertical, 2)
@@ -160,21 +160,21 @@ private struct BenchStrip: View {
                     ForEach(bench) { player in
                         VStack(spacing: 1) {
                             Text(text(number: player.number))
-                                .font(.system(size: 22, weight: .bold, design: .rounded))
+                                .font(.system(size: 30, weight: .bold, design: .rounded))
                             Text(text(percentage: player.inPercentage))
-                                .font(.system(size: 13).monospacedDigit())
+                                .font(.system(size: 19, weight: .semibold).monospacedDigit())
                                 .foregroundStyle(.secondary)
                             Text("\(text(count: player.points)) pts")
-                                .font(.system(size: 11).monospacedDigit())
+                                .font(.system(size: 15).monospacedDigit())
                                 .foregroundStyle(.tertiary)
                         }
-                        .frame(minWidth: 54)
+                        .frame(minWidth: 72)
                         .padding(.vertical, 6)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.05)))
                     }
                 }
             }
         }
-        .frame(maxHeight: 96)
+        .frame(maxHeight: 132)
     }
 }

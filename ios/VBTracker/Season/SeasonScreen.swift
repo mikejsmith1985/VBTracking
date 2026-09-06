@@ -10,6 +10,8 @@ import VBPresentation
 
 struct SeasonScreen: View {
     @Bindable var store: Store
+    /// The link to the watch, for reporting whether its app is actually installed.
+    var link: PhoneLink?
     /// The court on the lock screen, switched on by hand.
     var lockScreen: CourtActivityHost?
     @State private var isOnLockScreen = false
@@ -80,6 +82,13 @@ struct SeasonScreen: View {
                 // Reachable whether or not a season exists: a new phone holding a backup
                 // has no season, and an operator who cannot reach the restore has lost
                 // everything they recorded.
+                // Said out loud because nothing else says it. A watch app that never
+                // installed looks exactly like one that is asleep: the phone is fine, the
+                // wrist simply never shows a court, and there is no way to tell which.
+                if let link {
+                    Section("Apple Watch") { WatchRow(readiness: WatchReadiness(state: link.watchState)) }
+                }
+
                 Section("Your data") {
                     Button("Save a copy of everything") { sheet = .savingACopy }
                         .accessibilityIdentifier("export-data")
@@ -310,4 +319,29 @@ enum SeasonSheet: String, Identifiable {
     case handingOverTheSeason
 
     var id: String { rawValue }
+}
+
+/// Where the watch app is, and what to do when it is not on the wrist.
+///
+/// iOS gives an app no way to install its own watch app -- that switch belongs to the Watch
+/// app on the iPhone. So this says which of the four states the pair is in and exactly what
+/// to do about the one that needs doing, which is what was missing entirely.
+private struct WatchRow: View {
+    let readiness: WatchReadiness
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: readiness.needsAttention ? "exclamationmark.triangle" : "applewatch")
+                Text(readiness.headline).font(.callout)
+                Spacer(minLength: 4)
+            }
+            .foregroundStyle(readiness.needsAttention ? Color.orange : Color.primary)
+
+            if let instruction = readiness.instruction {
+                Text(instruction).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityIdentifier("watch-readiness")
+    }
 }

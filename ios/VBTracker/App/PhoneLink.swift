@@ -15,6 +15,15 @@ final class PhoneLink {
     private var session: (any ConnectivitySession)?
     private var sequence = 0
 
+    /// What the phone knows about the watch, for the one screen that says so.
+    ///
+    /// Asked fresh every time rather than kept: a watch app installed while the app was open
+    /// must stop being reported as missing without anybody relaunching anything.
+    var watchState: WatchState {
+        session?.watchState
+            ?? WatchState(isSupported: false, isPaired: false, isAppInstalled: false, isReachable: false)
+    }
+
     init(store: Store) {
         self.store = store
         self.session = WatchConnectivitySession(delegate: self)

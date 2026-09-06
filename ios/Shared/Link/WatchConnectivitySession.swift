@@ -24,6 +24,25 @@ public final class WatchConnectivitySession: NSObject, ConnectivitySession, @unc
 
     public var isReachable: Bool { session.isReachable }
 
+    /// What this phone knows about the watch. On the watch itself the questions do not
+    /// apply -- there is always exactly one phone and the app is plainly installed, or this
+    /// code would not be running.
+    public var watchState: WatchState {
+        #if os(iOS)
+            return WatchState(
+                isSupported: WCSession.isSupported(),
+                isPaired: session.isPaired,
+                isAppInstalled: session.isWatchAppInstalled,
+                isReachable: session.isReachable
+            )
+        #else
+            return WatchState(
+                isSupported: true, isPaired: true, isAppInstalled: true,
+                isReachable: session.isReachable
+            )
+        #endif
+    }
+
     /// The newest court. Sent twice on purpose while the watch is awake: the application
     /// context always arrives eventually, and the message arrives now.
     public func send(context: [String: Any]) {
