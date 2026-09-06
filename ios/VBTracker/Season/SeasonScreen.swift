@@ -17,6 +17,7 @@ struct SeasonScreen: View {
     @State private var isOnLockScreen = false
     @State private var isImporting = false
     @State private var isHandingOver = false
+    @State private var isInviting = false
     @State private var isExporting = false
     @State private var openGameId: String?
     @State private var careerPlayerId: String?
@@ -101,18 +102,34 @@ struct SeasonScreen: View {
                         // radio and a puzzle for whoever is holding the phone. Naming the
                         // direction answers both at once.
                         if peers.isSharing {
+                            if peers.mode == .sending {
+                                Button("Invite another phone again") { isInviting = true }
+                                    .accessibilityIdentifier("invite-again")
+                            }
                             Button("Stop sharing") { peers.stop() }
                                 .accessibilityIdentifier("stop-sharing")
-                            Text(peers.state.isLive ? peers.state.label(as: peers.role) : peers.mode.waitingLabel)
+                            Text(peers.state.isLive ? peers.state.label(as: peers.role) : peers.waitingLabel)
                                 .font(.caption)
                                 .foregroundStyle(peers.state.isLive ? Color.green : Color.secondary)
                         } else {
-                            Button("Send this match to another phone") { peers.startSending() }
-                                .accessibilityIdentifier("send-match")
-                            Button("Receive a match from another phone") { peers.startReceiving() }
-                                .accessibilityIdentifier("receive-match")
-                            Text("Keeps two phones in the gym level with each other, so an assistant coach sees the same figures on their own watch. The phone sending keeps the record; the phone receiving only watches. Bluetooth only — nothing goes over the internet.")
+                            // One button does the whole of it: start sharing, then hand the
+                            // other phone an invitation. Before this, both people had to find
+                            // a button and get the direction the right way round, standing on
+                            // a sideline, which nobody would ever have worked out unaided.
+                            Button("Share this match with another phone") {
+                                peers.startSending()
+                                isInviting = true
+                            }
+                            .accessibilityIdentifier("send-match")
+                            Text("Starts sharing, then offers an invitation to AirDrop. The other phone taps it once and starts watching — nothing to set up on their end. The phone sending keeps the record; the phone receiving only watches. Bluetooth only — nothing goes over the internet.")
                                 .font(.caption).foregroundStyle(.secondary)
+
+                            // Kept for when AirDrop is not to hand. It takes whichever phone
+                            // answers, because without an invitation there is nothing to
+                            // check a phone against.
+                            Button("Or watch a match without an invitation") { peers.startReceiving() }
+                                .accessibilityIdentifier("receive-match")
+                                .font(.caption)
                         }
 
                         if let explanation = peers.role.explanation {
@@ -162,6 +179,9 @@ struct SeasonScreen: View {
             }
             .sheet(isPresented: $isExporting) { ExportSheet(store: store, isPresented: $isExporting) }
             .sheet(isPresented: $isHandingOver) { HandoverSheet(store: store) }
+            .sheet(isPresented: $isInviting) {
+                if let peers { InviteSheet(store: store, invitation: peers.invitation()) }
+            }
             .onChange(of: isOnLockScreen) { _, wanted in
                 lockScreen?.isEnabled = wanted
                 if wanted { lockScreen?.follow(store.state) }

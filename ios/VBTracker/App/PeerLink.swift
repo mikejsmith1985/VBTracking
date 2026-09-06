@@ -30,6 +30,28 @@ final class PeerLink {
     /// season.
     private var peerHolds: Set<String> = []
 
+    /// The phone named in an AirDropped invitation, and what to call it. Nil when the
+    /// operator switched receiving on by hand and any phone will do.
+    private var expectedSender: String?
+    private var invitedBy: String?
+
+    /// Whether the phone on the other end has said who it is and turned out to be the right
+    /// one. Nothing is taken into the log before it has.
+    private var isPeerVouchedFor = false
+
+    /// This phone's own code, kept so that a phone restarting halfway through a match is
+    /// still the phone the other one was told about.
+    ///
+    /// `UserDefaults` rather than the log: this is a fact about a device, not about a season,
+    /// and it must not travel in a backup to become a second phone claiming the same name.
+    private static var thisPhonesCode: String {
+        let key = "peer.senderCode"
+        if let kept = UserDefaults.standard.string(forKey: key), !kept.isEmpty { return kept }
+        let made = UUID().uuidString
+        UserDefaults.standard.set(made, forKey: key)
+        return made
+    }
+
     init(store: Store, deviceName: String) {
         self.store = store
         self.deviceName = deviceName
@@ -48,7 +70,33 @@ final class PeerLink {
     func startSending() { start(in: .sending) }
 
     /// Watches a match another phone is sending.
-    func startReceiving() { start(in: .receiving) }
+    ///
+    /// `expecting` comes out of an AirDropped invitation and names one phone. Without it --
+    /// the operator simply tapped "receive" -- whoever answers is taken, which is how this
+    /// worked before and is worth keeping for when AirDrop is not to hand.
+    func startReceiving(expecting invitedCode: String? = nil) {
+        expectedSender = invitedCode
+        start(in: .receiving)
+    }
+
+    /// An invitation arrived by AirDrop. Start watching that phone, whatever was happening
+    /// before -- tapping the invitation is the clearest statement of intent there is.
+    func accept(_ invitation: MatchInvitation) {
+        invitedBy = invitation.senderName
+        startReceiving(expecting: invitation.senderCode)
+    }
+
+    /// The invitation to put in a season file, so the phone it lands on knows to listen and
+    /// knows which phone to listen to.
+    func invitation() -> MatchInvitation {
+        MatchInvitation(senderCode: Self.thisPhonesCode, senderName: deviceName)
+    }
+
+    /// What this phone is waiting for, in words, while nothing has answered yet.
+    var waitingLabel: String {
+        guard mode == .receiving else { return mode.waitingLabel }
+        return Introductions.waitingLabel(expecting: expectedSender, from: invitedBy)
+    }
 
     /// Starts the job again if it is not running.
     ///
@@ -73,6 +121,9 @@ final class PeerLink {
         mode = .off
         state = .off
         peerHolds = []
+        expectedSender = nil
+        invitedBy = nil
+        isPeerVouchedFor = false
     }
 
     private func start(in wanted: PeerMode) {
@@ -123,6 +174,11 @@ extension PeerLink: PeerDelegate {
     }
 
     nonisolated func received(fromPeer payload: [String: Any]) {
+        if let introduction = LinkPayload.decodeIntroduction(payload) {
+            Task { @MainActor in self.consider(introduction) }
+            return
+        }
+
         if let held = LinkPayload.decodeHeld(payload) {
             Task { @MainActor in self.sendWhatTheyLack(held) }
             return
@@ -146,9 +202,45 @@ extension PeerLink {
         guard newState.isLive else {
             // A link that went away takes what was known about the far side with it.
             peerHolds = []
+            isPeerVouchedFor = false
             return
         }
+        if mode == .sending { introduceThisPhone() }
         if mode == .receiving { announceWhatIsHeld() }
+    }
+
+    /// Says who this phone is, so a receiver holding an invitation can tell whether this is
+    /// the match it was invited to or somebody else's at the next court.
+    private func introduceThisPhone() {
+        session?.send(LinkPayload.encode(introducing: Introduction(
+            senderCode: Self.thisPhonesCode,
+            senderName: deviceName
+        )))
+    }
+
+    /// A phone said who it is. Keep listening, or hang up on a stranger.
+    fileprivate func consider(_ introduction: Introduction) {
+        guard mode == .receiving else { return }
+        let greeting = Introductions.consider(introduction, expecting: expectedSender)
+        guard greeting.isWelcome else {
+            // Somebody else's match. Everything it sent before introducing itself is
+            // dropped, because a stranger's serves must never reach this phone's log.
+            isPeerVouchedFor = false
+            store.say("That was another match nearby. Still looking.")
+            return stop(keeping: .receiving, expecting: expectedSender)
+        }
+        isPeerVouchedFor = true
+        invitedBy = greeting.peerName
+        state = .connected(peerName: greeting.peerName ?? "the other phone")
+        announceWhatIsHeld()
+    }
+
+    /// Drops the connection and starts looking again, keeping what this phone was told to
+    /// look for. Used when the phone that answered turned out to be the wrong one.
+    private func stop(keeping wanted: PeerMode, expecting invitedCode: String?) {
+        stop()
+        expectedSender = invitedCode
+        start(in: wanted)
     }
 
     /// Answers an announcement with the events the other phone has not got.
@@ -163,7 +255,7 @@ extension PeerLink {
     /// Only a receiver takes anything. A sender that accepted events would be a second
     /// opinion about what happened on court, and the two could not be told apart afterwards.
     fileprivate func take(_ arriving: [RawEvent]) {
-        guard mode == .receiving else { return }
+        guard mode == .receiving, isPeerVouchedFor else { return }
         peerHolds.formUnion(PeerSync.identifiersHeld(arriving))
         store.receive(peerEvents: arriving)
     }

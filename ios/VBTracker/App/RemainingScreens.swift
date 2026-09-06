@@ -399,6 +399,35 @@ struct ExportSheet: View {
     }
 }
 
+/// Inviting another phone to watch this match, through the share sheet.
+///
+/// The same file a handover sends, plus a line saying who is sharing. The phone it lands on
+/// reads that and starts watching by itself, so the other person's whole setup is tapping the
+/// AirDrop notification -- rather than being told, across a gym, to find a button.
+///
+/// Anything the share sheet offers will do. AirDrop is the one worth naming, but an
+/// invitation sent by message works exactly as well and is there when AirDrop is not.
+struct InviteSheet: View {
+    let store: Store
+    let invitation: MatchInvitation
+
+    var body: some View {
+        let text = store.exportedInvitation(invitation)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(store.handoverFilename())
+
+        ShareLink(item: written(text, to: url)) {
+            Label("Invite the other phone", systemImage: "person.2.wave.2")
+        }
+        .presentationDetents([.medium])
+        .accessibilityIdentifier("share-invitation")
+    }
+
+    private func written(_ text: String, to url: URL) -> URL {
+        try? text.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+}
+
 /// Handing this season to another phone, through the share sheet.
 ///
 /// The same bytes a backup holds, under an extension the app owns, so AirDrop offers the

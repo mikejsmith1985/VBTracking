@@ -64,8 +64,16 @@ struct VBTrackerApp: App {
             // feature. The Season tab is shown afterwards because that is where the arrival
             // is visible.
             .onOpenURL { url in
+                // Read before the merge, because merging consumes the file.
+                let invitation = store.invitation(inFileAt: url)
                 store.receive(fileAt: url)
-                tab = .season
+
+                // An invitation is the whole of the other person's setup. Tapping the
+                // AirDrop is the clearest statement of intent there is, so nothing is asked:
+                // the phone starts watching and shows the court it will be watching on.
+                guard let invitation, let peers else { return tab = .season }
+                peers.accept(invitation)
+                tab = .track
             }
             // Nothing is torn down when the app leaves the screen. The Bluetooth link is
             // allowed to keep running while the app is suspended, which is the entire reason

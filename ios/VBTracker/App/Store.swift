@@ -227,6 +227,15 @@ public final class Store {
     }
 
     /// A filename for handing this season to somebody else's phone.
+    /// This season, with an invitation to watch the match live attached.
+    public func exportedInvitation(_ invitation: MatchInvitation) -> String {
+        buildHandover(
+            events,
+            exportedAt: ISO8601DateFormatter().string(from: now()),
+            inviting: invitation
+        )
+    }
+
     public func handoverFilename() -> String {
         let day = ISO8601DateFormatter().string(from: now()).prefix(10)
         return VBCore.seasonFilename(on: String(day))
@@ -247,6 +256,26 @@ public final class Store {
             return false
         }
         return receive(from: text)
+    }
+
+    /// The invitation a season file carries, if it was sent by somebody sharing a match live.
+    ///
+    /// Read separately from the season itself, and never a reason to refuse the file: a
+    /// season handed over for keeps carries no invitation, and that is the ordinary case.
+    public func invitation(inFileAt url: URL) -> MatchInvitation? {
+        let opened = url.startAccessingSecurityScopedResource()
+        defer { if opened { url.stopAccessingSecurityScopedResource() } }
+
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        return readInvitation(text)
+    }
+
+    /// Says something to the operator, from outside the store.
+    ///
+    /// The notice row is the one place in the app where anything is said, so the link says
+    /// its piece there rather than growing a second one of its own.
+    public func say(_ text: String, isFailure: Bool = false) {
+        notice = Notice(text: text, isFailure: isFailure)
     }
 
     /// Takes in a season somebody else recorded, keeping everything already here.

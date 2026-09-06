@@ -35,6 +35,10 @@ public enum LinkKey {
     /// Phone to phone: the identifiers a phone already holds, so the other sends only the
     /// difference rather than the season.
     public static let heldEventIds = "heldEventIds"
+    /// Phone to phone: who the sending phone is, so a receiver that was handed an invitation
+    /// can tell it apart from somebody else's match at the next court.
+    public static let senderCode = "senderCode"
+    public static let senderName = "senderName"
 }
 
 /// The link between two phones in the same room.
@@ -106,6 +110,20 @@ public enum LinkPayload {
     /// What a phone holds, announced so the other sends only what is missing.
     public static func encode(held ids: [String]) -> [String: Any] {
         [LinkKey.heldEventIds: ids]
+    }
+
+    /// A sending phone saying who it is, first thing after a link comes up.
+    public static func encode(introducing introduction: Introduction) -> [String: Any] {
+        [
+            LinkKey.senderCode: introduction.senderCode,
+            LinkKey.senderName: introduction.senderName,
+        ]
+    }
+
+    public static func decodeIntroduction(_ payload: [String: Any]) -> Introduction? {
+        guard let code = payload[LinkKey.senderCode] as? String, !code.isEmpty else { return nil }
+        let name = payload[LinkKey.senderName] as? String
+        return Introduction(senderCode: code, senderName: name ?? "the other phone")
     }
 
     public static func decodeHeld(_ payload: [String: Any]) -> [String]? {
