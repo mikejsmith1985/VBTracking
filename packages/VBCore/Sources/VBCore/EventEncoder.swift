@@ -123,6 +123,9 @@ public enum EventEncoder {
         case let .recordServe(outcome):
             ["t": .string(EventType.recordServe), "outcome": .string(outcome?.rawValue ?? "")]
 
+        case let .recordRallyPoint(toUs):
+            ["t": .string(EventType.recordRallyPoint), "toUs": .bool(toUs)]
+
         case let .endMatch(result):
             ["t": .string(EventType.endMatch), "result": resultValue(result)]
 

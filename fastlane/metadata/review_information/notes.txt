@@ -1,5 +1,7 @@
+DEMO VIDEO: <PASTE THE HOSTED LINK HERE>
+
 1. SCREEN RECORDING
-A screen recording was supplied in the Guideline 2.1 reply. Captured on an iPhone 17 Pro running iOS 26.6, build 25. It begins with launching the app and walks through the typical flow: adding players to the roster, starting a game, placing six players on the court, recording serves with OUT / IN / IN-POINT, the five-serve alert, undo, the game figures, and the season list. The app has no account, no login, no purchases, no user-generated content shared with anyone, and requests no permissions, so none of those flows exist to record.
+The demo video is at the link above. Captured on an iPhone 17 Pro running iOS 26.6, build 25. It begins with launching the app and walks through the typical flow: adding players to the roster, starting a game, placing six players on the court, recording serves with OUT / IN / IN-POINT, the five-serve alert, undo, the game figures, and the season list. The app has no account, no login, no purchases, no user-generated content shared with anyone, and requests no permissions, so none of those flows exist to record.
 
 2. DEVICES AND OS TESTED
 Physical hardware: iPhone 17 Pro (iOS 26.6) and Apple Watch Ultra 2 (watchOS 26.6, 23U67). Builds were distributed through TestFlight and used to record real matches before submission. Minimum supported: iOS 18.0, watchOS 11.0. An automated interface suite also drives a full match on the iPhone simulator on every build, and a layout suite checks the watch court at all seven Apple Watch sizes down to 40 mm.

@@ -35,6 +35,7 @@ public enum EventType {
     public static let substitute = "SUBSTITUTE"
     public static let selectServer = "SELECT_SERVER"
     public static let recordServe = "RECORD_SERVE"
+    public static let recordRallyPoint = "RECORD_RALLY_POINT"
     public static let endMatch = "END_MATCH"
     public static let endGame = "END_GAME"
 }
@@ -173,6 +174,9 @@ extension Event.Kind {
 
         case EventType.recordServe:
             self = .recordServe(outcome: raw["outcome"]?.stringValue.flatMap(Outcome.init(rawValue:)))
+
+        case EventType.recordRallyPoint:
+            self = .recordRallyPoint(toUs: raw["toUs"]?.boolValue ?? false)
 
         case EventType.endMatch:
             self = .endMatch(result: raw.result("result"))

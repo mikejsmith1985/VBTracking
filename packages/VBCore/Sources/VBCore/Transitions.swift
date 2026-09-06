@@ -623,3 +623,15 @@ extension String {
         trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
+
+/// Records a rally decided while the other team had the ball.
+///
+/// Appended in order rather than counted, so undo drops exactly one rally and replay puts
+/// the same score back. Two running totals would lose which one to take back.
+func withRallyPointRecorded(_ state: AppState, toUs: Bool) -> AppState {
+    updateCurrentMatch(state) { match, _ in
+        var next = match
+        next.opponentServeRallies.append(toUs)
+        return next
+    }
+}

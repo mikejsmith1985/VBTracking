@@ -30,6 +30,18 @@ struct TrackScreen: View {
     @State private var isInviting = false
     @Environment(\.scenePhase) private var scenePhase
 
+    /// Whether a tap on the scoreboard would be taken.
+    ///
+    /// Only while our side is not actually serving. The rotation hands the ball on the moment
+    /// a turn ends, so the next player holds it -- without having served -- for the whole
+    /// spell the other team is serving, and that is the gap the scoreboard is for.
+    private var canScoreARally: Bool {
+        guard let match = store.state.currentMatch else { return false }
+        guard peers?.role.canRecord ?? true else { return false }
+        guard let open = match.openTurn else { return true }
+        return open.serves.isEmpty
+    }
+
     private var dock: DockState {
         DockState(state: store.state, isPickerRequested: isPickerRequested, canUndo: store.canUndo)
     }
@@ -64,6 +76,7 @@ struct TrackScreen: View {
                     BetweenGames(store: store)
                 } else {
                     MatchHeader(store: store, isEndingMatch: $isEndingMatch, isNamingGame: $isNamingGame)
+                    ScoreStrip(store: store, canRecord: canScoreARally)
                     if let peers { MatchSharing(peers: peers, isInviting: $isInviting) }
                     ScrollView { TallyBoard(match: store.state.currentMatch, roster: store.state.roster) }
                     Dock(

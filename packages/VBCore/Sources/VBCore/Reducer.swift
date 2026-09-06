@@ -144,6 +144,9 @@ private func transition(_ state: AppState, _ event: Event) -> AppState {
         guard let outcome else { return state }
         return withServeRecorded(state, outcome: outcome)
 
+    case let .recordRallyPoint(toUs):
+        return withRallyPointRecorded(state, toUs: toUs)
+
     case let .endMatch(result):
         return withMatchEnded(state, result: result.recorded)
 

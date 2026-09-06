@@ -228,6 +228,13 @@ public struct Event: Equatable, Sendable {
         case substitute(outPlayerId: String, inPlayerId: String)
         case selectServer(playerId: String)
         case recordServe(outcome: Outcome?)
+
+        /// A rally won while the other team had the ball.
+        ///
+        /// Only ever recorded then. Every rally on our own serve is already decided by the
+        /// serve's outcome -- in for a point, in without one, or out -- so recording those
+        /// again would count them twice.
+        case recordRallyPoint(toUs: Bool)
         case endMatch(result: ResultField)
         case endGame(result: ResultField)
 

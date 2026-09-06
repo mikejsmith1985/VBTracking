@@ -125,6 +125,15 @@ public final class Store {
     }
 
     /// Drops the last event and replays. One undo, one operator action.
+    /// Records a rally decided while the other team had the ball.
+    ///
+    /// Refused while one of ours is serving, because that rally is already decided by the
+    /// serve's outcome -- the refusal is the rulebook's, not this screen's.
+    @discardableResult
+    public func recordRallyPoint(toUs: Bool) -> Bool {
+        dispatch(.recordRallyPoint(toUs: toUs))
+    }
+
     public func undo() {
         guard !events.isEmpty else { return }
         do {
