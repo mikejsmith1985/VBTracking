@@ -317,10 +317,11 @@ extension BluetoothSession: CBCentralManagerDelegate {
         // nothing at all happens to the other phone until they tap it.
         guard mode.joinsWhatItFinds else {
             let name = advertisementData[CBAdvertisementDataLocalNameKey] as? String
-            return delegate?.noticedNearby(
+            delegate?.noticedNearby(
                 id: peripheral.identifier.uuidString,
                 name: name ?? peripheral.name ?? ""
             )
+            return
         }
 
         guard peer == nil else { return }

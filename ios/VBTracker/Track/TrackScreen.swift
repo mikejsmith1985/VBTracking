@@ -121,8 +121,11 @@ struct TrackScreen: View {
         .onAppear { peers?.listen() }
         .onDisappear { peers?.stopListening() }
         .onChange(of: scenePhase) { _, phase in
-            guard phase == .active else { return peers?.stopListening() ?? () }
-            peers?.listen()
+            if phase == .active {
+                peers?.listen()
+            } else {
+                peers?.stopListening()
+            }
         }
     }
 
