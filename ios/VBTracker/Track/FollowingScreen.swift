@@ -71,8 +71,11 @@ struct FollowingScreen: View {
                 // The way out, beside the thing it gets you out of. Becoming a spectator
                 // takes one tap on an invitation, so leaving must not take more.
                 Button("Stop watching") { peers?.stop() }
-                    .font(.caption2)
-                    .buttonStyle(.borderless)
+                    .font(.caption2.bold())
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.capsule)
+                    .controlSize(.small)
+                    .tint(.orange)
                     .accessibilityIdentifier("stop-watching")
             }
         }
