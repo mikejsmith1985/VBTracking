@@ -26,6 +26,8 @@ struct TrackScreen: View {
     @State private var isEndingMatch = false
     @State private var isChoosingLineup = false
     @State private var isNamingGame = false
+    /// The share sheet carrying an invitation to watch this match.
+    @State private var isInviting = false
 
     private var dock: DockState {
         DockState(state: store.state, isPickerRequested: isPickerRequested, canUndo: store.canUndo)
@@ -60,6 +62,7 @@ struct TrackScreen: View {
                     BetweenGames(store: store)
                 } else {
                     MatchHeader(store: store, isEndingMatch: $isEndingMatch, isNamingGame: $isNamingGame)
+                    if let peers { MatchSharing(peers: peers, isInviting: $isInviting) }
                     ScrollView { TallyBoard(match: store.state.currentMatch, roster: store.state.roster) }
                     Dock(
                         store: store,
@@ -104,6 +107,9 @@ struct TrackScreen: View {
         .sheet(isPresented: $isNamingGame) { GameNameSheet(store: store, isPresented: $isNamingGame) }
         .sheet(isPresented: $isEndingMatch) { EndMatchSheet(store: store, isPresented: $isEndingMatch) }
         .sheet(isPresented: $isChoosingLineup) { LineupSheet(store: store, isPresented: $isChoosingLineup) }
+        .sheet(isPresented: $isInviting) {
+            if let peers { InviteSheet(store: store, peers: peers) }
+        }
         // Full screen rather than a sheet: the whole point is every pixel, read from a metre
         // away, with no tab bar or grabber taking a strip of it.
         .fullScreenCover(isPresented: $isShowingSideline) { SidelineScreen(store: store) }

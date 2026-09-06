@@ -380,7 +380,6 @@ struct PlayerEdit: Identifiable {
 /// way the phone offers anything worth keeping — and never behind a game.
 struct ExportSheet: View {
     let store: Store
-    @Binding var isPresented: Bool
 
     var body: some View {
         let text = store.exportedBackup()
@@ -409,17 +408,36 @@ struct ExportSheet: View {
 /// invitation sent by message works exactly as well and is there when AirDrop is not.
 struct InviteSheet: View {
     let store: Store
-    let invitation: MatchInvitation
+    let peers: PeerLink
 
     var body: some View {
-        let text = store.exportedInvitation(invitation)
+        let text = store.exportedInvitation(peers.invitation())
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(store.handoverFilename())
 
-        ShareLink(item: written(text, to: url)) {
-            Label("Invite the other phone", systemImage: "person.2.wave.2")
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Invite another phone to watch")
+                .font(.headline)
+            Text("AirDrop this to them. One tap on their end and they are watching -- there is nothing for them to set up, and nothing to agree on first.")
+                .font(.caption).foregroundStyle(.secondary)
+
+            ShareLink(item: written(text, to: url)) {
+                Label("Send the invitation", systemImage: "person.2.wave.2")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("share-invitation")
         }
+        .padding(16)
         .presentationDetents([.medium])
-        .accessibilityIdentifier("share-invitation")
+        // Sharing starts here rather than at the button that opened this.
+        //
+        // Two state changes in one tap -- start the radio, then raise a sheet -- is a race
+        // with the view update the first one causes, and the sheet is what loses. The code in
+        // the invitation is this phone's own and does not depend on the radio being up, so
+        // the file is the same either way.
+        .onAppear { if !peers.isSharing { peers.startSending() } }
     }
 
     private func written(_ text: String, to url: URL) -> URL {

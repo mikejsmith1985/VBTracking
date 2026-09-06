@@ -63,9 +63,18 @@ struct FollowingScreen: View {
                     .font(.caption)
                 Spacer()
             }
-            Text("Keeps up in your pocket. The match arrives with the phone locked.")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Text("Keeps up in your pocket. The match arrives with the phone locked.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                Spacer(minLength: 4)
+                // The way out, beside the thing it gets you out of. Becoming a spectator
+                // takes one tap on an invitation, so leaving must not take more.
+                Button("Stop watching") { peers?.stop() }
+                    .font(.caption2)
+                    .buttonStyle(.borderless)
+                    .accessibilityIdentifier("stop-watching")
+            }
         }
         .foregroundStyle(.orange)
         .padding(.horizontal, 12)

@@ -10,15 +10,11 @@ import VBPresentation
 
 struct SeasonScreen: View {
     @Bindable var store: Store
-    /// Nil until the app has finished starting up. Sharing is not offered before then.
-    var peers: PeerLink?
     /// The court on the lock screen, switched on by hand.
     var lockScreen: CourtActivityHost?
     @State private var isOnLockScreen = false
     @State private var isImporting = false
-    @State private var isHandingOver = false
-    @State private var isInviting = false
-    @State private var isExporting = false
+    @State private var sheet: SeasonSheet?
     @State private var openGameId: String?
     @State private var careerPlayerId: String?
     /// Asked once. A second tap is the answer, and it is the last one.
@@ -85,59 +81,14 @@ struct SeasonScreen: View {
                 // has no season, and an operator who cannot reach the restore has lost
                 // everything they recorded.
                 Section("Your data") {
-                    Button("Save a copy of everything") { isExporting = true }
+                    Button("Save a copy of everything") { sheet = .savingACopy }
                         .accessibilityIdentifier("export-data")
                     Button("Restore from a saved copy") { isImporting = true }
                         .accessibilityIdentifier("import-data")
                     Text("Every season, every game, every serve — as one file you keep. Nothing is sent anywhere.")
                         .font(.caption).foregroundStyle(.secondary)
 
-                    // Separate from saving a copy, because it answers a different question.
-                    // A backup is for getting a season back; this is for a coach and an
-                    // assistant coach who both need the figures when only one of them is
-                    // tracking. What arrives is merged, so neither phone loses its roster.
-                    if let peers {
-                        // Two buttons, not one switch. "Share" left both phones doing the
-                        // same thing and guessing which was which, which is a race on the
-                        // radio and a puzzle for whoever is holding the phone. Naming the
-                        // direction answers both at once.
-                        if peers.isSharing {
-                            if peers.mode == .sending {
-                                Button("Invite another phone again") { isInviting = true }
-                                    .accessibilityIdentifier("invite-again")
-                            }
-                            Button("Stop sharing") { peers.stop() }
-                                .accessibilityIdentifier("stop-sharing")
-                            Text(peers.state.isLive ? peers.state.label(as: peers.role) : peers.waitingLabel)
-                                .font(.caption)
-                                .foregroundStyle(peers.state.isLive ? Color.green : Color.secondary)
-                        } else {
-                            // One button does the whole of it: start sharing, then hand the
-                            // other phone an invitation. Before this, both people had to find
-                            // a button and get the direction the right way round, standing on
-                            // a sideline, which nobody would ever have worked out unaided.
-                            Button("Share this match with another phone") {
-                                peers.startSending()
-                                isInviting = true
-                            }
-                            .accessibilityIdentifier("send-match")
-                            Text("Starts sharing, then offers an invitation to AirDrop. The other phone taps it once and starts watching — nothing to set up on their end. The phone sending keeps the record; the phone receiving only watches. Bluetooth only — nothing goes over the internet.")
-                                .font(.caption).foregroundStyle(.secondary)
-
-                            // Kept for when AirDrop is not to hand. It takes whichever phone
-                            // answers, because without an invitation there is nothing to
-                            // check a phone against.
-                            Button("Or watch a match without an invitation") { peers.startReceiving() }
-                                .accessibilityIdentifier("receive-match")
-                                .font(.caption)
-                        }
-
-                        if let explanation = peers.role.explanation {
-                            Text(explanation).font(.caption).foregroundStyle(.orange)
-                        }
-                    }
-
-                    Button("Send this season to another phone") { isHandingOver = true }
+                    Button("Send this season to another phone") { sheet = .handingOverTheSeason }
                         .accessibilityIdentifier("hand-over")
                     Text("Sends it over AirDrop. The other phone keeps what it already has and adds what it does not.")
                         .font(.caption).foregroundStyle(.secondary)
@@ -177,10 +128,14 @@ struct SeasonScreen: View {
             .navigationDestination(item: $careerPlayerId) { id in
                 CareerScreen(store: store, playerId: id)
             }
-            .sheet(isPresented: $isExporting) { ExportSheet(store: store, isPresented: $isExporting) }
-            .sheet(isPresented: $isHandingOver) { HandoverSheet(store: store) }
-            .sheet(isPresented: $isInviting) {
-                if let peers { InviteSheet(store: store, invitation: peers.invitation()) }
+            // One sheet, chosen by what is being asked for. Three `.sheet(isPresented:)` in
+            // a row on the same view is a stack SwiftUI does not promise to honour, and the
+            // third one added simply never appeared.
+            .sheet(item: $sheet) { which in
+                switch which {
+                case .savingACopy: ExportSheet(store: store)
+                case .handingOverTheSeason: HandoverSheet(store: store)
+                }
             }
             .onChange(of: isOnLockScreen) { _, wanted in
                 lockScreen?.isEnabled = wanted
@@ -343,4 +298,16 @@ struct StatsTable: View {
             Text(note).font(.caption2).foregroundStyle(.secondary)
         }
     }
+}
+
+/// Which sheet the Season tab is showing.
+///
+/// One `sheet(item:)` rather than several `sheet(isPresented:)` in a row: SwiftUI does not
+/// promise to honour a stack of them, and the third one added to this screen simply never
+/// appeared -- which looked exactly like a button that did nothing.
+enum SeasonSheet: String, Identifiable {
+    case savingACopy
+    case handingOverTheSeason
+
+    var id: String { rawValue }
 }

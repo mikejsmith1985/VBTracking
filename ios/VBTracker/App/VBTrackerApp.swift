@@ -33,7 +33,7 @@ struct VBTrackerApp: App {
                     .tabItem { Label("Game", systemImage: "list.number") }
                     .tag(Tab.game)
 
-                SeasonScreen(store: store, peers: peers, lockScreen: lockScreen)
+                SeasonScreen(store: store, lockScreen: lockScreen)
                     .tabItem { Label("Season", systemImage: "calendar") }
                     .tag(Tab.season)
 
