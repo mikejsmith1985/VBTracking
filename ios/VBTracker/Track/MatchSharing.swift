@@ -34,15 +34,20 @@ struct MatchSharing: View {
 
                 Spacer(minLength: 4)
 
-                // Offered again rather than only once: an invitation can be missed, declined
-                // or sent to the wrong person, and the answer to all three is another one.
+                // The way to reach a phone that cannot see this one -- somebody not in the
+                // app, or not in the room yet. It sends a file, which is why it is here and
+                // not on the way in: the ordinary case needs no file at all.
                 Button("Invite") { isInviting = true }
                     .accessibilityIdentifier("invite-again")
                 Button("Stop") { peers.stop() }
                     .accessibilityIdentifier("stop-sharing")
             } else {
+                // Starts sharing and nothing else. Putting a share sheet in the way of it
+                // meant a file, a picker and an "open with" stood between tapping share and
+                // being shared -- when the other phone can simply see this one and offer to
+                // watch. Handing somebody a file is the fallback now, behind Invite.
                 Button {
-                    isInviting = true
+                    peers.startSending()
                 } label: {
                     Label("Share this match", systemImage: "person.2.wave.2")
                 }

@@ -26,7 +26,7 @@ final class SharingUITests: XCTestCase {
         driver.photograph("20-share-this-match")
     }
 
-    func testSharingOpensSomethingToSendTheInvitationWith() {
+    func testSharingStartsAtOnceAndTheInvitationIsOneStepFurtherIn() {
         let driver = AppDriver.launch(self)
         driver.addPlayers(squad)
         driver.startGame()
@@ -34,6 +34,12 @@ final class SharingUITests: XCTestCase {
         let share = driver.app.buttons["share-match"]
         XCTAssertTrue(share.waitForExistence(timeout: 5))
         share.tap()
+
+        // Sharing starts on that tap and nothing stands in front of it. The file is the
+        // fallback for a phone that cannot see this one, so it lives one step further in.
+        let invite = driver.app.buttons["invite-again"]
+        XCTAssertTrue(invite.waitForExistence(timeout: 5), "sharing must start, and then offer to invite")
+        invite.tap()
 
         // The sheet's own control, not the button that opened it. A sheet that never appears
         // would otherwise pass on the strength of the row still being on screen -- which is
