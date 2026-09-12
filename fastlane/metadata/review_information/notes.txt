@@ -14,11 +14,11 @@ They are background modes because a coach puts her phone in her pocket. Without 
 Two complete pairs of real hardware: iPhone 17 Pro with Apple Watch Ultra 2, and iPhone 14 Pro with Apple Watch Series 11 (iOS 26.6, watchOS 26.6). All four were used together -- which is exactly the arrangement section 2 describes -- and the link, both watches and both lock screens work across them. Distributed through TestFlight and used to record real matches before submission. Minimum: iOS 18.0, watchOS 11.0. An interface suite also drives a full match on the simulator every build, and a layout suite checks the watch court at all seven sizes down to 40 mm.
 
 4. WHAT THE APP DOES AND FOR WHOM
-Volleyball Serve Tracker records which player served and whether each serve went in, out, or won the point. It replaces the paper serve chart a parent or assistant coach keeps on the sideline at a youth volleyball match, totalling serve-in percentage and points per player continuously so the coach has figures in front of them when deciding on a substitution. Audience: parents, assistant coaches and managers of school and club volleyball teams.
+Volleyball Serve Tracker records which player served and whether each serve went in, out, or won the point. It replaces the paper serve chart a parent or assistant coach keeps on the sideline at a youth volleyball match, totalling serve-in percentage and points per player continuously so the coach has figures in front of them when deciding on a substitution. Audience: parents, assistant coaches and managers of school and club teams.
 
 5. HOW TO REACH EVERY FEATURE
 No credentials or sample files are needed. From a fresh install:
-- Roster tab: type a name and jersey number, tap Add. Repeat six or more times.
+- Roster tab: type a name and jersey number, tap Add. Repeat six times.
 - Track tab: tap Start game. Tap an empty court box, then a player, six times.
 - Tap the player in the bottom-right box to hand them the ball, then record serves with OUT / IN / IN-POINT. Rotation advances itself; Undo reverses one action.
 - After five serves by one player a full-screen alert appears; any tap clears it.
