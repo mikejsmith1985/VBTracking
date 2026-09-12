@@ -179,6 +179,9 @@ public struct Event: Equatable, Sendable {
         case createSeason(id: String, name: String, team: String, format: SeasonFormat)
         case renameSeason(id: String, name: String, team: String?)
         case activateSeason(id: String)
+        /// Throws a season away with its memberships and every game played in it. The
+        /// players stay: a person outlives any roster, and their other seasons are untouched.
+        case discardSeason(id: String)
 
         // Players and rosters
         case addPlayer(id: String, name: String, number: String, seasonId: String?)
@@ -225,6 +228,13 @@ public struct Event: Equatable, Sendable {
         case substitute(outPlayerId: String, inPlayerId: String)
         case selectServer(playerId: String)
         case recordServe(outcome: Outcome?)
+
+        /// A rally won while the other team had the ball.
+        ///
+        /// Only ever recorded then. Every rally on our own serve is already decided by the
+        /// serve's outcome -- in for a point, in without one, or out -- so recording those
+        /// again would count them twice.
+        case recordRallyPoint(toUs: Bool)
         case endMatch(result: ResultField)
         case endGame(result: ResultField)
 

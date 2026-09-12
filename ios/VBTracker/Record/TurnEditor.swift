@@ -45,12 +45,15 @@ struct TurnEditor: View {
 
             HStack {
                 Button("Remove last serve") { removeLast() }
+                    .buttonStyle(.borderless)
                     .disabled(turn.serves.count <= 1)
                     .accessibilityIdentifier("drop-serve")
                 Spacer()
                 Button(reassigning == location ? "Cancel" : "Wrong player?") {
+                    disarmDelete()
                     reassigning = reassigning == location ? nil : location
                 }
+                .buttonStyle(.borderless)
                 .accessibilityIdentifier("reassign-turn")
             }
             .font(.caption)
@@ -64,6 +67,7 @@ struct TurnEditor: View {
                     onClose()
                 }
             }
+            .buttonStyle(.borderless)
             .font(.caption)
             .accessibilityIdentifier("delete-turn")
 
@@ -84,7 +88,8 @@ struct TurnEditor: View {
                 .foregroundStyle(.black)
             Text(store.state.rosterEntry(id: turn.playerId)?.name ?? "Removed player").font(.subheadline)
             Spacer()
-            Button("Done", action: onClose)
+            Button("Done", action: close)
+                .buttonStyle(.borderless)
                 .font(.caption)
                 .accessibilityIdentifier("close-turn")
         }
@@ -103,8 +108,9 @@ struct TurnEditor: View {
                             playerId: player.id
                         )
                     )
-                    if accepted { reassigning = nil }
+                    if accepted { reassigning = nil; disarmDelete() }
                 }
+                .buttonStyle(.borderless)
                 .font(.caption)
                 .accessibilityIdentifier("reassign-to-\(player.id)")
             }
@@ -116,7 +122,12 @@ struct TurnEditor: View {
     /// The whole list is sent, not the single serve that moved: the event says what the
     /// turn holds now, so replaying it can never depend on what it held when the button
     /// was tapped.
+    ///
+    /// Disarms the delete first. An armed delete that survives another correction is a turn
+    /// one tap from being thrown away by somebody who thinks they are fixing a serve, and a
+    /// deleted turn takes every serve in it.
     private func setServes(_ outcomes: [Outcome]) {
+        disarmDelete()
         store.dispatch(
             .setTurnServes(
                 gameId: gameId,
@@ -125,6 +136,22 @@ struct TurnEditor: View {
                 outcomes: outcomes.map(\.rawValue)
             )
         )
+    }
+
+    /// Takes the delete back off its hair trigger.
+    ///
+    /// The confirmation is armed by a first tap and fired by a second, and nothing else in
+    /// the editor used to clear it -- so the second tap could be a different button, made
+    /// minutes later, by somebody who had forgotten the first.
+    private func disarmDelete() {
+        if confirmingDelete == location { confirmingDelete = nil }
+    }
+
+    /// Closes the editor, leaving nothing armed behind it.
+    private func close() {
+        disarmDelete()
+        reassigning = nil
+        onClose()
     }
 
     private func cycle(at index: Int) {

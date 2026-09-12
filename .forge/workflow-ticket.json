@@ -1,0 +1,13 @@
+{
+  "taskId": "glance-and-keep-awake",
+  "branch": "feature/live-sync",
+  "startedAt": "2026-09-05T14:32:44.7044653Z",
+  "updatedAt": "2026-09-05T14:32:44.7076778Z",
+  "gates": [
+    {
+      "gate": "branch-created",
+      "passedAt": "2026-09-05T14:32:44.7054899Z",
+      "evidence": "feature/live-sync; the glance is fed by the same peer link"
+    }
+  ]
+}

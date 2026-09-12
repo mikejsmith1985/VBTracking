@@ -1,0 +1,32 @@
+{
+  "briefId": "brief-test-evidence-fixversion-picker",
+  "sessionId": "",
+  "taskId": "test-evidence-fixversion-picker",
+  "headline": "Attach test evidence picks the release by fix version (GH #377), and SNow Hub opens without the admin unlock.",
+  "whatChanged": "The section gains a Project key field (remembered; seeded from the CHG Generator draft) and a Fix version dropdown from Jira's list; the release is read page by page and typed keys add to it, counted once. Separately, the SNow Hub card, route and connection indicator no longer require the Admin Hub unlock — the gate mechanism stays, one line and one prop restore it.",
+  "whyItChanged": "The user's CHG named no Jira keys, so yesterday's feature had an empty scope; the release IS the fix version, picked from Jira's list per the pick-don't-type rule. The admin unlock on SNow Hub was friction on daily release work, paused by the user's decision.",
+  "whatCouldBreak": "A stale CHG Generator draft pre-fills the wrong project, visibly; one keystroke fixes it. Releases over 500 issues are read to that ceiling and the count is stated. Anyone relying on the admin lock to hide SNow Hub from a shared screen loses that until the gate is restored.",
+  "decisions": [
+    {
+      "chose": "Fix version dropdown ADDED to the key list (union, deduped)",
+      "insteadOf": "A mode switch between fix version and keys",
+      "because": "The CHG Generator's own pattern is pull a version then add a story by key; a union needs no mode, and the empty-scope case is refused outright.",
+      "openQuestion": "To scan ONLY typed keys while a version is selected, the dropdown must be cleared first."
+    },
+    {
+      "chose": "Keep released versions selectable, labelled (released)",
+      "insteadOf": "Reusing fetchFeatureReviewFixVersions, which drops released versions",
+      "because": "Evidence is sometimes attached after a release ships; hiding the version would block that for no benefit. Archived stays hidden.",
+      "openQuestion": "No date windowing: a long-lived project lists many released versions."
+    },
+    {
+      "chose": "Pause the SNow Hub admin gate by removing one line and one prop, mechanism intact",
+      "insteadOf": "Deleting the gateKind/requiresAdminUnlock mechanism",
+      "because": "The user said 'for a while'; a reversible pause is honest about that. Tests now assert no card is gated so a re-add is a deliberate test change.",
+      "openQuestion": "The SNow connection indicator was also un-gated (a hub you can open needs its relay panel); GitHub stays gated."
+    }
+  ],
+  "isRoutine": false,
+  "filesTouched": 14,
+  "publishedAt": "2026-09-05T12:24:27.5734627Z"
+}

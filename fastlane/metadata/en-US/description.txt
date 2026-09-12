@@ -1,4 +1,4 @@
-Track every serve of a volleyball season, on your phone and on your wrist.
+Track every serve of a volleyball season, on your phone, on your wrist, and on a second phone beside you.
 
 Built for the person on the sideline with a clipboard. One tap per serve, the rotation advances itself, and the six players on court appear on your Apple Watch — laid out as they are standing, with the next server's box the biggest thing on the screen. Decide on a substitution before the ball gets there.
 
@@ -7,18 +7,23 @@ WHAT IT DOES
 • One tap per serve — in, in for a point, or out
 • A rotation of six that advances itself, with substitutions that take the outgoing player's exact place
 • A full-screen alert when a server reaches five, and a buzz on your wrist you can set to off, brief or persistent
+• The rally score, kept properly: your serves already say who won those rallies, so you only tap for the ones played while the other team has the ball
 • Career statistics that follow a player across seasons — a jersey number belongs to a roster, a player does not
 • Correct any serve in any past game: change an outcome, add or remove a serve, reassign a turn, or add one that was missed
 • Enter games from paper sheets, one at a time or a batch from a file
 • A standalone scoreboard on the watch for games nobody is tracking
 • Save a copy of everything as one file you keep
 
+TWO PEOPLE, ONE MATCH
+
+One person tracks; another coaches. Share the match and the second phone picks it up from across the room — one tap, nothing to set up on their end. It follows the match read-only, so the two records can never disagree, and it keeps up with the phone locked in a pocket. The court reaches their own watch and their own lock screen, and there is a full-screen board for a phone propped beside the court.
+
 HONEST FIGURES
 
-A figure that was never recorded shows as a dash, never as a zero. A game copied from paper holds serves but no points, and reporting those points as nought would say the players earned less than they did.
+A figure that was never recorded shows as a dash, never as a zero. A game copied from paper holds serves but no points, and reporting those points as nought would say the players earned less than they did. The score stays blank until somebody is actually keeping it.
 
 NO SIGNAL NEEDED
 
-There is no networking code in this app at all — that is checked on every build. Nothing you record leaves your phone. The watch talks to the phone directly, over the link between your own two paired devices.
+Nothing you record ever leaves your own devices. There is no internet code in this app at all — no account, no server, no analytics — and that is checked on every build. The watch talks to the phone over the link between your own two paired devices, and a second phone joins over Bluetooth, in the same room, with nothing in between.
 
 No adverts. No account. Nothing locked.

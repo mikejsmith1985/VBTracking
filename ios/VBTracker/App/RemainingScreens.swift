@@ -12,10 +12,28 @@ import VBPresentation
 struct GameScreen: View {
     @Bindable var store: Store
     @State private var scope = Scope.match
+    /// Which game is being looked at, or nil for whichever is being tracked right now.
+    @State private var chosenGameId: String?
+    @State private var isEditing = false
 
     enum Scope: String, CaseIterable { case match, game }
 
-    private var game: Game? { store.state.currentGame }
+    /// Every game this season, newest first, because a game just finished is the one most
+    /// likely to be wanted.
+    private var games: [Game] {
+        guard let seasonId = store.state.activeSeasonId else { return [] }
+        return store.state.games(inSeason: seasonId)
+            .sorted { ($0.context.date ?? "") > ($1.context.date ?? "") }
+    }
+
+    /// The game on screen: the one chosen, else the one being tracked, else the newest.
+    ///
+    /// The tab used to show `currentGame` and nothing else, so the moment a game ended there
+    /// was no way to look at its figures from here at all -- the whole tab went empty.
+    private var game: Game? {
+        if let chosenGameId, let chosen = store.state.game(id: chosenGameId) { return chosen }
+        return store.state.currentGame ?? games.first
+    }
 
     var body: some View {
         NavigationStack {
@@ -26,6 +44,26 @@ struct GameScreen: View {
                             Text(title(of: game)).font(.headline)
                             Text(subtitle(of: game)).font(.caption).foregroundStyle(.secondary)
                         }
+
+                        // The way to a game that is not the live one, and the way to correct
+                        // whichever is on screen. Both were only ever reachable from the
+                        // Season tab, which is not where somebody looking at a game's
+                        // figures thinks to go.
+                        if games.count > 1 {
+                            Picker("Game", selection: chosenBinding) {
+                                ForEach(games, id: \.id) { each in
+                                    Text(title(of: each)).tag(each.id)
+                                }
+                            }
+                            .accessibilityIdentifier("choose-game")
+                        }
+
+                        Button {
+                            isEditing = true
+                        } label: {
+                            Label("Edit this game", systemImage: "square.and.pencil")
+                        }
+                        .accessibilityIdentifier("edit-game")
                     }
 
                     if game.kind == .historical {
@@ -62,7 +100,20 @@ struct GameScreen: View {
                 }
             }
             .navigationTitle("Game")
+            .navigationDestination(isPresented: $isEditing) {
+                if let game {
+                    GameFormScreen(store: store, gameId: game.id)
+                }
+            }
         }
+    }
+
+    /// The chosen game, defaulting to whatever is on screen so the picker never shows blank.
+    private var chosenBinding: Binding<String> {
+        Binding(
+            get: { chosenGameId ?? game?.id ?? "" },
+            set: { chosenGameId = $0 }
+        )
     }
 }
 
@@ -153,6 +204,14 @@ struct RosterScreen: View {
     @State private var confirmingRemoval: String?
     @State private var editing: PlayerEdit?
 
+    /// Which of the two fields is being typed into, so Return can move between them.
+    ///
+    /// The number pad has no Return of its own, which is why the field order matters: the
+    /// name is typed first and hands over, and the number is the one the Done button and a
+    /// successful Add both close.
+    @FocusState private var focus: Field?
+    private enum Field { case name, number }
+
     var body: some View {
         NavigationStack {
             List {
@@ -160,7 +219,12 @@ struct RosterScreen: View {
 
                 Section("Add a player") {
                     TextField("Name", text: $name)
-                    TextField("Number", text: $number).keyboardType(.numberPad)
+                        .focused($focus, equals: .name)
+                        .submitLabel(.next)
+                        .onSubmit { focus = .number }
+                    TextField("Number", text: $number)
+                        .keyboardType(.numberPad)
+                        .focused($focus, equals: .number)
                     Button("Add") {
                         let accepted = store.dispatch(
                             .addPlayer(
@@ -170,9 +234,13 @@ struct RosterScreen: View {
                                 seasonId: store.state.activeSeasonId
                             )
                         )
-                        if accepted { name = ""; number = "" }
+                        // The keyboard goes with the player. Leaving it up over the tab
+                        // bar after a successful Add is what trapped an operator on this
+                        // screen, and no button they could reach was the way out.
+                        if accepted { name = ""; number = ""; focus = nil }
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .accessibilityIdentifier("add-player")
                 }
 
                 Section("\(store.state.roster.count) of \(maxRoster)") {
@@ -217,6 +285,7 @@ struct RosterScreen: View {
                 }
             }
             .navigationTitle("Roster")
+            .keyboardDismissable()
             .sheet(item: $editing) { edit in
                 PlayerEditor(store: store, playerId: edit.id, editing: $editing)
             }
@@ -266,6 +335,7 @@ struct PlayerEditor: View {
                 }
             }
             .navigationTitle(player?.name ?? "Player")
+            .keyboardDismissable()
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -310,7 +380,6 @@ struct PlayerEdit: Identifiable {
 /// way the phone offers anything worth keeping — and never behind a game.
 struct ExportSheet: View {
     let store: Store
-    @Binding var isPresented: Bool
 
     var body: some View {
         let text = store.exportedBackup()
@@ -321,6 +390,79 @@ struct ExportSheet: View {
         }
         .presentationDetents([.medium])
         .accessibilityIdentifier("share-backup")
+    }
+
+    private func written(_ text: String, to url: URL) -> URL {
+        try? text.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+}
+
+/// Inviting another phone to watch this match, through the share sheet.
+///
+/// The same file a handover sends, plus a line saying who is sharing. The phone it lands on
+/// reads that and starts watching by itself, so the other person's whole setup is tapping the
+/// AirDrop notification -- rather than being told, across a gym, to find a button.
+///
+/// Anything the share sheet offers will do. AirDrop is the one worth naming, but an
+/// invitation sent by message works exactly as well and is there when AirDrop is not.
+struct InviteSheet: View {
+    let store: Store
+    let peers: PeerLink
+
+    var body: some View {
+        let text = store.exportedInvitation(peers.invitation())
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(store.handoverFilename())
+
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Invite another phone to watch")
+                .font(.headline)
+            Text("AirDrop this to them. One tap on their end and they are watching -- there is nothing for them to set up, and nothing to agree on first.")
+                .font(.caption).foregroundStyle(.secondary)
+
+            ShareLink(item: written(text, to: url)) {
+                Label("Send the invitation", systemImage: "person.2.wave.2")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityIdentifier("share-invitation")
+        }
+        .padding(16)
+        .presentationDetents([.medium])
+        // Sharing starts here rather than at the button that opened this.
+        //
+        // Two state changes in one tap -- start the radio, then raise a sheet -- is a race
+        // with the view update the first one causes, and the sheet is what loses. The code in
+        // the invitation is this phone's own and does not depend on the radio being up, so
+        // the file is the same either way.
+        .onAppear { if !peers.isSharing { peers.startSending() } }
+    }
+
+    private func written(_ text: String, to url: URL) -> URL {
+        try? text.write(to: url, atomically: true, encoding: .utf8)
+        return url
+    }
+}
+
+/// Handing this season to another phone, through the share sheet.
+///
+/// The same bytes a backup holds, under an extension the app owns, so AirDrop offers the
+/// app by name on the other phone instead of dropping the file into Files for somebody to
+/// go and find. A backup keeps `.json` because the web app reads those.
+struct HandoverSheet: View {
+    let store: Store
+
+    var body: some View {
+        let text = store.exportedBackup()
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(store.handoverFilename())
+
+        ShareLink(item: written(text, to: url)) {
+            Label("Send this season", systemImage: "person.2.badge.gearshape")
+        }
+        .presentationDetents([.medium])
+        .accessibilityIdentifier("share-season")
     }
 
     private func written(_ text: String, to url: URL) -> URL {

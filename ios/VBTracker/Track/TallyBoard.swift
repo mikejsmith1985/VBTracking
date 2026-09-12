@@ -94,10 +94,27 @@ private struct Mark: View {
                 .strokeBorder(tint, lineWidth: 2)
                 .background(RoundedRectangle(cornerRadius: 2).fill(outcome == .inPoint ? tint : .clear))
             if outcome == .out {
-                Rectangle().fill(tint).frame(width: 16, height: 2).rotationEffect(.degrees(-45))
+                // Corner to corner of the mark itself, which is the whole point of drawing
+                // it as a shape: a fixed 16pt bar turned 45 degrees is wider than the 8pt
+                // mark it belongs to, so an out serve drew across its neighbour and over
+                // the border of its own turn, and two turns side by side read as one.
+                Diagonal().stroke(tint, lineWidth: 2)
             }
         }
         .frame(width: 8, height: 22)
+    }
+}
+
+/// A line from one corner to the other of whatever it is given.
+///
+/// Bounded by construction rather than by a number that has to stay in step with the size
+/// of the mark. That is the property the old drawing did not have.
+private struct Diagonal: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+        return path
     }
 }
 

@@ -156,7 +156,16 @@ struct CourtLayoutTests {
 
         #expect(onDeck.number > onDeck.percentage)
         #expect(onDeck.percentage > onDeck.points)
+        #expect(onDeck.points > onDeck.pointsLabel, "the count outranks the word beside it")
         #expect(onDeck.number > other.number, "the box being decided about is the readable one")
+
+        // Read from a wrist across a gym. The figures under the number were the two things
+        // somebody had to lean in for, so they have a floor now -- one that a later tidy-up
+        // of the type scale cannot quietly drop back below.
+        for type in [onDeck, other] {
+            #expect(type.percentage >= 15, "the serve-in figure must be legible at arm's length")
+            #expect(type.points >= 14, "so must the points")
+        }
     }
 }
 

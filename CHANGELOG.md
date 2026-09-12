@@ -4,7 +4,252 @@ All notable changes to this project are recorded here.
 
 ## [Unreleased]
 
+### Added
+
+- **The court on the lock screen, and it never shows a figure it cannot vouch for.** A Live
+  Activity rather than a widget: a widget refreshes on a timeline the system decides, and a
+  court that updates when iOS feels like it is a court nobody may act on. The six on court
+  appear with the on-deck box largest, and who serves next shows in the Dynamic Island. The
+  moment the figures stop arriving the boxes are removed entirely -- not dimmed, not greyed,
+  not marked stale, but gone, replaced by a line saying to open the app. A percentage on a
+  lock screen is read as a percentage however it is styled, and a coach reading a frozen one
+  has no way to know it froze. It is switched on by hand and ends the moment the match does.
+
+- **The board, full screen, for a phone propped up beside the court.** Somebody coaching who
+  would rather glance at a phone than a wrist wants more than the next server: they want
+  everybody available and what each has done tonight. The six on court are drawn large enough
+  to read from a metre away, with the bench beside them in jersey order carrying the same
+  figures. The screen is kept awake while it is open and released the moment it closes -- a
+  phone that stays lit after somebody puts it away is a flat battery by the third set.
+  Nothing on it is tappable but the way out, because a phone lying on a scorer's table gets
+  knocked and a mis-tap must not be able to record anything.
+
+- **A match can be shared live with a second phone, over Bluetooth, with no internet.** One
+  person tracks and another coaches, and the coach's watch pairs to the coach's phone and to
+  nothing else -- so the court cannot travel from the tracker's phone to the coach's wrist. It
+  goes phone to phone over Multipeer Connectivity, and the coach's phone feeds her own watch
+  by the link that already exists, which is why the watch app needed no change at all. Each
+  phone announces the identifiers it holds and is sent only the difference, so a season is
+  never put on the air to ask what is missing. A phone that receives a match stops recording:
+  two phones both recording the same game produce two logs of it that cannot be joined
+  afterwards, and refusing to start the second is the only point at which that is
+  preventable. Sharing is switched on by hand, so a phone that never shares never sees the
+  local-network prompt.
+
+- **A game can be corrected after it was played, including one copied from paper.** The
+  figures on a paper sheet were drawn as text and could only be read, so a transcription with
+  numbers in the wrong row was permanent on the phone -- the web app had been able to fix one
+  since release 002. They are fields now, and a player the transcription missed can be added
+  by filling in both boxes. A box left empty stays a dash rather than becoming a nought,
+  because a nought would say they served and missed serves they never took.
+
+- **The Game tab reaches every game in the season, and offers to correct the one it shows.**
+  It showed only the game being tracked, so the moment a game ended the tab went empty and
+  the figures for what had just happened were reachable only from the Season tab.
+
+- **A season can be handed to another phone, and what arrives is merged.** A coach and an
+  assistant coach at the same match need the same figures, and only one of them is tracking.
+  "Send this season to another phone" writes the same bytes a backup holds under an extension
+  the app owns, so AirDrop offers the app by name on the receiving phone instead of dropping
+  the file into Files for somebody to go and find. What arrives is merged rather than
+  restored: everything already on the receiving phone is kept in the order it was recorded,
+  and only events it does not already hold are added. An event is recognised by its
+  identifier, and one that arrives without a name is named from its own content, so the same
+  file twice adds nothing the second time. One thing is refused, and only one: both logs
+  recording the same game, which would say every serve in it happened twice. Everything else
+  joins, the same way the log is loaded from disk.
+
+- **A season can be thrown away, and everything can be erased.** Neither app had any way
+  out of its own data: a season entered to try the app out could be emptied game by game
+  and player by player and would still sit at the top of the screen with no control that
+  would remove it. Discarding a season takes its games with it and deliberately keeps the
+  players -- a person outlives any roster, and what they wore in another season is
+  untouched. "Erase everything" returns the app to the day it was installed, and forgets
+  which backups have been imported so the operator's own file can be restored again. Both
+  arm on the first tap and commit on the second, like every other destructive control.
+
+### Changed
+
+- **Sharing a match now says which way it travels, and that is also why it connects.** One
+  "Share this match live" button left both phones doing the same thing and working out
+  afterwards who was who. Two phones inviting each other at the same moment is a race on the
+  radio -- one invitation wins, the other is refused, and the pair spends its time
+  reconnecting rather than syncing; it joined perhaps one time in five. There are two buttons
+  now, "Send this match" and "Receive a match". The sender makes itself findable, the receiver
+  does the finding, and everything else about a phone's behaviour follows from that one
+  choice. Nothing is inferred from what arrives, so nothing can be inferred wrongly.
+
+- **The receiving phone shows the board and nothing else.** It kept a full tracking screen it
+  could not use -- outcome buttons, the picker, undo, a header of controls. A control that
+  cannot be used is a control somebody taps anyway and then wonders about, and on a sideline
+  that wondering costs a rotation. What is left is the court, the bench, and a button to go
+  full screen.
+
+- **Holding the phone's screen awake is confined rather than banned.** The restraint rule
+  banned `isIdleTimerDisabled` outright, alongside the APIs that suppress the wearer's
+  notifications. On a phone it suppresses nothing -- it keeps the display lit. The rule that
+  list enforces is about the watch, where holding the screen means an extended runtime
+  session and several of those do silence notifications. So it is allowed in exactly one
+  file, the board, and a second test fails the build unless that file gives the screen back
+  when it closes.
+
+- **"No networking" now means no internet, not no radios, and each radio is confined to one
+  file.** The offline test banned `MultipeerConnectivity` outright, which would have banned
+  the phone-to-phone link the release needs -- by the same logic that would have banned the
+  watch. Frameworks that reach the internet are still banned everywhere; the two that reach
+  only the next device in the room are allowed in exactly one file apiece, and a test fails
+  the build if either appears anywhere else or if the peer link so much as names a networking
+  API.
+
+- **An edit saves when you leave the field, not only when you leave the screen.** The game
+  form dispatched its changes from `onDisappear` alone, which does not reliably fire when the
+  operator switches tabs -- so a correction typed and then left by any route but the Back
+  button was thrown away without a word. It now saves when a field is finished with, when the
+  app leaves the foreground, and on the way out.
+
+- **The serve record is named for what it opens.** The one way into the serve-by-serve
+  history read "Serve record - 47/62 in", which looks like a statistic somebody put on a row
+  rather than a way in. The count moved to the caption underneath it.
+
+- **The watch court is visible to the tests that measure it.** Every box carried an
+  identifier, and none of them could ever be found: a SwiftUI stack is not an accessibility
+  element on its own, so an identifier put on one is never matched. The boxes and the header
+  are now containers in their own right, which is what makes "the on-deck box is the biggest
+  thing on the screen" a claim a machine can check.
+
+- **The watch can be handed a court to draw, so its layout requirements are actually
+  tested.** The interface suite has always launched the watch with `-uiTestCourt` and the
+  watch has never read it: a court arrives from a paired phone, and a build machine has
+  none, so eight tests measuring the on-deck box and the dash-not-zero rule were failing on
+  an empty screen. The argument is now honoured, the same way the phone honours
+  `-uiTestFreshStore` -- unreachable by using the app, read once at start-up, inert on a
+  real watch.
+
+
+- **The two figures under a jersey number are readable from a wrist.** Serve-in percentage
+  and points sat at 13-16pt in secondary and tertiary grey -- the dimmest things on a screen
+  that gets one second of attention, across a gym, at arm's length. Both are larger and both
+  gained a step of contrast; only the unit "pts" stays quiet, because it is the same on every
+  box and is recognised rather than read. The jersey number still leads by a long way, so a
+  box is scanned in the same order as before. A test now holds a floor under both sizes.
+
 ### Fixed
+
+- **A shared match keeps syncing through the end of a game and into the next one.** Throwing
+  a game away and starting another left the second phone connected, read-only, and receiving
+  nothing. Both phones had quietly decided they were the follower: the other phone almost
+  always holds something the tracker does not -- an older season of its own -- and that
+  arriving demoted the phone doing the recording, after which neither pushed anything. A
+  phone that has sent a match is the tracker and stays the tracker; the only way out of a
+  role is stopping sharing, which is the one thing the operator actually asked for by tapping
+  the button.
+
+- **A match that cannot be joined now says so.** The refusal was swallowed, so a merge the
+  rulebook would not allow looked exactly like a match that had not moved.
+
+- **The sharing row says which phone is recording.** "Sharing with Mike's iPhone" did not say
+  which way the match was travelling, and the two phones behave completely differently -- one
+  records and one cannot.
+
+- **A shared match now keeps up, instead of syncing once and stopping.** The first exchange
+  worked and nothing after it did: on every change the tracking phone announced the
+  identifiers it held, which asks the other phone to send back what IT is missing -- and a
+  phone that is following has nothing to send. A tracker has to push what it owes, not ask
+  about it. It now remembers what the other phone is known to hold, sends only the
+  difference, and forgets all of it when the link drops so a reconnect starts the
+  conversation again.
+
+- **A phone following somebody else's match no longer shows recording buttons.** It was told
+  in words that only the tracking phone records, and then offered OUT, IN and IN-POINT
+  anyway. The controls come off rather than grey out: a disabled button still invites the
+  tap.
+
+- **The build no longer uploads with a document-configuration warning.** Declaring the
+  `.vbseason` file type without saying how the app opens one is ITMS-90737, which arrives by
+  email hours after the build has already gone to TestFlight -- the slowest feedback loop in
+  the project. It is answered "not in place": a season that arrives is read once and merged
+  into this app's own log, and the operator's file is never written back to. A test now checks
+  the declarations Apple checks, in a fifth of a second instead of by email.
+
+- **Correcting a serve no longer risks deleting the whole turn.** Every button inside an open
+  turn shared one tap target, because buttons in a list row take the row's tap unless each is
+  told to be its own. So "Remove last serve" also pressed "Done" and armed "Delete this turn"
+  -- and the next correction fired the delete that was already armed, taking every serve in
+  the turn with it. Each button is its own target now, and the delete disarms itself the
+  moment anything else is touched, so a confirmation can never be answered by a different
+  button minutes later.
+
+
+- **An out serve stays inside its own mark.** The cross was a fixed 16px bar hung past both
+  edges of the 8px mark and turned 45 degrees, so it drew across the mark beside it and over
+  the border of its own turn -- two turns side by side read as one block, and the figures
+  under them looked like they belonged to whichever turn the eye landed on. Both apps now
+  draw it corner to corner of the mark itself, which is bounded by construction rather than
+  by a number that has to stay in step with the mark's size.
+
+### Fixed
+
+- **A game can be named before the whistle.** The only way in was a caption at the top of
+  the match header, which read as a label rather than a control, so an operator looking for
+  somewhere to type the opponent found nothing and tracked a game the season list would call
+  "Unnamed opponent". The pre-game screen now offers the field outright, and the header
+  control is drawn as a button whether or not it already holds a name.
+- **The keyboard lets go.** Adding a player left the number pad up over the tab bar, and a
+  number pad has no return key -- the screen could not be left. Adding now takes the
+  keyboard with it, Return moves from the name to the number, any scroll dismisses rather
+  than only a deliberate drag, and the Done button is drawn bold. The Track screen and the
+  game-naming sheet were missing the escape entirely and now carry it.
+
+### Added
+
+- **The interface suites are filmed.** Every screen in this app is written on a machine that
+  cannot run it, so the first person to see one was whoever installed the build -- which is
+  how a keyboard that could not be dismissed reached a release. Both suites now record the
+  simulator they drive and publish the video, and both run to the end even when one fails,
+  with the pass or fail decided afterwards. Naming a game and escaping a keyboard are
+  covered by tests for the first time.
+
+### Changed
+
+- **Every icon is lit like a neon sign, and they all come from one renderer.** The web app
+  drew a volleyball while the native apps carried the player and the ball — the same product
+  wearing two faces depending on how it was installed. All five now come from the same
+  traced artwork and the same code: black ground, a bright tube along the shape's edge, a
+  cyan wash behind it, and a frame around the tile. The frame follows what each icon gets
+  cropped to — a rounded rectangle for a home screen, a circle for a watch face and for the
+  `maskable` icon, which a browser may crop to a circle of 80% of its width.
+- **The app icon is lit like a neon sign.** The same silhouette and ball, traced from the
+  same artwork, but on black with a bright tube along the shape's edge, a cyan wash behind
+  it, and a frame around the tile. The frame follows the shape each platform crops to — a
+  rounded rectangle on the phone, a circle on the watch — because a rounded rectangle drawn
+  for a watch face would have its corners sliced off.
+
+- **The two apps agree about colour again.** The web app coloured the tally board by turn;
+  the native one changed to colour by player and the web app was left behind, so the same
+  season looked different in each. The web app now computes the identical colours from the
+  identical numbers — one hue per player, their own turns as shades of it, and the jersey
+  badge carrying the colour so the link to a person is stated rather than inferred.
+- **The native stats table shows Turns and Court.** It has always computed both; only the
+  web app printed them, so the same figures were visible in one app and not the other. Court
+  appears only where a lineup was used, which is the rule the web app has always followed —
+  without one it would be a column of dashes pretending to mean something.
+
+
+### Fixed
+
+- **The five-serve alert was invisible to VoiceOver.** A container in SwiftUI is not an
+  accessibility element on its own, so the overlay had no identity: it could not be
+  announced, and nothing behind it was hidden while it was up. It is now named, and marked
+  modal, so the court behind it is ignored while the interrupt is on screen — which is the
+  whole point of an interrupt.
+
+- **A jersey number could trap you on the roster screen.** The number field brings up a
+  number pad, a number pad has no return key, and nothing else on the screen dismissed one —
+  so the keyboard sat over the tab bar and the page could not be left at all short of
+  force-quitting the app. Every screen that takes typing now offers Done above the keyboard,
+  and a drag down over the list puts it away too. Two interface tests cover it: one proves
+  the way out exists, the other proves the tab bar is still reachable with a number
+  half-typed.
 
 - **The interface suite had never run, and could not have.** It failed three ways before a
   single test executed: no `CODE_SIGNING_ALLOWED=NO`, so the build reached for credentials the

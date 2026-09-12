@@ -82,6 +82,7 @@ struct PaperGameScreen: View {
             }
         }
         .navigationTitle("A game from paper")
+        .keyboardDismissable()
     }
 
     private func binding(
@@ -158,6 +159,7 @@ struct PaperImportScreen: View {
             }
         }
         .navigationTitle("Games from paper")
+        .keyboardDismissable()
         .fileImporter(isPresented: $isChoosingFile, allowedContentTypes: [.item]) { result in
             guard case let .success(url) = result else { return }
             let opened = url.startAccessingSecurityScopedResource()

@@ -61,6 +61,11 @@ final class WatchLink {
     private var session: (any ConnectivitySession)?
 
     init() {
+        // A court asked for on the command line, so the layout can be measured on a build
+        // machine with no paired phone. Nil on every real watch, and the connectivity
+        // session is still started either way -- a fixture must not change how the app
+        // behaves once a real court arrives.
+        snapshot = CourtFixture.requested
         session = WatchConnectivitySession(delegate: self)
     }
 

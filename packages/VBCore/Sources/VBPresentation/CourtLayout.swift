@@ -93,11 +93,18 @@ public struct BoxTypography: Equatable, Sendable {
     public var number: Double
     public var percentage: Double
     public var points: Double
+    /// The word "pts" beside the count, which never has to be read -- only recognised.
+    public var pointsLabel: Double
 
     /// The type for a box, given whether it is the one the coach is deciding about.
+    ///
+    /// Both figures under the number were raised: read from a wrist at arm's length, across
+    /// a gym, they were the two things somebody had to lean in for. The number still leads
+    /// by a long way, so the box is scanned the same way -- who, then how they are serving,
+    /// then what it has been worth.
     public static func forBox(isOnDeck: Bool) -> BoxTypography {
         isOnDeck
-            ? BoxTypography(number: 46, percentage: 16, points: 14)
-            : BoxTypography(number: 32, percentage: 13, points: 12)
+            ? BoxTypography(number: 46, percentage: 18, points: 17, pointsLabel: 11)
+            : BoxTypography(number: 32, percentage: 15, points: 14, pointsLabel: 10)
     }
 }

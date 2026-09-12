@@ -35,6 +35,7 @@ function transition(state, event) {
     case EVENT.CREATE_SEASON: return withSeasonCreated(state, event)
     case EVENT.RENAME_SEASON: return withSeasonRenamed(state, event)
     case EVENT.ACTIVATE_SEASON: return { ...state, activeSeasonId: event.id }
+    case EVENT.DISCARD_SEASON: return withSeasonDiscarded(state, event)
     case EVENT.ADD_PLAYER: return withPlayerAdded(state, event)
     case EVENT.EDIT_PLAYER: return withPlayerEdited(state, event)
     case EVENT.REMOVE_PLAYER: return withPlayerRemoved(state, event)
@@ -75,6 +76,8 @@ export function rejectionReason(state, event) {
     case EVENT.RENAME_SEASON:
       return seasonById(state, event.id) ? namePresence(event.name, 'season') : 'That season does not exist.'
     case EVENT.ACTIVATE_SEASON: return activateSeasonRejection(state, event)
+    case EVENT.DISCARD_SEASON:
+      return seasonById(state, event.id) ? null : 'That season no longer exists.'
     case EVENT.ADD_PLAYER: return addPlayerRejection(state, event)
     case EVENT.EDIT_PLAYER: return editPlayerRejection(state, event)
     case EVENT.REMOVE_PLAYER: return findPlayer(state, event.id) ? null : 'That player is not on the roster.'
@@ -354,6 +357,24 @@ function hasRecordedServe(match) {
 }
 
 // --- Season transitions ------------------------------------------------------
+
+/**
+ * Throws a season away with everything recorded inside it.
+ *
+ * The players are deliberately left behind. Discarding a season says the season did not
+ * happen, not that the children did not exist -- their other seasons, and the numbers they
+ * wore in them, are untouched.
+ */
+function withSeasonDiscarded(state, event) {
+  const discarded = state.games.filter((game) => game.seasonId === event.id).map((game) => game.id)
+  return {
+    ...state,
+    seasons: state.seasons.filter((season) => season.id !== event.id),
+    games: state.games.filter((game) => game.seasonId !== event.id),
+    activeSeasonId: state.activeSeasonId === event.id ? null : state.activeSeasonId,
+    currentGameId: discarded.includes(state.currentGameId) ? null : state.currentGameId,
+  }
+}
 
 function withSeasonCreated(state, event) {
   const season = {

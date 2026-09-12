@@ -3,18 +3,29 @@
 // Four tabs, the same four the web app shipped with, because the operator has been using
 // them all season and the names are in their hands already: Track, Game, Season, Roster.
 import SwiftUI
+import UIKit
 import VBCore
 
 @main
 struct VBTrackerApp: App {
     @State private var store = Store(directory: AppPaths.storeDirectory)
     @State private var link: PhoneLink?
+    @State private var peers: PeerLink?
+    @State private var lockScreen = CourtActivityHost()
     @State private var tab = Tab.track
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some Scene {
         WindowGroup {
+            // A known rough edge, written down rather than papered over: a SwiftUI tab
+            // bar hands the accessibility tree its symbol name and drops the Label's text,
+            // so these tabs read aloud as "record.circle" and "person.3". Two attempts have
+            // failed -- an `.accessibilityIdentifier` after `.tabItem` lands on the tab's
+            // CONTENT instead of the bar button, and an `.accessibilityLabel` on the Label
+            // is ignored outright. Fixing it properly means leaving `.tabItem` behind, which
+            // is a change worth making on a machine that can run it and watch what happens.
             TabView(selection: $tab) {
-                TrackScreen(store: store)
+                TrackScreen(store: store, peers: peers)
                     .tabItem { Label("Track", systemImage: "record.circle") }
                     .tag(Tab.track)
 
@@ -22,7 +33,7 @@ struct VBTrackerApp: App {
                     .tabItem { Label("Game", systemImage: "list.number") }
                     .tag(Tab.game)
 
-                SeasonScreen(store: store)
+                SeasonScreen(store: store, link: link, lockScreen: lockScreen)
                     .tabItem { Label("Season", systemImage: "calendar") }
                     .tag(Tab.season)
 
@@ -37,6 +48,40 @@ struct VBTrackerApp: App {
                 // no watch paired must behave exactly as it does with one.
                 guard link == nil else { return }
                 link = PhoneLink(store: store)
+                // Built but not started: sharing a match with a second phone is switched on
+                // by hand, and until it is, no radio is touched and no permission is asked
+                // for. A phone that never shares never sees the local-network prompt.
+                peers = PeerLink(store: store, deviceName: UIDevice.current.name)
+
+                // The lock screen follows the record like the wrist does, and is switched on
+                // by hand: a lock screen is somebody's own, and an app that puts itself there
+                // uninvited is one they turn off entirely.
+                store.observe { state in lockScreen.follow(state) }
+            }
+            // A season sent from another phone. The file arrives here whether the app was
+            // running or not, and it is merged rather than restored: the person receiving it
+            // has their own roster, and replacing it would be a disaster dressed up as a
+            // feature. The Season tab is shown afterwards because that is where the arrival
+            // is visible.
+            .onOpenURL { url in
+                // Read before the merge, because merging consumes the file.
+                let invitation = store.invitation(inFileAt: url)
+                store.receive(fileAt: url)
+
+                // An invitation is the whole of the other person's setup. Tapping the
+                // AirDrop is the clearest statement of intent there is, so nothing is asked:
+                // the phone starts watching and shows the court it will be watching on.
+                guard let invitation, let peers else { return tab = .season }
+                peers.accept(invitation)
+                tab = .track
+            }
+            // Nothing is torn down when the app leaves the screen. The Bluetooth link is
+            // allowed to keep running while the app is suspended, which is the entire reason
+            // it replaced Multipeer: a locked phone in a pocket goes on receiving the match.
+            // This only picks the radio up again if it was never started.
+            .onChange(of: scenePhase) { _, phase in
+                guard phase == .active else { return }
+                peers?.appCameBack()
             }
         }
     }

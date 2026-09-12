@@ -1,0 +1,26 @@
+{
+  "briefId": "brief-itms-90737-document-config",
+  "sessionId": "tab-107-0xs7q4wng",
+  "taskId": "itms-90737-document-config",
+  "headline": "Builds no longer upload with a document-configuration warning, and a test now catches the class of problem.",
+  "whatChanged": "Added LSSupportsOpeningDocumentsInPlace = NO beside the .vbseason document type in ios/project.yml, and a ProjectConfigurationTests suite that checks the declarations Apple checks: document configuration, exported type, radio usage strings paired with their services, and export compliance on both apps.",
+  "whyItChanged": "ITMS-90737 arrived by email hours after build 28 had already gone to TestFlight. Declaring a document type without saying how the app opens one is a warning on every upload, and nothing in the compile or the test run saw it.",
+  "whatCouldBreak": "Nothing at runtime: the app never opened a file in place. iOS will now hand it a copy in the app's Inbox rather than the original, which is what the merge already assumed.",
+  "decisions": [
+    {
+      "chose": "Opening documents in place is NO",
+      "insteadOf": "YES, which Apple's own message calls recommended",
+      "because": "A season that arrives is read once and merged into the app's own log; the file is never written back to. Saying YES would promise an editor the app is not, and would leave the operator's own file open to being changed by an app they only asked to read it.",
+      "openQuestion": "YES avoids a copy in the Inbox. If a very large season ever made that copy costly, this is the line to revisit."
+    },
+    {
+      "chose": "Check the plist declarations in the Swift test suite",
+      "insteadOf": "Waiting for the ITMS email on each upload",
+      "because": "The email arrives hours after the build has already been distributed, which is the slowest feedback loop in the project. The same check costs a fifth of a second locally, and was proven to fail by removing the fix.",
+      "openQuestion": "It reads project.yml as text rather than parsing YAML, so it proves a key is present rather than that it is well-formed."
+    }
+  ],
+  "isRoutine": false,
+  "filesTouched": 3,
+  "publishedAt": "2026-09-05T12:25:13.2713101Z"
+}

@@ -49,6 +49,9 @@ public func rejectionReason(_ state: AppState, _ event: Event) -> String? {
         if state.currentMatch != nil { return "Finish the current game before starting another." }
         return nil
 
+    case let .discardSeason(id):
+        return state.season(id: id) != nil ? nil : "That season no longer exists."
+
     case let .discardGame(id):
         return state.games.contains { $0.id == id } ? nil : "That game no longer exists."
 
@@ -89,6 +92,19 @@ public func rejectionReason(_ state: AppState, _ event: Event) -> String? {
     case let .recordServe(outcome):
         if outcome == nil { return "Unrecognised serve outcome." }
         return state.currentMatch?.openTurn != nil ? nil : "Select the server first."
+
+    case .recordRallyPoint:
+        // Only while our side is not actually serving. Every rally on our own serve is
+        // already decided by that serve's outcome, so accepting one there as well would
+        // count it twice and put the score permanently out.
+        //
+        // "Not serving" is a turn with no serves in it yet, because the rotation hands the
+        // ball on the moment a turn ends -- so the next player holds it, without having
+        // served, for the whole spell the other team is serving. That gap is where this
+        // lives. Once they have served once, every rally is a serve.
+        guard let match = state.currentMatch else { return "No match is in progress." }
+        guard let open = match.openTurn else { return nil }
+        return open.serves.isEmpty ? nil : "Record the serve outcome instead."
 
     case let .endMatch(result):
         return endMatchRejection(state, result: result)

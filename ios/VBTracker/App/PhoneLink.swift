@@ -15,13 +15,22 @@ final class PhoneLink {
     private var session: (any ConnectivitySession)?
     private var sequence = 0
 
+    /// What the phone knows about the watch, for the one screen that says so.
+    ///
+    /// Asked fresh every time rather than kept: a watch app installed while the app was open
+    /// must stop being reported as missing without anybody relaunching anything.
+    var watchState: WatchState {
+        session?.watchState
+            ?? WatchState(isSupported: false, isPaired: false, isAppInstalled: false, isReachable: false)
+    }
+
     init(store: Store) {
         self.store = store
         self.session = WatchConnectivitySession(delegate: self)
 
         // Every accepted event redraws the wrist, substitutions included -- so the coach's
         // decision is never one serve out of date.
-        store.onChange = { [weak self] state in
+        store.observe { [weak self] state in
             self?.send(state)
         }
         send(store.state)
@@ -40,7 +49,10 @@ final class PhoneLink {
             serveLimit: ServeLimitNotice.raised(by: state),
             // And what the phone holds, so a serve recorded on the wrist stops showing as
             // unsent the moment the court that includes it arrives.
-            acknowledgedEventIds: store.acknowledgedEventIds
+            acknowledgedEventIds: store.acknowledgedEventIds,
+            // The rally score rides along with the court it belongs to, so the wrist never
+            // shows one that belongs to a different moment.
+            score: state.currentMatch?.rallyScore
         )
         session.send(context: LinkPayload.encode(snapshot: snapshot))
     }

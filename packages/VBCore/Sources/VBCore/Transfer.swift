@@ -112,6 +112,18 @@ public func backupFilename(on day: String) -> String {
     "vbtracking-backup-\(day).json"
 }
 
+/// The extension on a season being handed to another phone.
+///
+/// Its own extension rather than `.json`, so the receiving phone can offer this app by name
+/// when the file arrives. A backup keeps `.json` because the web app reads those, and the
+/// two files hold identical bytes -- only the name differs.
+public let seasonFileExtension = "vbseason"
+
+/// A filename for a season being passed to somebody else.
+public func seasonFilename(on day: String) -> String {
+    "vbtracking-season-\(day).\(seasonFileExtension)"
+}
+
 // MARK: - Naming events
 
 /// Gives an event an identifier if it does not have one.

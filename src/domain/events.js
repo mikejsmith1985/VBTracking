@@ -18,6 +18,7 @@ export const EVENT = Object.freeze({
   CREATE_SEASON: 'CREATE_SEASON',
   RENAME_SEASON: 'RENAME_SEASON',
   ACTIVATE_SEASON: 'ACTIVATE_SEASON',
+  DISCARD_SEASON: 'DISCARD_SEASON',
   START_GAME: 'START_GAME',
   DISCARD_GAME: 'DISCARD_GAME',
   SET_GAME_CONTEXT: 'SET_GAME_CONTEXT',
@@ -111,6 +112,17 @@ export function createSeason(id, name, team, format = DEFAULT_FORMAT) {
 /** Corrects a season's name or the team it is played for. */
 export function renameSeason(id, name, team) {
   return { t: EVENT.RENAME_SEASON, id, name, team }
+}
+
+/**
+ * Records a season being thrown away: the season, its roster memberships, and every game
+ * played in it.
+ *
+ * The players stay. A person outlives any roster, and what they wore in another season is
+ * not touched -- the same rule that makes leaving a squad different from never playing.
+ */
+export function discardSeason(id) {
+  return { t: EVENT.DISCARD_SEASON, id }
 }
 
 /** Records which season new games now belong to. */

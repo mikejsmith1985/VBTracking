@@ -168,6 +168,21 @@ func withGameStarted(
     return seeded
 }
 
+/// Throws a season away with everything recorded inside it.
+///
+/// The players are deliberately left behind. Discarding a season says the season did not
+/// happen, not that the children did not exist -- their other seasons, and the numbers they
+/// wore in them, are untouched.
+func withSeasonDiscarded(_ state: AppState, id: String) -> AppState {
+    var next = state
+    let discarded = Set(state.games.filter { $0.seasonId == id }.map(\.id))
+    next.seasons = state.seasons.filter { $0.id != id }
+    next.games = state.games.filter { $0.seasonId != id }
+    if state.activeSeasonId == id { next.activeSeasonId = nil }
+    if let current = state.currentGameId, discarded.contains(current) { next.currentGameId = nil }
+    return next
+}
+
 func withGameDiscarded(_ state: AppState, id: String) -> AppState {
     var next = state
     next.games = state.games.filter { $0.id != id }
@@ -606,5 +621,17 @@ func withActiveRoster(_ state: AppState) -> AppState {
 extension String {
     var trimmed: String {
         trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+/// Records a rally decided while the other team had the ball.
+///
+/// Appended in order rather than counted, so undo drops exactly one rally and replay puts
+/// the same score back. Two running totals would lose which one to take back.
+func withRallyPointRecorded(_ state: AppState, toUs: Bool) -> AppState {
+    updateCurrentMatch(state) { match, _ in
+        var next = match
+        next.opponentServeRallies.append(toUs)
+        return next
     }
 }

@@ -9,9 +9,13 @@ import VBPresentation
 
 struct TrackScreen: View {
     @Bindable var store: Store
+    /// The link to a second phone, when there is one. Nil is the ordinary case.
+    var peers: PeerLink?
 
     /// The operator asked to change server mid-turn. Their override, nothing else's.
     @State private var isPickerRequested = false
+    /// The board, full screen, for a phone propped up beside the court.
+    @State private var isShowingSideline = false
 
     /// What the operator has picked up: a player waiting for a spot, or a spot waiting for
     /// a player. Both directions arrange the rotation, because before a match people think
@@ -22,15 +26,43 @@ struct TrackScreen: View {
     @State private var isEndingMatch = false
     @State private var isChoosingLineup = false
     @State private var isNamingGame = false
+    /// The share sheet carrying an invitation to watch this match.
+    @State private var isInviting = false
+    @Environment(\.scenePhase) private var scenePhase
+
+    /// Whether a tap on the scoreboard would be taken.
+    ///
+    /// Only while our side is not actually serving. The rotation hands the ball on the moment
+    /// a turn ends, so the next player holds it -- without having served -- for the whole
+    /// spell the other team is serving, and that is the gap the scoreboard is for.
+    private var canScoreARally: Bool {
+        guard let match = store.state.currentMatch else { return false }
+        guard peers?.role.canRecord ?? true else { return false }
+        guard let open = match.openTurn else { return true }
+        return open.serves.isEmpty
+    }
 
     private var dock: DockState {
         DockState(state: store.state, isPickerRequested: isPickerRequested, canUndo: store.canUndo)
     }
 
     var body: some View {
+        // A phone receiving somebody else's match has one job: show the court. It records
+        // nothing, so a dock, a picker and a header full of controls are all things that
+        // cannot be used -- and a control that cannot be used is a control somebody taps
+        // anyway and then wonders about.
+        if peers?.role.canRecord == false {
+            FollowingScreen(store: store, peers: peers)
+        } else {
+            trackingBody
+        }
+    }
+
+    private var trackingBody: some View {
         ZStack {
             VStack(spacing: 0) {
                 NoticeBanner(notice: store.notice)
+                if let peers { NearbyOffer(peers: peers) }
 
                 if store.state.roster.isEmpty {
                     EmptyState(
@@ -44,6 +76,8 @@ struct TrackScreen: View {
                     BetweenGames(store: store)
                 } else {
                     MatchHeader(store: store, isEndingMatch: $isEndingMatch, isNamingGame: $isNamingGame)
+                    ScoreStrip(store: store, canRecord: canScoreARally)
+                    if let peers { MatchSharing(peers: peers, isInviting: $isInviting) }
                     ScrollView { TallyBoard(match: store.state.currentMatch, roster: store.state.roster) }
                     Dock(
                         store: store,
@@ -51,7 +85,8 @@ struct TrackScreen: View {
                         armed: $armed,
                         isPickerRequested: $isPickerRequested,
                         isChoosingLineup: $isChoosingLineup,
-                        onServe: record
+                        onServe: record,
+                        canRecord: peers?.role.canRecord ?? true
                     )
                 }
             }
@@ -61,10 +96,50 @@ struct TrackScreen: View {
                     self.alert = nil
                 }
             }
+
+            // Bottom-left, out of the way of the three outcome buttons: this is opened
+            // between rallies, never during one.
+            VStack {
+                Spacer()
+                HStack {
+                    Button {
+                        isShowingSideline = true
+                    } label: {
+                        Image(systemName: "rectangle.inset.filled.on.rectangle")
+                            .font(.title3)
+                            .padding(10)
+                            .background(Circle().fill(.thinMaterial))
+                    }
+                    .accessibilityLabel("Show the board full screen")
+                    .accessibilityIdentifier("open-sideline")
+                    Spacer()
+                }
+                .padding(.leading, 10)
+                .padding(.bottom, 4)
+            }
         }
+        .keyboardDismissable()
         .sheet(isPresented: $isNamingGame) { GameNameSheet(store: store, isPresented: $isNamingGame) }
         .sheet(isPresented: $isEndingMatch) { EndMatchSheet(store: store, isPresented: $isEndingMatch) }
         .sheet(isPresented: $isChoosingLineup) { LineupSheet(store: store, isPresented: $isChoosingLineup) }
+        .sheet(isPresented: $isInviting) {
+            if let peers { InviteSheet(store: store, peers: peers) }
+        }
+        // Full screen rather than a sheet: the whole point is every pixel, read from a metre
+        // away, with no tab bar or grabber taking a strip of it.
+        .fullScreenCover(isPresented: $isShowingSideline) { SidelineScreen(store: store) }
+        // Listening costs a radio and stops the moment this screen does. It is what makes the
+        // other phone's whole setup one tap, so it starts without being asked -- but it never
+        // runs behind the operator's back on some other tab.
+        .onAppear { peers?.listen() }
+        .onDisappear { peers?.stopListening() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                peers?.listen()
+            } else {
+                peers?.stopListening()
+            }
+        }
     }
 
     /// Records one serve, and raises the five-serve alert when it is the fifth.
@@ -95,16 +170,17 @@ private struct MatchHeader: View {
                 Button {
                     isNamingGame = true
                 } label: {
+                    // Always drawn as a control, whether or not it holds a name. As a bare
+                    // caption it read as a label, and an operator looking for somewhere to
+                    // type the opponent in went looking on other screens instead.
                     HStack(spacing: 4) {
-                        Text(opponent ?? "Name this game")
-                            .font(.caption.bold())
-                            .foregroundStyle(opponent == nil ? Color.cyan : Color.secondary)
-                        if opponent != nil {
-                            Image(systemName: "pencil").font(.system(size: 9)).foregroundStyle(.tertiary)
-                        }
+                        Image(systemName: "pencil").font(.caption2)
+                        Text(opponent ?? "Name this game").font(.caption.bold())
                     }
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .tint(opponent == nil ? Color.cyan : Color.secondary)
                 .accessibilityIdentifier("name-game")
 
                 Text("Match \((store.state.currentMatch?.index ?? 0) + 1) of \(matchesPerGame)")
@@ -132,6 +208,10 @@ private struct MatchHeader: View {
 private struct BetweenGames: View {
     let store: Store
 
+    /// Who they are playing, typed before the whistle rather than only after it.
+    @State private var opponent = ""
+    @FocusState private var isNaming: Bool
+
     /// Today, in the form the log keeps dates in.
     private func today() -> String {
         let formatter = DateFormatter()
@@ -147,6 +227,21 @@ private struct BetweenGames: View {
                     ? "Every match is finished."
                     : "A game is \(matchesPerGame) matches to \(targetScore)."
             )
+            // Optional, and in front of the operator rather than behind a tap on the
+            // header once play has started. Left empty the game is still started at once --
+            // the whistle never waits on typing.
+            VStack(spacing: 6) {
+                TextField("Opposing team (optional)", text: $opponent)
+                    .textFieldStyle(.roundedBorder)
+                    .submitLabel(.done)
+                    .focused($isNaming)
+                    .onSubmit { isNaming = false }
+                    .accessibilityIdentifier("pre-game-opponent")
+                Text("You can also name it, or change it, from the header once play starts.")
+                    .font(.caption2).foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 32)
+
             Button("Start game") {
                 // The rule is written into the event, never read from the code: a game
                 // recorded before the rule existed must replay as it always did.
@@ -162,7 +257,17 @@ private struct BetweenGames: View {
                 }
                 // Dated the moment it starts. A game being tracked is being played today,
                 // and a season full of "No date" is the cost of not saying so.
-                store.dispatch(.setGameContext(gameId: id, context: GameContext(date: today())))
+                store.dispatch(
+                    .setGameContext(
+                        gameId: id,
+                        context: GameContext(
+                            date: today(),
+                            opponent: opponent.trimmingCharacters(in: .whitespaces)
+                        )
+                    )
+                )
+                opponent = ""
+                isNaming = false
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)

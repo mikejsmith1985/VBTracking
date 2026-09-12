@@ -53,6 +53,9 @@ private func transition(_ state: AppState, _ event: Event) -> AppState {
         next.activeSeasonId = id
         return next
 
+    case let .discardSeason(id):
+        return withSeasonDiscarded(state, id: id)
+
     case let .addPlayer(id, name, number, seasonId):
         return withPlayerAdded(state, id: id, name: name, number: number, seasonId: seasonId)
 
@@ -140,6 +143,9 @@ private func transition(_ state: AppState, _ event: Event) -> AppState {
     case let .recordServe(outcome):
         guard let outcome else { return state }
         return withServeRecorded(state, outcome: outcome)
+
+    case let .recordRallyPoint(toUs):
+        return withRallyPointRecorded(state, toUs: toUs)
 
     case let .endMatch(result):
         return withMatchEnded(state, result: result.recorded)

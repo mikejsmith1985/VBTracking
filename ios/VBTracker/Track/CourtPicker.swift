@@ -245,6 +245,9 @@ struct Chip: View {
         .tint(isArmed ? .orange : (isServing ? .cyan : .gray))
         .opacity(isOnCourt || isArmed ? 1 : 0.65)
         .accessibilityIdentifier("player-\(player.id)")
-        .accessibilityLabel("\(player.name), number \(player.number)")
+        // Where they are standing is said out loud, not left to the 65% opacity that says it
+        // to everybody else. A court chip and a bench chip were otherwise indistinguishable
+        // to anything that cannot see them.
+        .accessibilityLabel("\(player.name), number \(player.number)\(isOnCourt ? "" : ", on the bench")")
     }
 }
