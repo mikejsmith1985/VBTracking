@@ -20,10 +20,13 @@ settings:
     # Info.plist at all -- which fails at the very last step, after everything compiled.
     GENERATE_INFOPLIST_FILE: YES
     DEVELOPMENT_TEAM: $(APPLE_TEAM_ID)
-    # Back to 1.0. The 1.1 train existed only to keep clear of a 1.0 sitting in review with
-    # build 25 attached; that submission has been withdrawn, so there is nothing to keep
-    # clear of. A first release numbered 1.1 would imply a 1.0 that never existed.
-    MARKETING_VERSION: "1.0"
+    # 1.1, and it stays 1.1. It was briefly set back to 1.0 on the reasoning that a first
+    # release numbered 1.1 implies a 1.0 that never existed -- which is true and cost
+    # nothing next to what it broke: both test phones were already running 1.1, and
+    # TestFlight will not offer a lower version as an update, so the build was uploaded
+    # and reached nobody. The App Store version record is renamed to match instead, which
+    # is allowed for a version that has never been released.
+    MARKETING_VERSION: "1.1"
     CURRENT_PROJECT_VERSION: "1"
     # Warnings are not advice. A season of real data is riding on this.
     SWIFT_TREAT_WARNINGS_AS_ERRORS: YES
