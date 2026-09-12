@@ -11,7 +11,7 @@ bluetooth-peripheral is declared because the tracking phone advertises the match
 They are background modes because a coach puts her phone in her pocket. Without them iOS suspends the app and the link drops, which is exactly what happened in testing: the match stopped arriving every time her screen locked, and the court on her watch and lock screen silently stopped moving. Nothing is transmitted but the serves of the match in progress, between two devices in the same gym, and only while the operator has switched sharing on by hand.
 
 3. DEVICES AND OS TESTED
-Physical hardware: iPhone 17 Pro and iPhone 15 (iOS 26.6), Apple Watch Ultra 2 (watchOS 26.6). Distributed through TestFlight and used to record real matches before submission. Minimum: iOS 18.0, watchOS 11.0. An interface suite drives a full match on the simulator every build, and a layout suite checks the watch court at all seven sizes down to 40 mm.
+Physical hardware: iPhone 17 Pro and iPhone 14 (iOS 26.6), Apple Watch Ultra 2 (watchOS 26.6). Distributed through TestFlight and used to record real matches before submission. Minimum: iOS 18.0, watchOS 11.0. An interface suite drives a full match on the simulator every build, and a layout suite checks the watch court at all seven sizes down to 40 mm.
 
 4. WHAT THE APP DOES AND FOR WHOM
 Volleyball Serve Tracker records which player served and whether each serve went in, out, or won the point. It replaces the paper serve chart a parent or assistant coach keeps on the sideline at a youth volleyball match, and totals serve-in percentage and points per player continuously so the coach has figures in front of them when deciding on a substitution. Audience: parents, assistant coaches and team managers of school and club volleyball teams.
