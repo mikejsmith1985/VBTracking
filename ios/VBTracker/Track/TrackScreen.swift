@@ -70,6 +70,10 @@ struct TrackScreen: View {
                         detail: "Add your team before the first serve."
                     )
                 } else if store.state.currentMatch == nil {
+                    // Offered before the whistle too. Two people set up before a match, not
+                    // during one, and sharing that only appeared once a game was running
+                    // meant arriving at a gym with nothing to tap.
+                    if let peers { MatchSharing(peers: peers, isInviting: $isInviting) }
                     // Starting a game opens nothing. The whistle is the one moment the
                     // app must not put a sheet in front of anybody -- naming waits on the
                     // header, where it can be done between rallies or afterwards.
@@ -131,7 +135,14 @@ struct TrackScreen: View {
         // Listening costs a radio and stops the moment this screen does. It is what makes the
         // other phone's whole setup one tap, so it starts without being asked -- but it never
         // runs behind the operator's back on some other tab.
-        .onAppear { peers?.listen() }
+        //
+        // Keyed on whether the link exists yet, and not `onAppear` alone. The link is built
+        // in the app root's `task`, which runs AFTER this view appears -- so on a cold launch
+        // `onAppear` found nil, listening never started, and nothing ever fired it again. It
+        // worked every time it was tested only because a phone that has been backgrounded and
+        // reopened gets a scene-phase change, and a phone opened fresh at a gym does not. That
+        // cost a whole match.
+        .task(id: peers == nil) { peers?.listen() }
         .onDisappear { peers?.stopListening() }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {

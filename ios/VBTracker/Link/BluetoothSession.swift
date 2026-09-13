@@ -231,7 +231,13 @@ extension BluetoothSession: CBPeripheralManagerDelegate {
         service.characteristics = [channel]
         manager.add(service)
         self.channel = channel
+        // Advertising waits for `didAdd`. Starting it here advertised a service iOS had not
+        // finished registering, so a phone that found the advertisement could fail to find
+        // anything behind it.
+    }
 
+    public func peripheralManager(_ manager: CBPeripheralManager, didAdd service: CBService, error: Error?) {
+        guard error == nil, service.uuid == Wire.service else { return }
         // The name is advertised for the other phone to show, but iOS drops it from the
         // advertisement once this app is in the background. The service UUID survives, and it
         // is the only part that has to.
