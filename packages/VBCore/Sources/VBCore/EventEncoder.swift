@@ -117,6 +117,13 @@ public enum EventEncoder {
                 "outPlayerId": .string(outPlayerId), "inPlayerId": .string(inPlayerId),
             ]
 
+        case let .swapLineupPositions(firstIndex, secondIndex):
+            [
+                "t": .string(EventType.swapLineupPositions),
+                "firstIndex": .number(Double(firstIndex)),
+                "secondIndex": .number(Double(secondIndex)),
+            ]
+
         case let .selectServer(playerId):
             ["t": .string(EventType.selectServer), "playerId": .string(playerId)]
 

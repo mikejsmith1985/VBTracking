@@ -85,6 +85,18 @@ public func rejectionReason(_ state: AppState, _ event: Event) -> String? {
     case let .substitute(outPlayerId, inPlayerId):
         return substituteRejection(state, outPlayerId: outPlayerId, inPlayerId: inPlayerId)
 
+    case let .swapLineupPositions(firstIndex, secondIndex):
+        // Allowed mid-match on purpose: this is how an order written down wrong gets put
+        // right, and that is usually noticed after the first serve rather than before it.
+        // It rewrites who serves next and leaves every turn already played alone.
+        guard let lineup = state.currentMatch?.lineup else { return "There is no serving order yet." }
+        guard firstIndex != secondIndex else { return "Those are the same place." }
+        let places = 0..<min(lineup.count, lineupSize)
+        guard places.contains(firstIndex), places.contains(secondIndex) else {
+            return "That is not a place in the order."
+        }
+        return nil
+
     case let .selectServer(playerId):
         if state.currentMatch == nil { return "No match is in progress." }
         return state.rosterEntry(id: playerId) != nil ? nil : "That player is not on the roster."

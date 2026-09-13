@@ -226,6 +226,13 @@ public struct Event: Equatable, Sendable {
 
         case clearLineup
         case substitute(outPlayerId: String, inPlayerId: String)
+
+        /// Exchanges two places in the serving order.
+        ///
+        /// A correction, not a substitution. Nobody left the floor: the order was written
+        /// down wrong, or the plan changed before the ball moved. Recording it as a
+        /// substitution would put a swap in the history that never happened on court.
+        case swapLineupPositions(firstIndex: Int, secondIndex: Int)
         case selectServer(playerId: String)
         case recordServe(outcome: Outcome?)
 

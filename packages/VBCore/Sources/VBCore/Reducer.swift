@@ -144,6 +144,9 @@ private func transition(_ state: AppState, _ event: Event) -> AppState {
         guard let outcome else { return state }
         return withServeRecorded(state, outcome: outcome)
 
+    case let .swapLineupPositions(firstIndex, secondIndex):
+        return withLineupPositionsSwapped(state, firstIndex: firstIndex, secondIndex: secondIndex)
+
     case let .recordRallyPoint(toUs):
         return withRallyPointRecorded(state, toUs: toUs)
 

@@ -635,3 +635,22 @@ func withRallyPointRecorded(_ state: AppState, toUs: Bool) -> AppState {
         return next
     }
 }
+
+/// Exchanges two places in the serving order.
+///
+/// The turns already played are untouched: each one records the place it consumed, so a
+/// correction to who stands where changes who serves next and never rewrites who served.
+func withLineupPositionsSwapped(_ state: AppState, firstIndex: Int, secondIndex: Int) -> AppState {
+    updateCurrentMatch(state) { match, _ in
+        guard var lineup = match.lineup,
+            lineup.indices.contains(firstIndex),
+            lineup.indices.contains(secondIndex)
+        else {
+            return match
+        }
+        lineup.swapAt(firstIndex, secondIndex)
+        var next = match
+        next.lineup = lineup
+        return next
+    }
+}

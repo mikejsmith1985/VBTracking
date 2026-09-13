@@ -33,6 +33,7 @@ public enum EventType {
     public static let placeInLineup = "PLACE_IN_LINEUP"
     public static let clearLineupPosition = "CLEAR_LINEUP_POSITION"
     public static let substitute = "SUBSTITUTE"
+    public static let swapLineupPositions = "SWAP_LINEUP_POSITIONS"
     public static let selectServer = "SELECT_SERVER"
     public static let recordServe = "RECORD_SERVE"
     public static let recordRallyPoint = "RECORD_RALLY_POINT"
@@ -168,6 +169,12 @@ extension Event.Kind {
 
         case EventType.substitute:
             self = .substitute(outPlayerId: raw.string("outPlayerId"), inPlayerId: raw.string("inPlayerId"))
+
+        case EventType.swapLineupPositions:
+            self = .swapLineupPositions(
+                firstIndex: raw.int("firstIndex") ?? -1,
+                secondIndex: raw.int("secondIndex") ?? -1
+            )
 
         case EventType.selectServer:
             self = .selectServer(playerId: raw.string("playerId"))

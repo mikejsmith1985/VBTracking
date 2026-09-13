@@ -126,40 +126,64 @@ struct LineupSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                // Dragged to reorder, and nothing here deletes on a tap. Tapping used to
+                // take a player out, so putting two of them in the wrong order meant
+                // clearing all six and starting again -- which is what it cost at a match.
                 Section("Serving order") {
-                    ForEach(Array(chosen.enumerated()), id: \.offset) { index, playerId in
+                    ForEach(chosen, id: \.self) { playerId in
                         HStack {
-                            Text("\(index + 1)").font(.caption.bold()).foregroundStyle(.secondary)
+                            Text("\((chosen.firstIndex(of: playerId) ?? 0) + 1)")
+                                .font(.caption.bold())
+                                .foregroundStyle(.secondary)
+                                .frame(minWidth: 16, alignment: .leading)
                             Text(store.state.rosterEntry(id: playerId)?.name ?? "Removed player")
                             Spacer()
                             Text(text(number: store.state.rosterEntry(id: playerId)?.number))
                                 .font(.headline.monospacedDigit())
                         }
-                        .onTapGesture { chosen.removeAll { $0 == playerId } }
+                    }
+                    .onMove { source, destination in
+                        chosen.move(fromOffsets: source, toOffset: destination)
+                    }
+                    // Swiped to remove, which is the gesture iOS already means by it -- and
+                    // one nobody performs by accident on a list they are dragging.
+                    .onDelete { offsets in
+                        chosen.remove(atOffsets: offsets)
                     }
                 }
 
                 Section("Everyone else") {
                     ForEach(store.state.roster.filter { !chosen.contains($0.id) }, id: \.id) { player in
-                        Button {
+                        HStack {
+                            Text(player.name)
+                            Spacer()
+                            Text(text(number: player.number)).font(.headline.monospacedDigit())
+                        }
+                        // A tap gesture rather than a Button, and this is not a style
+                        // choice: the list is held in edit mode so the order can be
+                        // dragged, and a Button inside a row in edit mode is a control
+                        // that may never fire. A tap gesture fires either way.
+                        .contentShape(Rectangle())
+                        .onTapGesture {
                             guard chosen.count < lineupSize else { return }
                             chosen.append(player.id)
-                        } label: {
-                            HStack {
-                                Text(player.name)
-                                Spacer()
-                                Text(text(number: player.number)).font(.headline.monospacedDigit())
-                            }
                         }
+                        // Nobody drags or swipes on this half. The handles belong to the
+                        // order above, where they mean something.
+                        .moveDisabled(true)
+                        .deleteDisabled(true)
                     }
                 }
 
                 Section {
-                    Text("Tap in the order they serve. The first is the server; the rotation hands it on from there.")
+                    Text("Tap below to add, drag to reorder, swipe to remove. The first serves; the rotation hands it on from there.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
             }
             .navigationTitle("Six on court")
+            // Always editing, so the drag handles are simply there. An Edit button would be
+            // one more thing to find before the order could be put right.
+            .environment(\.editMode, .constant(.active))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Cancel") { isPresented = false } }
                 ToolbarItem(placement: .confirmationAction) {

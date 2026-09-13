@@ -313,9 +313,12 @@ private func underWay() -> AppState {
 
 @Suite("What a tap on a player means")
 struct TapIntentTests {
-    @Test("Someone in the order is simply the next server")
-    func onCourtPlayerServes() {
-        #expect(intent(ofTapping: "p3", state: onCourt(), armed: nil) == .serve(playerId: "p3"))
+    @Test("Someone in the order is picked up, and serves on the tap that confirms it")
+    func onCourtPlayerIsSelectedThenServes() {
+        // One tap no longer hands over the ball. A phone held at the side of a court gets
+        // touched, and a touch must not start somebody's serve turn.
+        #expect(intent(ofTapping: "p3", state: onCourt(), armed: nil) == .armSubstitution(incomingPlayerId: "p3"))
+        #expect(intent(ofTapping: "p3", state: onCourt(), armed: .player("p3")) == .serve(playerId: "p3"))
     }
 
     @Test("Someone on the bench is the player coming on")

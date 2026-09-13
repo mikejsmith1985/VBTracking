@@ -72,6 +72,13 @@ struct CourtPicker: View {
                 isPickerRequested = false
             }
 
+        case let .swap(firstIndex, secondIndex):
+            // The picker stays open. Correcting an order usually means correcting more than
+            // one place in it, and closing would cost a tap to reopen for each.
+            if store.dispatch(.swapLineupPositions(firstIndex: firstIndex, secondIndex: secondIndex)) {
+                armed = nil
+            }
+
         case .ignore:
             // Putting something down also puts the picker away. Without this, tapping the
             // player already serving -- which is the most natural way to say "no, carry on"
