@@ -22,6 +22,11 @@ struct TallyBoard: View {
             EmptyState(title: "No serves yet", detail: "Pick the server below to start recording.")
         } else {
             VStack(alignment: .leading, spacing: 12) {
+                // Above the rows, not below them. It answers "how are we serving", which is
+                // asked before anybody starts reading individual players -- and six rows of
+                // marks could never be added up at a glance.
+                if let match { TeamTotals(figures: match.teamFigures, scope: "This match") }
+
                 ForEach(rows, id: \.playerId) { row in
                     TallyRowView(row: row, player: roster.first { $0.id == row.playerId })
                 }

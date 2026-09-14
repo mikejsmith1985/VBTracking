@@ -84,11 +84,17 @@ struct GameScreen: View {
 
                         if scope == .game {
                             Section("Game totals") {
+                                // The side's own row before the players'. "Game totals" said
+                                // the totals per player, which is a different thing and left
+                                // the obvious question -- how did we serve -- to be added up
+                                // by hand from every row on the screen.
+                                TeamTotals(figures: game.teamFigures, scope: "Whole game")
                                 MatchFigures(figures: game.statistics, roster: store.state.roster)
                             }
                         } else {
                             ForEach(game.matches, id: \.index) { match in
                                 Section("Match \(match.index + 1) · \(match.score) pts") {
+                                    TeamTotals(figures: match.teamFigures, scope: "Match \(match.index + 1)")
                                     MatchFigures(figures: match.statistics, roster: store.state.roster)
                                     Substitutions(match: match, store: store)
                                 }
