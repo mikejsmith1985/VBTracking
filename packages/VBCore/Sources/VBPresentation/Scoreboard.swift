@@ -25,7 +25,10 @@ public enum Side: String, CaseIterable, Codable, Sendable {
 }
 
 /// A scratch game's score, and what it means.
-public struct Scoreboard: Equatable, Codable, Sendable {
+// Hashable as well, because the court sent to the wrist carries one and is compared
+// whole: a court whose only change is the score has to count as changed, or the score
+// freezes on the wrist between serves.
+public struct Scoreboard: Equatable, Hashable, Codable, Sendable {
     public private(set) var us: Int
     public private(set) var them: Int
 

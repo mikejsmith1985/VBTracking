@@ -156,7 +156,16 @@ struct CourtLayoutTests {
 
         #expect(onDeck.number > onDeck.percentage)
         #expect(onDeck.percentage > onDeck.points)
+        #expect(onDeck.points > onDeck.pointsLabel, "the count outranks the word beside it")
         #expect(onDeck.number > other.number, "the box being decided about is the readable one")
+
+        // Read from a wrist across a gym. The figures under the number were the two things
+        // somebody had to lean in for, so they have a floor now -- one that a later tidy-up
+        // of the type scale cannot quietly drop back below.
+        for type in [onDeck, other] {
+            #expect(type.percentage >= 15, "the serve-in figure must be legible at arm's length")
+            #expect(type.points >= 14, "so must the points")
+        }
     }
 }
 
@@ -304,9 +313,12 @@ private func underWay() -> AppState {
 
 @Suite("What a tap on a player means")
 struct TapIntentTests {
-    @Test("Someone in the order is simply the next server")
-    func onCourtPlayerServes() {
-        #expect(intent(ofTapping: "p3", state: onCourt(), armed: nil) == .serve(playerId: "p3"))
+    @Test("Someone in the order is picked up, and serves on the tap that confirms it")
+    func onCourtPlayerIsSelectedThenServes() {
+        // One tap no longer hands over the ball. A phone held at the side of a court gets
+        // touched, and a touch must not start somebody's serve turn.
+        #expect(intent(ofTapping: "p3", state: onCourt(), armed: nil) == .armSubstitution(incomingPlayerId: "p3"))
+        #expect(intent(ofTapping: "p3", state: onCourt(), armed: .player("p3")) == .serve(playerId: "p3"))
     }
 
     @Test("Someone on the bench is the player coming on")

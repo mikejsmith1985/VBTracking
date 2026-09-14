@@ -37,7 +37,21 @@ public final class Store {
 
     /// Called after every accepted event, so the wrist can be told without the store
     /// knowing what a wrist is.
-    public var onChange: ((AppState) -> Void)?
+    /// Told whenever the record moves. More than one, because two links listen: the wrist,
+    /// and a second phone sharing the match. A single slot meant whichever was built last
+    /// silently replaced the other.
+    private var observers: [(AppState) -> Void] = []
+
+    /// Registers a listener for the life of the app. There is no way to remove one: both
+    /// links live as long as the app does, and an unregister nobody calls is a method that
+    /// only ever goes wrong.
+    public func observe(_ listener: @escaping (AppState) -> Void) {
+        observers.append(listener)
+    }
+
+    private func notify() {
+        for listener in observers { listener(state) }
+    }
 
     public init(directory: URL, now: @escaping () -> Date = Date.init) {
         self.log = LogFile(url: directory.appendingPathComponent("log.jsonl"))
@@ -106,11 +120,20 @@ public final class Store {
 
         events = merged.log
         state = replay(raw: events)
-        onChange?(state)
+        notify()
         return merged.accepted
     }
 
     /// Drops the last event and replays. One undo, one operator action.
+    /// Records a rally decided while the other team had the ball.
+    ///
+    /// Refused while one of ours is serving, because that rally is already decided by the
+    /// serve's outcome -- the refusal is the rulebook's, not this screen's.
+    @discardableResult
+    public func recordRallyPoint(toUs: Bool) -> Bool {
+        dispatch(.recordRallyPoint(toUs: toUs))
+    }
+
     public func undo() {
         guard !events.isEmpty else { return }
         do {
@@ -118,7 +141,7 @@ public final class Store {
             events.removeLast()
             state = replay(raw: events)
             notice = nil
-            onChange?(state)
+            notify()
         } catch {
             notice = Notice(text: (error as? LogFileError)?.message ?? "That could not be undone.", isFailure: true)
         }
@@ -170,7 +193,188 @@ public final class Store {
         events = imported.events
         state = replay(raw: events)
         notice = Notice(text: "Restored \(imported.events.count) recorded actions.", isFailure: false)
-        onChange?(state)
+        notify()
+        return true
+    }
+
+    /// The log as it stands, for a second phone to compare against its own.
+    public var heldEvents: [RawEvent] { events }
+
+    /// Takes events sent by another phone at the same match.
+    ///
+    /// The same merge a season handed over by AirDrop goes through, so an event already held
+    /// is skipped by identifier and two phones that both recorded the same game are refused
+    /// whole. Silent on success: this arrives while somebody is watching a match, and a
+    /// notice per serve would cover the court.
+    @discardableResult
+    public func receive(peerEvents incoming: [RawEvent]) -> Bool {
+        let merged = merge(mine: events, theirs: incoming)
+
+        // A refusal is said out loud. It used to be swallowed, so a match that could not be
+        // joined looked exactly like a match that had not moved -- the second phone sat
+        // there connected, read-only, and silently a match behind.
+        if let refusal = merged.refusal {
+            notice = Notice(text: refusal, isFailure: true)
+            return false
+        }
+        guard merged.eventsAdded > 0 else { return false }
+
+        do {
+            try log.replace(with: merged.events)
+        } catch {
+            notice = Notice(
+                text: (error as? LogFileError)?.message ?? "That could not be saved.",
+                isFailure: true
+            )
+            return false
+        }
+
+        events = merged.events
+        state = replay(raw: events)
+        notify()
+        return true
+    }
+
+    /// A filename for handing this season to somebody else's phone.
+    /// This season, with an invitation to watch the match live attached.
+    public func exportedInvitation(_ invitation: MatchInvitation) -> String {
+        buildHandover(
+            events,
+            exportedAt: ISO8601DateFormatter().string(from: now()),
+            inviting: invitation
+        )
+    }
+
+    public func handoverFilename() -> String {
+        let day = ISO8601DateFormatter().string(from: now()).prefix(10)
+        return VBCore.seasonFilename(on: String(day))
+    }
+
+    /// Takes in a season from a file the phone handed us.
+    ///
+    /// A file arriving from AirDrop sits outside the app's own container, so it has to be
+    /// asked for before it can be read. Reading it here rather than at the call site keeps
+    /// every failure reported in the one place the operator reads notices.
+    @discardableResult
+    public func receive(fileAt url: URL) -> Bool {
+        let opened = url.startAccessingSecurityScopedResource()
+        defer { if opened { url.stopAccessingSecurityScopedResource() } }
+
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else {
+            notice = Notice(text: "That file could not be opened.", isFailure: true)
+            return false
+        }
+        return receive(from: text)
+    }
+
+    /// The invitation a season file carries, if it was sent by somebody sharing a match live.
+    ///
+    /// Read separately from the season itself, and never a reason to refuse the file: a
+    /// season handed over for keeps carries no invitation, and that is the ordinary case.
+    public func invitation(inFileAt url: URL) -> MatchInvitation? {
+        let opened = url.startAccessingSecurityScopedResource()
+        defer { if opened { url.stopAccessingSecurityScopedResource() } }
+
+        guard let text = try? String(contentsOf: url, encoding: .utf8) else { return nil }
+        return readInvitation(text)
+    }
+
+    /// Says something to the operator, from outside the store.
+    ///
+    /// The notice row is the one place in the app where anything is said, so the link says
+    /// its piece there rather than growing a second one of its own.
+    public func say(_ text: String, isFailure: Bool = false) {
+        notice = Notice(text: text, isFailure: isFailure)
+    }
+
+    /// Takes in a season somebody else recorded, keeping everything already here.
+    ///
+    /// Different from `restore` on purpose. Restoring is for a lost phone and replaces
+    /// everything; this is for a coach handing the match over, where wiping the roster on
+    /// the receiving phone would be a disaster dressed up as a feature.
+    ///
+    /// All or nothing, like every other way into the log. A merge the rulebook would refuse
+    /// changes nothing and says why.
+    @discardableResult
+    public func receive(from text: String) -> Bool {
+        let read = readBackup(text)
+        guard let incoming = read.log else {
+            notice = Notice(text: read.reason ?? "That file could not be read.", isFailure: true)
+            return false
+        }
+
+        let merged = merge(mine: events, theirs: incoming.events)
+        if let refusal = merged.refusal {
+            notice = Notice(text: refusal, isFailure: true)
+            return false
+        }
+        guard merged.eventsAdded > 0 else {
+            notice = Notice(text: "That season is already here. Nothing was changed.", isFailure: false)
+            return true
+        }
+
+        do {
+            try log.replace(with: merged.events)
+            try ledger.record(
+                ImportEntry(
+                    sourceHash: incoming.sourceHash,
+                    importedAt: ISO8601DateFormatter().string(from: now()),
+                    eventCount: merged.eventsAdded
+                )
+            )
+        } catch {
+            notice = Notice(
+                text: (error as? LogFileError)?.message ?? "That season could not be saved.",
+                isFailure: true
+            )
+            return false
+        }
+
+        events = merged.events
+        state = replay(raw: events)
+        notice = Notice(text: arrivalWording(merged), isFailure: false)
+        notify()
+        return true
+    }
+
+    /// What to tell the operator arrived, counted rather than guessed at.
+    private func arrivalWording(_ merged: MergeResult) -> String {
+        var parts: [String] = []
+        if merged.seasonsAdded > 0 { parts.append(count(merged.seasonsAdded, "season")) }
+        if merged.playersAdded > 0 { parts.append(count(merged.playersAdded, "player")) }
+        parts.append(count(merged.eventsAdded, "recorded action"))
+        return "Added " + parts.joined(separator: ", ") + "."
+    }
+
+    private func count(_ number: Int, _ noun: String) -> String {
+        "\(number) \(noun)\(number == 1 ? "" : "s")"
+    }
+
+    /// Throws away every season, every game and every player, leaving a new install.
+    ///
+    /// Not an event: an event would be appended to the log it is meant to empty, and the
+    /// figures would come back on the next replay. The log itself is replaced with nothing.
+    ///
+    /// The import ledger is cleared with it, so a backup restored before can be restored
+    /// again -- otherwise erasing everything would leave the app refusing the only file the
+    /// operator has to put it back.
+    @discardableResult
+    public func eraseEverything() -> Bool {
+        do {
+            try log.replace(with: [])
+            try ledger.forget()
+        } catch {
+            notice = Notice(
+                text: (error as? LogFileError)?.message ?? "That could not be erased.",
+                isFailure: true
+            )
+            return false
+        }
+
+        events = []
+        state = replay(raw: events)
+        notice = Notice(text: "Everything was erased.", isFailure: false)
+        notify()
         return true
     }
 
@@ -199,7 +403,7 @@ public final class Store {
         events.append(event)
         state = replay(raw: events)
         notice = nil
-        onChange?(state)
+        notify()
         return true
     }
 

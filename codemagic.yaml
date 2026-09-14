@@ -41,12 +41,34 @@ workflows:
 
       # `build-for-testing` rather than `build`: it compiles the test targets too, and an
       # interface test that does not compile is a test that never runs.
+      #
+      # The output is kept, because Codemagic keeps no downloadable log for a step that
+      # failed -- which is the only step whose log anybody wants. The errors are reprinted
+      # at the end so the reason is in the build page too, not only in a file to download.
       - name: Compile the phone, the watch, and their tests
         script: |
-          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTracker             -destination 'generic/platform=iOS Simulator'             CODE_SIGNING_ALLOWED=NO
+          set -o pipefail
+          mkdir -p /tmp/logs
+          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTracker             -destination 'generic/platform=iOS Simulator'             CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/logs/phone.log
+          status=$?
+          echo "--- what went wrong, if anything ---"
+          grep -E "error:|warning:.*treated as error|The following build commands failed" /tmp/logs/phone.log | head -40 || true
+          exit $status
+
       - name: Compile the watch on its own
         script: |
-          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTrackerWatch             -destination 'generic/platform=watchOS Simulator'             CODE_SIGNING_ALLOWED=NO
+          set -o pipefail
+          mkdir -p /tmp/logs
+          xcodebuild build-for-testing             -project ios/VBTracker.xcodeproj             -scheme VBTrackerWatch             -destination 'generic/platform=watchOS Simulator'             CODE_SIGNING_ALLOWED=NO 2>&1 | tee /tmp/logs/watch.log
+          status=$?
+          echo "--- what went wrong, if anything ---"
+          grep -E "error:|The following build commands failed" /tmp/logs/watch.log | head -40 || true
+          exit $status
+
+    # Only the lines that matter. A whole xcodebuild log is tens of megabytes and every
+    # artifact is zipped into one download, so keeping it all buries the part worth reading.
+    artifacts:
+      - /tmp/logs/*.log
 
     triggering:
       events: []
@@ -77,18 +99,22 @@ workflows:
       #
       # Declaring `ios_signing` only looks for profiles that are already there, and on a
       # brand new App ID there are none -- the first build died in under a second saying so.
-      # `--create` makes the certificate and both profiles once, and finds them every time
-      # after. Two bundle ids, because the watch app is signed as its own bundle.
+      # `--create` makes the certificate and every profile once, and finds them every time
+      # after. One call per signed bundle: the phone, the watch it carries, and the lock
+      # screen extension. A bundle with no call of its own gets no profile, and the archive
+      # fails on that one target alone -- which is exactly how the lock screen first failed.
       - name: Sign, creating the profiles the first time
         script: |
-          app-store-connect fetch-signing-files "com.mikejsmith.vbtracker" \
-            --type IOS_APP_STORE \
-            --create \
-            --certificate-key @env:CERTIFICATE_PRIVATE_KEY
-          app-store-connect fetch-signing-files "com.mikejsmith.vbtracker.watchapp" \
-            --type IOS_APP_STORE \
-            --create \
-            --certificate-key @env:CERTIFICATE_PRIVATE_KEY
+          for bundle in \
+            "com.mikejsmith.vbtracker" \
+            "com.mikejsmith.vbtracker.watchapp" \
+            "com.mikejsmith.vbtracker.glance"
+          do
+            app-store-connect fetch-signing-files "$bundle" \
+              --type IOS_APP_STORE \
+              --create \
+              --certificate-key @env:CERTIFICATE_PRIVATE_KEY
+          done
           keychain initialize
           keychain add-certificates
           xcode-project use-profiles
@@ -105,13 +131,25 @@ workflows:
           cd packages/VBCore
           swift test
 
+      # The whole build goes to a file, and its errors are reprinted at the end.
+      #
+      # Codemagic keeps no downloadable log for a step that fails, so a compile error here
+      # was only ever readable by opening the web UI -- and the API, which is how this gets
+      # driven, could not see it at all. The log is published as an artifact instead.
       - name: Build the phone and the watch it carries
         script: |
-          xcode-project build-ipa \
-            --project ios/VBTracker.xcodeproj \
-            --scheme VBTracker
+          set -o pipefail
+          mkdir -p /tmp/logs
+          status=0
+          xcode-project build-ipa --project ios/VBTracker.xcodeproj --scheme VBTracker 2>&1 | tee /tmp/logs/build.log || status=$?
+          if [ "$status" -ne 0 ]; then
+            echo "==================== WHAT THE COMPILER SAID ===================="
+            grep -E 'error:|The following build commands failed' /tmp/logs/build.log | head -40 || true
+          fi
+          exit "$status"
 
     artifacts:
+      - /tmp/logs/*.log
       - build/ios/ipa/*.ipa
       - $HOME/Library/Developer/Xcode/DerivedData/**/Build/**/*.app
 
@@ -158,15 +196,52 @@ workflows:
       #
       # No signing either: a simulator needs no signature, and this workflow holds no
       # credentials on purpose.
+      #
+      # The whole run goes to a file and only a digest is printed at the end. A test log is
+      # far longer than the build log keeps, so `tail` on the run itself threw away the
+      # early failures and left five failing tests showing as one -- the four that mattered
+      # had scrolled off before anybody could read them. The digest is last, so it survives.
+      # Both suites run to the end even when one fails -- a phone failure used to stop the
+      # watch suite from running at all, so a single broken tap hid whatever the watch had
+      # to say. The verdict is passed at the end instead.
+      #
+      # Both suites leave stills and a digest behind. Video was tried and dropped: 134 MB
+      # of it, zipped together with the digest by Codemagic, made the one small file that
+      # explains a failure take longer to fetch than the build took to produce it.
+      # First, because a simulator that cannot be named leaves xcodebuild with an empty
+      # destination -- an error that reads like nothing at all and costs a whole run.
+      - name: The simulator picker names devices correctly
+        script: ./tests/ci/simulator-picker.test.sh
+
       - name: The phone
-        script: |
-          set -o pipefail
-          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTracker -destination 'platform=iOS Simulator,name=iPhone 17 Pro' CODE_SIGNING_ALLOWED=NO 2>&1 | tail -400
+        script: ./scripts/ci-run-tests.sh 'iPhone' 'iPhone 17 Pro' VBTracker 'iOS Simulator' /tmp/phone.log
+        ignore_failure: true
 
       - name: The watch, where the on-deck box is measured
+        script: ./scripts/ci-run-tests.sh 'Apple Watch' 'Apple Watch Ultra 2 (49mm)' VBTrackerWatch 'watchOS Simulator' /tmp/watch.log
+        ignore_failure: true
+
+      - name: The verdict
         script: |
-          set -o pipefail
-          xcodebuild test -project ios/VBTracker.xcodeproj -scheme VBTrackerWatch -destination 'platform=watchOS Simulator,name=Apple Watch Ultra 2 (49mm)' CODE_SIGNING_ALLOWED=NO 2>&1 | tail -400
+          set -u
+          # Reprinted here so the reason is in the build log itself, not only in an
+          # artifact somebody has to download to read.
+          for digest in /tmp/digest/*.txt; do
+            [ -f "$digest" ] && cat "$digest"
+          done
+          failed=0
+          for log in /tmp/phone.log /tmp/watch.log; do
+            [ -f "$log" ] || { echo "$log was never written"; failed=1; continue; }
+            grep -qE '^\*\* TEST SUCCEEDED \*\*' "$log" || { echo "$(basename "$log"): failing"; failed=1; }
+          done
+          exit "$failed"
+
+    # Small on purpose. Codemagic keeps no downloadable log for a step that failed, and it
+    # zips every artifact into one file -- so anything large in here buries the one thing
+    # worth reading.
+    artifacts:
+      - /tmp/shots/**/*.png
+      - /tmp/digest/*.txt
 
     # Run by hand, before anything ships. It is the only suite that can say whether a tap
     # does what it looks like it does, and the three bugs it was written for were every one
@@ -252,61 +327,240 @@ workflows:
       # the version to it, confirm it.
       - name: Submit for review
         script: |
-          if [ "$SUBMIT_FOR_REVIEW" != "yes" ]; then
-            echo "SUBMIT_FOR_REVIEW is not yes. The listing is staged and nothing was submitted."
+          # Codemagic keeps no downloadable log for a step that failed, which is exactly
+          # the step whose output is worth reading. Everything it says goes to a file that
+          # is published as an artifact, and pipefail keeps the step's own verdict intact.
+          set -o pipefail
+          mkdir -p /tmp/asc
+          submit_for_review() {
+            if [ "$SUBMIT_FOR_REVIEW" != "yes" ]; then
+              echo "SUBMIT_FOR_REVIEW is not yes. The listing is staged and nothing was submitted."
+              exit 0
+            fi
+            set -e
+
+            APP_ID=6806672687
+
+            echo "--- the version to submit ---"
+            VERSION_ID=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null             | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(v['id'] for v in d if v['attributes']['appStoreState'] in ('PREPARE_FOR_SUBMISSION','DEVELOPER_REJECTED','REJECTED','METADATA_REJECTED')))" 2>/dev/null || true)
+            if [ -z "$VERSION_ID" ]; then
+              echo "Could not read the version id from the CLI; listing what it does return:"
+              app-store-connect apps app-store-versions "$APP_ID" --json 2>&1 | head -40
+              exit 1
+            fi
+            echo "Version: $VERSION_ID"
+
+            echo "--- create the submission ---"
+            SUBMISSION_ID=$(app-store-connect review-submissions create "$APP_ID" --platform IOS --json             | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
+            echo "Submission: $SUBMISSION_ID"
+
+            # From here on, a failure takes its own submission away with it. An abandoned
+            # draft blocks the next attempt, and asking somebody to go and delete one by hand
+            # after every failed run is a poor way to treat them.
+            set +e
+            echo "--- add the version to it ---"
+            app-store-connect review-submission-items create "$SUBMISSION_ID" --version-id "$VERSION_ID"
+            added=$?
+
+            if [ $added -ne 0 ]; then
+              echo "--- could not add the version; discarding the empty submission ---"
+              # The cancel result is printed rather than swallowed. Last time it was hidden
+              # behind `|| true` and the step announced that nothing was left behind while a
+              # draft submission sat in the account waiting to be deleted by hand.
+              app-store-connect review-submissions cancel "$SUBMISSION_ID"
+              cancelled=$?
+              if [ $cancelled -eq 0 ]; then
+                echo "The empty submission was cancelled."
+              else
+                echo "COULD NOT CANCEL $SUBMISSION_ID -- it may need deleting by hand."
+              fi
+              exit 1
+            fi
+
+            echo "--- confirm ---"
+            app-store-connect review-submissions confirm "$SUBMISSION_ID"
+            confirmed=$?
+
+            if [ $confirmed -ne 0 ]; then
+              echo "--- could not confirm; discarding the submission ---"
+              app-store-connect review-submissions cancel "$SUBMISSION_ID"
+              [ $? -eq 0 ] && echo "The submission was cancelled." || echo "COULD NOT CANCEL $SUBMISSION_ID."
+              exit 1
+            fi
+            echo "Submitted for review."
+
+          }
+          submit_for_review 2>&1 | tee /tmp/asc/submit.txt
+
+    artifacts:
+      - /tmp/asc/*.txt
+
+    triggering:
+      events: []
+
+  # The review submissions themselves, which are a layer above the version and the only
+  # place a rejection actually lives.
+  #
+  # A version can belong to exactly one review submission. Apple leaves the bounced
+  # submission open and holding the version, so creating a fresh one fails with "already
+  # added to another reviewSubmission" -- a message that names the new submission's id and
+  # not the old one's, which sends you looking in the wrong place.
+  store-submissions:
+    name: The review submissions
+    max_build_duration: 20
+    integrations:
+      app_store_connect: RLL_Codemagic_CI_AppManager
+    environment:
+      xcode: latest
+      vars:
+        # "list" reports and changes nothing. "cancel" withdraws the submission named by
+        # SUBMISSION_ID. "confirm" sends it to review. Never an empty string: Codemagic
+        # rejects the whole workflow before a step runs.
+        SUBMISSION_ACTION: "list"
+        SUBMISSION_ID: "none"
+        # Space separated. Read only; nothing here changes anything.
+        SUBMISSION_IDS: "none"
+    scripts:
+      - name: What submissions exist
+        script: |
+          set -o pipefail
+          mkdir -p /tmp/asc
+          # There is no "list" subcommand -- only cancel, confirm, create, get and items --
+          # so the ids have to be handed in. They come out of the 409 the failed submission
+          # printed, which names both the submission holding the version and the empty one
+          # left behind.
+          look() {
+            if [ "$SUBMISSION_IDS" = "none" ]; then
+              echo "No SUBMISSION_IDS given, so nothing was read."
+              return 0
+            fi
+            for id in $SUBMISSION_IDS; do
+              echo "=================== $id ==================="
+              app-store-connect review-submissions get "$id" 2>&1 | head -30
+              echo "--- what it holds ---"
+              app-store-connect review-submissions items "$id" 2>&1 | head -30
+              echo
+            done
+          }
+          look 2>&1 | tee /tmp/asc/submissions.txt
+        ignore_failure: true
+
+      - name: Cancel or confirm, if one was named
+        script: |
+          set -o pipefail
+          mkdir -p /tmp/asc
+          act() {
+            if [ "$SUBMISSION_ACTION" = "list" ] || [ "$SUBMISSION_ID" = "none" ]; then
+              echo "SUBMISSION_ACTION is $SUBMISSION_ACTION and SUBMISSION_ID is $SUBMISSION_ID. Nothing was changed."
+              return 0
+            fi
+            echo "$SUBMISSION_ACTION on $SUBMISSION_ID"
+            app-store-connect review-submissions "$SUBMISSION_ACTION" "$SUBMISSION_ID" 2>&1
+          }
+          act 2>&1 | tee /tmp/asc/action.txt
+        ignore_failure: true
+
+    artifacts:
+      - /tmp/asc/*.txt
+
+    triggering:
+      events: []
+
+  # Which build the version under review carries.
+  #
+  # A rejected version keeps the build it was rejected with, and answering App Review with a
+  # recording of a build that is not attached tells them about an app they cannot open. This
+  # reads the state first and only changes it when told to, by number, so the switch is never
+  # a side effect of looking.
+  store-build:
+    name: The build under review
+    max_build_duration: 20
+    integrations:
+      app_store_connect: RLL_Codemagic_CI_AppManager
+    environment:
+      xcode: latest
+      vars:
+        # "none" means read and report. A build number means attach that build to the
+        # version. Not an empty string: Codemagic refuses a variable with no characters in
+        # it, and the whole workflow with it, before a single step runs.
+        ATTACH_BUILD: "none"
+    scripts:
+      # Everything this learns goes to a file that is published, because Codemagic keeps
+      # no log for a step that failed -- and a step asking questions of a CLI whose exact
+      # subcommands are not yet known is a step that may well fail.
+      - name: What the version carries, and what it could carry
+        script: |
+          set -u
+          APP_ID=6806672687
+          mkdir -p /tmp/asc
+          report=/tmp/asc/state.txt
+
+          # The question this workflow exists to answer is "which build is on the version",
+          # and App Store Connect does not print it beside the version. It is held on the
+          # build's side of the relationship, so the only way to read it is to ask each
+          # recent build which version it belongs to and find the one that answers.
+          {
+            echo "=================== THE VERSION ==================="
+            version_id=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((v["id"] for v in d if v["attributes"].get("appStoreState") not in ("READY_FOR_SALE","REPLACED_WITH_NEW_VERSION")), ""))')
+            app-store-connect apps app-store-versions "$APP_ID" 2>&1 | grep -E "Version string|state" || true
+            echo "version id: ${version_id:-<none found>}"
+
+            echo
+            echo "=================== THE BUILD IT CARRIES ==================="
+            newest=$(app-store-connect apps builds "$APP_ID" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); n=sorted((int(b["attributes"]["version"]) for b in d), reverse=True)[:8]; print(" ".join(str(x) for x in n))')
+            echo "checking builds: $newest"
+            found=""
+            for number in $newest; do
+              build_id=$(app-store-connect builds list --app-id "$APP_ID" --build-version-number "$number" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["id"] if d else "")')
+              [ -n "$build_id" ] || continue
+              belongs=$(app-store-connect builds app-store-version "$build_id" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d.get("id","") if isinstance(d,dict) else "")')
+              if [ -n "$belongs" ]; then
+                echo "  build $number -> version $belongs"
+                [ "$belongs" = "$version_id" ] && found="$number"
+              else
+                echo "  build $number -> not on any version"
+              fi
+            done
+            echo
+            if [ -n "$found" ]; then
+              echo "ANSWER: version 1.0 carries build $found"
+            else
+              echo "ANSWER: none of the builds checked is on version ${version_id:-?}"
+            fi
+          } | tee "$report"
+        ignore_failure: true
+
+      - name: Attach the build, if one was named
+        script: |
+          set -u
+          APP_ID=6806672687
+          mkdir -p /tmp/asc
+          report=/tmp/asc/attach.txt
+
+          if [ "$ATTACH_BUILD" = "none" ]; then
+            echo "ATTACH_BUILD is none. Nothing was changed." | tee "$report"
             exit 0
           fi
-          set -e
 
-          APP_ID=6806672687
-
-          echo "--- the version to submit ---"
-          VERSION_ID=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null             | python3 -c "import json,sys; d=json.load(sys.stdin); print(next(v['id'] for v in d if v['attributes']['appStoreState'] in ('PREPARE_FOR_SUBMISSION','DEVELOPER_REJECTED','REJECTED','METADATA_REJECTED')))" 2>/dev/null || true)
-          if [ -z "$VERSION_ID" ]; then
-            echo "Could not read the version id from the CLI; listing what it does return:"
-            app-store-connect apps app-store-versions "$APP_ID" --json 2>&1 | head -40
-            exit 1
-          fi
-          echo "Version: $VERSION_ID"
-
-          echo "--- create the submission ---"
-          SUBMISSION_ID=$(app-store-connect review-submissions create "$APP_ID" --platform IOS --json             | python3 -c "import json,sys; print(json.load(sys.stdin)['id'])")
-          echo "Submission: $SUBMISSION_ID"
-
-          # From here on, a failure takes its own submission away with it. An abandoned
-          # draft blocks the next attempt, and asking somebody to go and delete one by hand
-          # after every failed run is a poor way to treat them.
-          set +e
-          echo "--- add the version to it ---"
-          app-store-connect review-submission-items create "$SUBMISSION_ID" --version-id "$VERSION_ID"
-          added=$?
-
-          if [ $added -ne 0 ]; then
-            echo "--- could not add the version; discarding the empty submission ---"
-            # The cancel result is printed rather than swallowed. Last time it was hidden
-            # behind `|| true` and the step announced that nothing was left behind while a
-            # draft submission sat in the account waiting to be deleted by hand.
-            app-store-connect review-submissions cancel "$SUBMISSION_ID"
-            cancelled=$?
-            if [ $cancelled -eq 0 ]; then
-              echo "The empty submission was cancelled."
+          {
+            echo "Attaching build $ATTACH_BUILD."
+            echo "--- the build's id ---"
+            build_id=$(app-store-connect builds list --app-id "$APP_ID" --build-version-number "$ATTACH_BUILD" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(d[0]["id"] if d else "")')
+            echo "build id: ${build_id:-<none found>}"
+            echo "--- the editable version's id ---"
+            version_id=$(app-store-connect apps app-store-versions "$APP_ID" --json 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next((v["id"] for v in d if v["attributes"].get("appStoreState") not in ("READY_FOR_SALE","REPLACED_WITH_NEW_VERSION")), ""))')
+            echo "version id: ${version_id:-<none found>}"
+            if [ -n "$build_id" ] && [ -n "$version_id" ]; then
+              echo "--- attach ---"
+              app-store-connect app-store-versions modify "$version_id" --build-id "$build_id" 2>&1
             else
-              echo "COULD NOT CANCEL $SUBMISSION_ID -- it may need deleting by hand."
+              echo "Could not identify both ids, so nothing was changed."
             fi
-            exit 1
-          fi
+          } | tee "$report"
+        ignore_failure: true
 
-          echo "--- confirm ---"
-          app-store-connect review-submissions confirm "$SUBMISSION_ID"
-          confirmed=$?
-
-          if [ $confirmed -ne 0 ]; then
-            echo "--- could not confirm; discarding the submission ---"
-            app-store-connect review-submissions cancel "$SUBMISSION_ID"
-            [ $? -eq 0 ] && echo "The submission was cancelled." || echo "COULD NOT CANCEL $SUBMISSION_ID."
-            exit 1
-          fi
-          echo "Submitted for review."
+    artifacts:
+      - /tmp/asc/*.txt
 
     triggering:
       events: []

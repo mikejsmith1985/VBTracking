@@ -24,19 +24,38 @@ struct PlayerBox: View {
                 .lineLimit(1)
 
             if slot.number != nil {
+                // Both figures carry full weight and a step more contrast than they did.
+                // At tertiary they were the dimmest thing on a screen read at arm's length,
+                // in a gym, in a second -- which is the one place quiet type does not work.
                 Text(text(percentage: slot.inPercentage))
                     .font(.system(size: type.percentage, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
 
-                Text("\(text(count: slot.points)) pts")
-                    .font(.system(size: type.points).monospacedDigit())
-                    .foregroundStyle(.tertiary)
+                HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    Text(text(count: slot.points))
+                        .font(.system(size: type.points, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                    // The unit stays quiet. It is the same on every box, so it is recognised
+                    // rather than read, and every point of width it gives back goes to a
+                    // figure that does have to be.
+                    Text("pts")
+                        .font(.system(size: type.pointsLabel))
+                        .foregroundStyle(.tertiary)
+                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(background)
         .overlay(border)
         .overlay(alignment: .topLeading) { marker }
+        // A SwiftUI stack is not an accessibility element on its own, so an identifier put
+        // on one is never matched by a test looking for it -- which is why every court
+        // measurement failed on an app that was drawing the court perfectly well.
+        // `.contain` rather than `.combine`: combining would fold the figures into one
+        // label and take the dash away from the test that checks a dash is drawn.
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier(identifier)
         .accessibilityLabel(spokenLabel)
     }

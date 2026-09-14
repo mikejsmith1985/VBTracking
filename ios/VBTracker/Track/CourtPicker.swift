@@ -72,6 +72,13 @@ struct CourtPicker: View {
                 isPickerRequested = false
             }
 
+        case let .swap(firstIndex, secondIndex):
+            // The picker stays open. Correcting an order usually means correcting more than
+            // one place in it, and closing would cost a tap to reopen for each.
+            if store.dispatch(.swapLineupPositions(firstIndex: firstIndex, secondIndex: secondIndex)) {
+                armed = nil
+            }
+
         case .ignore:
             // Putting something down also puts the picker away. Without this, tapping the
             // player already serving -- which is the most natural way to say "no, carry on"
@@ -245,6 +252,9 @@ struct Chip: View {
         .tint(isArmed ? .orange : (isServing ? .cyan : .gray))
         .opacity(isOnCourt || isArmed ? 1 : 0.65)
         .accessibilityIdentifier("player-\(player.id)")
-        .accessibilityLabel("\(player.name), number \(player.number)")
+        // Where they are standing is said out loud, not left to the 65% opacity that says it
+        // to everybody else. A court chip and a bench chip were otherwise indistinguishable
+        // to anything that cannot see them.
+        .accessibilityLabel("\(player.name), number \(player.number)\(isOnCourt ? "" : ", on the bench")")
     }
 }

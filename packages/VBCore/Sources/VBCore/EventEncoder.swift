@@ -31,6 +31,9 @@ public enum EventEncoder {
         case let .activateSeason(id):
             ["t": .string(EventType.activateSeason), "id": .string(id)]
 
+        case let .discardSeason(id):
+            ["t": .string(EventType.discardSeason), "id": .string(id)]
+
         case let .addPlayer(id, name, number, seasonId):
             player(EventType.addPlayer, id: id, name: name, number: number, seasonId: seasonId)
 
@@ -114,11 +117,21 @@ public enum EventEncoder {
                 "outPlayerId": .string(outPlayerId), "inPlayerId": .string(inPlayerId),
             ]
 
+        case let .swapLineupPositions(firstIndex, secondIndex):
+            [
+                "t": .string(EventType.swapLineupPositions),
+                "firstIndex": .number(Double(firstIndex)),
+                "secondIndex": .number(Double(secondIndex)),
+            ]
+
         case let .selectServer(playerId):
             ["t": .string(EventType.selectServer), "playerId": .string(playerId)]
 
         case let .recordServe(outcome):
             ["t": .string(EventType.recordServe), "outcome": .string(outcome?.rawValue ?? "")]
+
+        case let .recordRallyPoint(toUs):
+            ["t": .string(EventType.recordRallyPoint), "toUs": .bool(toUs)]
 
         case let .endMatch(result):
             ["t": .string(EventType.endMatch), "result": resultValue(result)]

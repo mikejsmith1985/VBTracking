@@ -44,6 +44,20 @@ public struct ImportLedger: Sendable {
         Set(entries().map(\.sourceHash))
     }
 
+    /// Forgets every import.
+    ///
+    /// Only for erasing everything. The ledger exists so the same backup cannot be imported
+    /// twice and double a season; once there is no season left, a ledger that still
+    /// remembers would refuse the operator the only file that puts their data back.
+    public func forget() throws {
+        guard FileManager.default.fileExists(atPath: url.path) else { return }
+        do {
+            try FileManager.default.removeItem(at: url)
+        } catch {
+            throw LogFileError.unwritable(error.localizedDescription)
+        }
+    }
+
     /// Records an import that has landed.
     ///
     /// Written after the log itself, never before: a ledger that claimed an import the log

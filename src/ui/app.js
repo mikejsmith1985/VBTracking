@@ -49,6 +49,8 @@ const ui = {
   confirmingRemoveId: null,
   confirmingEndMatch: false,
   confirmingDiscardGame: null,
+  confirmingDiscardSeason: null,
+  confirmingErase: false,
   confirmingImport: false,
   confirmingHistoricalImport: false,
   rotateNotice: null,
@@ -67,6 +69,8 @@ const CONFIRMATIONS = {
   'remove-player': 'confirmingRemoveId',
   'discard-game': 'confirmingDiscardGame',
   'delete-turn': 'confirmingDeleteTurn',
+  'discard-season': 'confirmingDiscardSeason',
+  'erase-everything': 'confirmingErase',
   'import-data': 'confirmingImport',
   'import-historical': 'confirmingHistoricalImport',
 }
@@ -216,6 +220,16 @@ const ACTIONS = {
   'close-lineup': () => { ui.showLineup = false },
 
   'export-data': () => { void exportData() },
+  // The way back to an empty app. Not an event: an event would be appended to the log it is
+  // meant to empty, and every figure would come back on the next replay.
+  'erase-everything': () => confirmThen('confirmingErase', true, () => {
+    store.replaceAll([])
+    succeed('Everything was erased.')
+    ui.tab = 'track'
+  }),
+  'discard-season': (element) => confirmThen('confirmingDiscardSeason', element.dataset.id, () => {
+    dispatch(E.discardSeason(element.dataset.id))
+  }),
   'import-data': () => confirmThen('confirmingImport', true, () => chooseFile(readBackup)),
   'import-historical': () => confirmThen('confirmingHistoricalImport', true, () => chooseFile(readHistorical)),
 

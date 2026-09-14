@@ -10,10 +10,17 @@ import VBPresentation
 
 struct SeasonScreen: View {
     @Bindable var store: Store
+    /// The link to the watch, for reporting whether its app is actually installed.
+    var link: PhoneLink?
+    /// The court on the lock screen, switched on by hand.
+    var lockScreen: CourtActivityHost?
+    @State private var isOnLockScreen = false
     @State private var isImporting = false
-    @State private var isExporting = false
+    @State private var sheet: SeasonSheet?
     @State private var openGameId: String?
     @State private var careerPlayerId: String?
+    /// Asked once. A second tap is the answer, and it is the last one.
+    @State private var isConfirmingErase = false
 
     private var season: Season? { store.state.activeSeason }
     private var games: [Game] {
@@ -75,13 +82,45 @@ struct SeasonScreen: View {
                 // Reachable whether or not a season exists: a new phone holding a backup
                 // has no season, and an operator who cannot reach the restore has lost
                 // everything they recorded.
+                // Said out loud because nothing else says it. A watch app that never
+                // installed looks exactly like one that is asleep: the phone is fine, the
+                // wrist simply never shows a court, and there is no way to tell which.
+                if let link {
+                    Section("Apple Watch") { WatchRow(readiness: WatchReadiness(state: link.watchState)) }
+                }
+
                 Section("Your data") {
-                    Button("Save a copy of everything") { isExporting = true }
+                    Button("Save a copy of everything") { sheet = .savingACopy }
                         .accessibilityIdentifier("export-data")
                     Button("Restore from a saved copy") { isImporting = true }
                         .accessibilityIdentifier("import-data")
                     Text("Every season, every game, every serve — as one file you keep. Nothing is sent anywhere.")
                         .font(.caption).foregroundStyle(.secondary)
+
+                    Button("Send this season to another phone") { sheet = .handingOverTheSeason }
+                        .accessibilityIdentifier("hand-over")
+                    Text("Sends it over AirDrop. The other phone keeps what it already has and adds what it does not.")
+                        .font(.caption).foregroundStyle(.secondary)
+
+                    // The way back to an empty app. Without it, data put in to try the app
+                    // out -- or a backup restored to see what it looked like -- could only
+                    // be taken out one season, one game, one player at a time.
+                    Button(
+                        isConfirmingErase ? "Erase everything?" : "Erase everything",
+                        role: .destructive
+                    ) {
+                        guard isConfirmingErase else { isConfirmingErase = true; return }
+                        store.eraseEverything()
+                        isConfirmingErase = false
+                    }
+                    .accessibilityIdentifier("erase-everything")
+
+                    Text(
+                        isConfirmingErase
+                            ? "Tap again to erase. Every season, game, serve and player is thrown away and cannot be recovered — save a copy first if you might want it back."
+                            : "Returns the app to how it was on the day it was installed. Save a copy first."
+                    )
+                    .font(.caption).foregroundStyle(isConfirmingErase ? Color.red : Color.secondary)
                 }
 
                 // Last, quietly, on a screen read between matches. It never comes to the
@@ -98,7 +137,19 @@ struct SeasonScreen: View {
             .navigationDestination(item: $careerPlayerId) { id in
                 CareerScreen(store: store, playerId: id)
             }
-            .sheet(isPresented: $isExporting) { ExportSheet(store: store, isPresented: $isExporting) }
+            // One sheet, chosen by what is being asked for. Three `.sheet(isPresented:)` in
+            // a row on the same view is a stack SwiftUI does not promise to honour, and the
+            // third one added simply never appeared.
+            .sheet(item: $sheet) { which in
+                switch which {
+                case .savingACopy: ExportSheet(store: store)
+                case .handingOverTheSeason: HandoverSheet(store: store)
+                }
+            }
+            .onChange(of: isOnLockScreen) { _, wanted in
+                lockScreen?.isEnabled = wanted
+                if wanted { lockScreen?.follow(store.state) }
+            }
             .fileImporter(isPresented: $isImporting, allowedContentTypes: [.item]) { result in
                 // No file-type filter at all: iOS saves a JSON file from Safari as
                 // ".json.txt", and a filter greys out the file the phone just wrote. The
@@ -183,6 +234,13 @@ struct StatsTable: View {
         .sorted { ($0.figures.inPercentage ?? -1) > ($1.figures.inPercentage ?? -1) }
     }
 
+    /// True when at least one player has a time-on-court figure to show.
+    ///
+    /// Without a lineup the column would be a row of dashes pretending to mean something,
+    /// which is the same rule the web app has always followed.
+    private var showsCourt: Bool {
+        ordered.contains { $0.figures.turnsOnCourt != nil }
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -203,7 +261,15 @@ struct StatsTable: View {
                         Text(text(percentage: row.figures.inPercentage))
                             .font(.caption.monospacedDigit()).frame(width: 44, alignment: .trailing)
                         Text(text(count: row.figures.points))
-                            .font(.caption.monospacedDigit()).frame(width: 30, alignment: .trailing)
+                            .font(.caption.monospacedDigit()).frame(width: 26, alignment: .trailing)
+                        Text(text(count: row.figures.turnsTaken))
+                            .font(.caption.monospacedDigit()).frame(width: 26, alignment: .trailing)
+                            .foregroundStyle(.secondary)
+                        if showsCourt {
+                            Text(text(count: row.figures.turnsOnCourt))
+                                .font(.caption.monospacedDigit()).frame(width: 30, alignment: .trailing)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 .buttonStyle(.plain)
@@ -223,7 +289,13 @@ struct StatsTable: View {
             Spacer()
             Text("In / served").frame(width: 52, alignment: .trailing)
             Text("In %").frame(width: 44, alignment: .trailing)
-            Text(pointsHeading(coverage: coverage)).frame(width: 30, alignment: .trailing)
+            Text(pointsHeading(coverage: coverage)).frame(width: 26, alignment: .trailing)
+            // How many turns they served, and how many they stood on court for. The second
+            // is what turns "she served twice" into "she served twice in nine".
+            Text("Turns").frame(width: 26, alignment: .trailing)
+            if showsCourt {
+                Text("Court").frame(width: 30, alignment: .trailing)
+            }
         }
         .font(.caption2.weight(.semibold))
         .textCase(.uppercase)
@@ -234,5 +306,42 @@ struct StatsTable: View {
         if let note = coverageNote(coverage) {
             Text(note).font(.caption2).foregroundStyle(.secondary)
         }
+    }
+}
+
+/// Which sheet the Season tab is showing.
+///
+/// One `sheet(item:)` rather than several `sheet(isPresented:)` in a row: SwiftUI does not
+/// promise to honour a stack of them, and the third one added to this screen simply never
+/// appeared -- which looked exactly like a button that did nothing.
+enum SeasonSheet: String, Identifiable {
+    case savingACopy
+    case handingOverTheSeason
+
+    var id: String { rawValue }
+}
+
+/// Where the watch app is, and what to do when it is not on the wrist.
+///
+/// iOS gives an app no way to install its own watch app -- that switch belongs to the Watch
+/// app on the iPhone. So this says which of the four states the pair is in and exactly what
+/// to do about the one that needs doing, which is what was missing entirely.
+private struct WatchRow: View {
+    let readiness: WatchReadiness
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: readiness.needsAttention ? "exclamationmark.triangle" : "applewatch")
+                Text(readiness.headline).font(.callout)
+                Spacer(minLength: 4)
+            }
+            .foregroundStyle(readiness.needsAttention ? Color.orange : Color.primary)
+
+            if let instruction = readiness.instruction {
+                Text(instruction).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .accessibilityIdentifier("watch-readiness")
     }
 }

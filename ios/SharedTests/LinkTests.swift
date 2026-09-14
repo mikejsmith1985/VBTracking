@@ -12,6 +12,12 @@ import VBPresentation
 /// A session that goes nowhere, and remembers everything it was asked to send.
 final class FakeSession: ConnectivitySession, @unchecked Sendable {
     var isReachable: Bool
+
+    /// A fake watch that is present and installed, which is the ordinary case every test
+    /// here is about. The awkward cases are decided by `WatchReadiness` and tested there.
+    var watchState: WatchState {
+        WatchState(isSupported: true, isPaired: true, isAppInstalled: true, isReachable: isReachable)
+    }
     private(set) var contexts: [[String: Any]] = []
     private(set) var transfers: [[String: Any]] = []
 

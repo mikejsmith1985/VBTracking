@@ -1,8 +1,12 @@
-// The tally board: one mark per serve, grouped by serve turn, coloured by turn.
-// Colour carries the turn; the outcome is carried by the mark's shape, so the board is
-// readable without colour vision (FR-034).
+// The tally board: one mark per serve, grouped by turn, in the colour of the PLAYER.
+//
+// "The green tallies are number 5" is something a coach can hold in their head across a
+// whole match; "the green ones are the third turn" is not. A player's own turns are shades
+// of their one hue, so the turns stay separable without the colour stopping meaning a
+// person. The outcome is carried by the mark's shape, so the board is readable without
+// colour vision at all (FR-034).
 import { OUTCOME } from '../../domain/events.js'
-import { colorForTurn } from '../../domain/palette.js'
+import { colorForPlayer, colorForPlayerTurn } from '../../domain/palette.js'
 import { turnStats, isOverServeLimit, matchStats } from '../../domain/stats.js'
 import { esc, playerLabel, playerById } from '../html.js'
 
@@ -27,29 +31,35 @@ export function tallyBoard(match, roster) {
 
   const totals = matchStats(match)
   const rows = [...byPlayer.entries()]
-    .map(([playerId, turns]) => tallyRow(playerById(roster, playerId), turns, totals.get(playerId)))
+    .map(([playerId, turns], playerIndex) =>
+      tallyRow(playerById(roster, playerId), turns, totals.get(playerId), playerIndex))
     .join('')
 
   return rows + legend()
 }
 
-/** One player's row: their name, their running totals, and each of their turns. */
-export function tallyRow(player, turns, totals) {
+/**
+ * One player's row: their name, their running totals, and each of their turns.
+ *
+ * `playerIndex` is their place in the order they first served, which is what their colour
+ * comes from and does not move for the rest of the match.
+ */
+export function tallyRow(player, turns, totals, playerIndex = 0) {
   return `
-    <div class="tally-row">
+    <div class="tally-row" style="--player-color:${colorForPlayer(playerIndex)}">
       <div class="tally-name">
         ${playerLabel(player)}
         <span class="tally-total">${totals.serves} served · ${totals.servesIn} in · ${totals.points} pts</span>
       </div>
-      <div class="turns">${turns.map(turnGroup).join('')}</div>
+      <div class="turns">${turns.map((turn, position) => turnGroup(turn, playerIndex, position)).join('')}</div>
     </div>`
 }
 
 /** One serve turn: its marks, its own counts, and an over-limit flag when it ran long. */
-export function turnGroup(turn) {
+export function turnGroup(turn, playerIndex = 0, position = 0) {
   const stats = turnStats(turn)
   const overLimit = isOverServeLimit(turn)
-  const color = colorForTurn(turn.ordinal)
+  const color = colorForPlayerTurn(playerIndex, position)
 
   const classes = ['turn', overLimit ? 'over-limit' : '', turn.isOffLineup ? 'off-lineup' : '']
     .filter(Boolean).join(' ')
@@ -71,7 +81,7 @@ function legend() {
       <span><i class="mark mark-point"></i> point</span>
       <span><i class="mark mark-in"></i> in, no point</span>
       <span><i class="mark mark-out"></i> out</span>
-      <span>colour = serve turn</span>
+      <span>colour = player</span>
     </div>`
 }
 

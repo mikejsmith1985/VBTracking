@@ -18,12 +18,20 @@ public struct Figures: Equatable, Sendable {
     public var turnsTaken: Int
     public var inPercentage: Double?
 
+    /// What share of serves won the rally outright.
+    ///
+    /// A different question from the in-percentage, and the more useful one for a team
+    /// total: somebody can put nine serves in ten over the net and win nothing with any of
+    /// them. Nil rather than zero when nobody has served, like every figure here.
+    public var pointPercentage: Double?
+
     public init(serves: Int = 0, servesIn: Int = 0, points: Int = 0, turnsTaken: Int = 0) {
         self.serves = serves
         self.servesIn = servesIn
         self.points = points
         self.turnsTaken = turnsTaken
         self.inPercentage = serves == 0 ? nil : Double(servesIn) / Double(serves)
+        self.pointPercentage = serves == 0 ? nil : Double(points) / Double(serves)
     }
 }
 
@@ -59,6 +67,9 @@ extension Match {
         turns.reduce(0) { $0 + $1.figures.points }
     }
 
+    /// The whole side's serving in this match, as one row.
+    public var teamFigures: Figures { totalFigures(turns) }
+
     /// True when points on serve have reached the target.
     ///
     /// Advisory only: the opponent's score is not tracked, so the app cannot know whether
@@ -73,6 +84,23 @@ extension Game {
     public var statistics: [String: Figures] {
         aggregateTurns(allTurns)
     }
+
+    /// The whole side's serving across every match of this game.
+    public var teamFigures: Figures { totalFigures(allTurns) }
+}
+
+/// Everything one side served over a list of turns, as one row.
+///
+/// Summed from the turns rather than from the per-player table, so a serve recorded against
+/// a player who was later removed from the roster still counts. It happened on the floor.
+public func totalFigures(_ turns: [Turn]) -> Figures {
+    let counted = turns.filter { !$0.serves.isEmpty }
+    return Figures(
+        serves: counted.reduce(0) { $0 + $1.serves.count },
+        servesIn: counted.reduce(0) { $0 + $1.serves.filter(\.outcome.isIn).count },
+        points: counted.reduce(0) { $0 + $1.serves.filter { $0.outcome == .inPoint }.count },
+        turnsTaken: counted.count
+    )
 }
 
 /// How many serve turns elapsed while this player was on court, whether or not they served.

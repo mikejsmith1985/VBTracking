@@ -12,6 +12,10 @@ enum ShippedSources {
         "ios/VBTracker",
         "ios/VBTrackerWatch",
         "ios/Shared",
+        // Both halves of the lock screen. A shipped directory no rule scans is a hole in
+        // every rule at once.
+        "ios/GlanceShared",
+        "ios/VBTrackerGlance",
     ]
 
     static var repository: URL {

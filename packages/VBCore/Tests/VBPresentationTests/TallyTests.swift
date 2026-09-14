@@ -411,11 +411,16 @@ struct PlayerFirstPlacementTests {
         )
     }
 
-    @Test("Once six are standing, a tap on a player hands them the ball")
-    func aFullOrderServes() {
+    @Test("Once six are standing, a tap on a player picks them up rather than serving them")
+    func aFullOrderSelects() {
         let state = partly((0..<6).map { ("p\($0 + 1)", $0) })
         #expect(isLineupComplete(state.currentLineup))
-        #expect(intent(ofTapping: "p1", state: state, armed: nil) == .serve(playerId: "p1"))
+
+        // Serving on a single tap meant one stray touch of the court started a turn for the
+        // wrong player, and it made exchanging two players on court impossible: the first
+        // tap served instead of selecting. Tapping the held player again is what serves.
+        #expect(intent(ofTapping: "p1", state: state, armed: nil) == .armSubstitution(incomingPlayerId: "p1"))
+        #expect(intent(ofTapping: "p1", state: state, armed: .player("p1")) == .serve(playerId: "p1"))
     }
 
     @Test("A half-built order is not a complete one")

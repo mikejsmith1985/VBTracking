@@ -18,6 +18,10 @@ public protocol ConnectivitySession: AnyObject, Sendable {
 
     /// Queues events for delivery. Guaranteed, in order, and it survives going out of range.
     func transfer(userInfo: [String: Any])
+
+    /// What the phone can find out about the watch beside it. Read rather than assumed: a
+    /// watch app that never installed looks exactly like one that is simply asleep.
+    var watchState: WatchState { get }
 }
 
 /// What arrives.
@@ -32,6 +36,43 @@ public enum LinkKey {
     public static let snapshot = "snapshot"
     public static let events = "events"
     public static let confirmedEventIds = "confirmedEventIds"
+    /// Phone to phone: the identifiers a phone already holds, so the other sends only the
+    /// difference rather than the season.
+    public static let heldEventIds = "heldEventIds"
+    /// Phone to phone: who the sending phone is, so a receiver that was handed an invitation
+    /// can tell it apart from somebody else's match at the next court.
+    public static let senderCode = "senderCode"
+    public static let senderName = "senderName"
+    /// Phone to phone: the sending phone saying it has finished, so the watching phone stops
+    /// watching by itself rather than sitting on a court that will never move again.
+    public static let sharingEnded = "sharingEnded"
+}
+
+/// The link between two phones in the same room.
+///
+/// Separate from `ConnectivitySession` because the two links answer different questions. The
+/// watch link has exactly one peer, always the same one, paired at the factory of the
+/// relationship; this one has to find a phone that may not be there, may be somebody else's,
+/// and can leave halfway through a match.
+public protocol PeerSession: AnyObject, Sendable {
+    /// Starts looking, and starts being findable.
+    func start()
+
+    /// Stops both, and drops any phone already joined.
+    func stop()
+
+    /// Sends to whichever phone is joined. Does nothing when none is.
+    func send(_ payload: [String: Any])
+}
+
+/// What arrives from the other phone.
+public protocol PeerDelegate: AnyObject, Sendable {
+    func received(fromPeer payload: [String: Any])
+    func peerLinkChanged(_ state: PeerLinkState)
+
+    /// A phone nearby is advertising a match. Only ever called while listening, and never
+    /// followed by a connection: noticing somebody is not joining them.
+    func noticedNearby(id: String, name: String)
 }
 
 /// Encoding the two payloads.
@@ -75,5 +116,54 @@ public enum LinkPayload {
 
     public static func decodeConfirmed(_ payload: [String: Any]) -> Set<String> {
         Set(payload[LinkKey.confirmedEventIds] as? [String] ?? [])
+    }
+
+    /// What a phone holds, announced so the other sends only what is missing.
+    public static func encode(held ids: [String]) -> [String: Any] {
+        [LinkKey.heldEventIds: ids]
+    }
+
+    /// A sending phone saying who it is, first thing after a link comes up.
+    public static func encode(introducing introduction: Introduction) -> [String: Any] {
+        [
+            LinkKey.senderCode: introduction.senderCode,
+            LinkKey.senderName: introduction.senderName,
+        ]
+    }
+
+    /// A sending phone saying it has stopped. Said out loud rather than left to the radio,
+    /// because a link that simply drops is a phone at the far end of the gym -- worth waiting
+    /// for -- and one that has stopped is not.
+    public static func encodeFarewell() -> [String: Any] {
+        [LinkKey.sharingEnded: true]
+    }
+
+    public static func isFarewell(_ payload: [String: Any]) -> Bool {
+        payload[LinkKey.sharingEnded] as? Bool == true
+    }
+
+    public static func decodeIntroduction(_ payload: [String: Any]) -> Introduction? {
+        guard let code = payload[LinkKey.senderCode] as? String, !code.isEmpty else { return nil }
+        let name = payload[LinkKey.senderName] as? String
+        return Introduction(senderCode: code, senderName: name ?? "the other phone")
+    }
+
+    public static func decodeHeld(_ payload: [String: Any]) -> [String]? {
+        payload[LinkKey.heldEventIds] as? [String]
+    }
+
+    /// The phone-to-phone link carries `Data`, not a property list, so a payload is flattened here
+    /// rather than at every call site.
+    ///
+    /// The values are `Data` and arrays of `String` only, which is what makes a plain
+    /// property-list serialisation enough -- and keeps the wire format something a person
+    /// can read in a debugger.
+    public static func data(from payload: [String: Any]) -> Data? {
+        try? PropertyListSerialization.data(fromPropertyList: payload, format: .binary, options: 0)
+    }
+
+    public static func payload(from data: Data) -> [String: Any]? {
+        let decoded = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil)
+        return decoded as? [String: Any]
     }
 }

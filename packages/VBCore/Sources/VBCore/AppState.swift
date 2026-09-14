@@ -149,13 +149,22 @@ public struct Match: Equatable, Sendable {
     public var substitutions: [Substitution]
     public var turns: [Turn]
 
+    /// Rallies decided while the OTHER team had the ball, in the order they happened: true
+    /// for one we won, false for one they won.
+    ///
+    /// Only those. Every rally on our own serve is already decided by that serve's outcome,
+    /// so keeping them here as well would count each one twice. Empty means nobody has
+    /// recorded any -- which is not a nil-nil scoreline, it is no scoreline at all.
+    public var opponentServeRallies: [Bool]
+
     public init(
         index: Int,
         status: MatchStatus = .inProgress,
         result: MatchResult = .undecided,
         lineup: [String?]? = nil,
         substitutions: [Substitution] = [],
-        turns: [Turn] = []
+        turns: [Turn] = [],
+        opponentServeRallies: [Bool] = []
     ) {
         self.index = index
         self.status = status
@@ -163,6 +172,7 @@ public struct Match: Equatable, Sendable {
         self.lineup = lineup
         self.substitutions = substitutions
         self.turns = turns
+        self.opponentServeRallies = opponentServeRallies
     }
 
     /// The serve turn accepting serves right now, or nil between servers.

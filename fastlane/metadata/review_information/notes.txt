@@ -1,7 +1,31 @@
-No account or login is needed.
+DEMO VIDEO: <PASTE THE HOSTED LINK HERE>
 
-To try the phone app: Roster tab, add six or more players with numbers. Track tab, Start game. Tap an empty spot on the court and then a player to place them, six times, or tap a player and then a spot — both work. Tap the player in the bottom-right corner to hand them the ball, then record with OUT / IN / IN — POINT.
+1. SCREEN RECORDING
+The demo video is at the link above, captured on a physical iPhone 17 Pro running iOS 26.6 with this build. It covers the whole app: adding players, starting a game, placing six on court, recording serves, the five-serve alert, undo, the rally score, correcting a past game, backup and restore, sharing with a second phone, and the Apple Watch court. There is no account, login, purchase or shared user content, so none of those flows exist to record.
 
-The Apple Watch app mirrors the phone's court over Watch Connectivity and needs a paired watch with the phone app open. Its scoreboard page — swipe up twice — works on its own with no phone at all, if pairing is not convenient.
+2. WHY THIS APP USES BLUETOOTH BACKGROUND MODES
+The one thing worth reading. Two people work a match: one tracks serves, the other coaches. Each Apple Watch pairs to its own phone and to nothing else, so the court cannot reach the coach's wrist from the tracker's phone directly. It goes phone to phone over Bluetooth LE, and her phone feeds her own watch.
 
-The app contains no networking code of any kind. Nothing recorded leaves the device, which is why the privacy answer is "Data Not Collected".
+bluetooth-peripheral is declared because the tracking phone advertises the match. bluetooth-central is declared because the coach's phone subscribes to it. Both are needed: with only one, half the pair stops working.
+
+They are background modes because a coach puts her phone in her pocket. Without them iOS suspends the app and the link drops -- exactly what happened in testing: the match stopped arriving whenever her screen locked, and her watch and lock screen silently stopped moving. Nothing travels but the serves of the match in progress, between two devices in one gym, and only while sharing has been switched on by hand.
+
+3. DEVICES AND OS TESTED
+Two complete pairs of real hardware: iPhone 17 Pro with Apple Watch Ultra 2, and iPhone 14 Pro with Apple Watch Series 11 (iOS 26.6, watchOS 26.6). All four were used together -- which is exactly the arrangement section 2 describes -- and the link, both watches and both lock screens work across them. Distributed through TestFlight and used to record real matches before submission. Minimum: iOS 18.0, watchOS 11.0. An interface suite also drives a full match on the simulator every build, and a layout suite checks the watch court at all seven sizes down to 40 mm.
+
+4. WHAT THE APP DOES AND FOR WHOM
+Volleyball Serve Tracker records which player served and whether each serve went in, out, or won the point. It replaces the paper serve chart a parent or assistant coach keeps on the sideline at a youth volleyball match, totalling serve-in percentage and points per player continuously so the coach has figures in front of them when deciding on a substitution. Audience: parents, assistant coaches and managers of school and club teams.
+
+5. HOW TO REACH EVERY FEATURE
+No credentials or sample files are needed. From a fresh install:
+- Roster tab: type a name and jersey number, tap Add. Repeat six times.
+- Track tab: tap Start game. Tap an empty court box, then a player, six times.
+- Tap the player in the bottom-right box to hand them the ball, then record serves with OUT / IN / IN-POINT. Rotation advances itself; Undo reverses one action.
+- After five serves by one player a full-screen alert appears; any tap clears it.
+- The two numbers at the top are the rally score. They take a tap only while your side is not serving: a serve's own outcome already decides that rally.
+- "Share this match" starts sharing. A second phone running the app sees it offered and taps once to watch.
+- Game tab shows running figures. Season tab holds past games, notes, backup, restore and corrections.
+- Apple Watch: mirrors the phone's court. Swipe up twice for the standalone scoreboard, which needs no phone.
+
+6. EXTERNAL SERVICES
+None. No data providers, authentication, payments, AI, analytics, advertising SDK, crash reporter or social login, and no internet code of any kind -- a test fails the build if any shipped file references an internet networking API. All data stays on the user's own devices, hence the "Data Not Collected" privacy answer. The only outbound link is an optional "buy me a coffee" tip that opens in Safari; the app takes no payments.

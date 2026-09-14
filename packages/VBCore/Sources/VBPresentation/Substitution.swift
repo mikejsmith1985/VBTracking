@@ -52,6 +52,10 @@ public enum TapIntent: Equatable, Sendable {
     /// Complete a substitution: the armed player comes on where this one goes off.
     case substitute(outPlayerId: String, inPlayerId: String)
 
+    /// Exchange two places in the serving order. A correction, not a substitution --
+    /// both players are already on court and neither is leaving it.
+    case swap(firstIndex: Int, secondIndex: Int)
+
     /// Nothing — put down whatever is being held and carry on.
     case ignore
 }
@@ -78,7 +82,19 @@ public func intent(
         // the referee lets someone out of the order take the ball.
         if incoming == playerId { return .serve(playerId: playerId) }
 
+        let isIncomingOnCourt = lineup?.contains(incoming) == true
+
         if isOnCourt {
+            // Two players already on court exchange places. Nobody is leaving the floor, so
+            // this is a correction to the order and never a substitution -- recording it as
+            // one would put a swap in the history that did not happen.
+            if isIncomingOnCourt,
+                let held = lineup?.firstIndex(of: incoming),
+                let tapped = lineup?.firstIndex(of: playerId)
+            {
+                return .swap(firstIndex: held, secondIndex: tapped)
+            }
+
             // Before the first serve this is still arranging, not substituting: writing a
             // substitution into a match nobody has played would put a swap in the record
             // that never happened on the floor.
@@ -86,6 +102,12 @@ public func intent(
                 return .place(playerId: incoming, lineupIndex: index)
             }
             return .substitute(outPlayerId: playerId, inPlayerId: incoming)
+        }
+
+        // Holding somebody on court and tapping the bench is the same substitution said the
+        // other way round. Re-aiming there would refuse the more natural order of the two.
+        if isIncomingOnCourt, !state.canArrangeRotation {
+            return .substitute(outPlayerId: incoming, inPlayerId: playerId)
         }
 
         // A different bench player: re-aim rather than refuse.
@@ -100,7 +122,12 @@ public func intent(
             return playerId == state.activeServerId ? .ignore : .armSubstitution(incomingPlayerId: playerId)
         }
 
-        guard lineup != nil, !isOnCourt else {
+        // Nothing held, and a tap on somebody already on court picks them up -- it does not
+        // hand them the ball. Serving on a single tap meant one stray touch of the court
+        // started a turn for the wrong player, and it made exchanging two players on court
+        // impossible, because the first tap served instead of selecting. Tapping the held
+        // player again is what serves.
+        guard lineup != nil else {
             return playerId == state.activeServerId ? .ignore : .serve(playerId: playerId)
         }
         return .armSubstitution(incomingPlayerId: playerId)
@@ -153,6 +180,11 @@ public func pickerHint(state: AppState, armed: Armed?) -> String {
         if state.canArrangeRotation {
             return "\(name) — tap a spot to stand them there, or tap them again to serve first."
         }
+        if state.currentMatch?.lineup?.contains(playerId) == true {
+            // Held player already on court: the two useful things are swapping them
+            // with somebody else out there, or handing them the ball.
+            return "\(name) — tap another player on court to swap them, the bench to sub, or tap again to serve."
+        }
         return "\(name) is coming on — tap who they replace. Tap them again to serve without substituting."
 
     case nil:
@@ -163,7 +195,9 @@ public func pickerHint(state: AppState, armed: Armed?) -> String {
         if state.canArrangeRotation {
             return "Tap whoever serves first · serving corner is bottom right"
         }
-        return "Serving corner is bottom right · tap a bench player to sub them on"
+        // The serving corner stays in it: it is the one thing on this screen somebody
+        // has to be told once, and a test keeps it there for that reason.
+        return "Serving corner is bottom right · tap to pick up, again to serve, another to swap"
     }
 }
 

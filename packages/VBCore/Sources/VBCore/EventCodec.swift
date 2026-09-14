@@ -16,6 +16,7 @@ public enum EventType {
     public static let createSeason = "CREATE_SEASON"
     public static let renameSeason = "RENAME_SEASON"
     public static let activateSeason = "ACTIVATE_SEASON"
+    public static let discardSeason = "DISCARD_SEASON"
     public static let startGame = "START_GAME"
     public static let discardGame = "DISCARD_GAME"
     public static let setGameContext = "SET_GAME_CONTEXT"
@@ -32,8 +33,10 @@ public enum EventType {
     public static let placeInLineup = "PLACE_IN_LINEUP"
     public static let clearLineupPosition = "CLEAR_LINEUP_POSITION"
     public static let substitute = "SUBSTITUTE"
+    public static let swapLineupPositions = "SWAP_LINEUP_POSITIONS"
     public static let selectServer = "SELECT_SERVER"
     public static let recordServe = "RECORD_SERVE"
+    public static let recordRallyPoint = "RECORD_RALLY_POINT"
     public static let endMatch = "END_MATCH"
     public static let endGame = "END_GAME"
 }
@@ -76,6 +79,9 @@ extension Event.Kind {
 
         case EventType.activateSeason:
             self = .activateSeason(id: raw.string("id"))
+
+        case EventType.discardSeason:
+            self = .discardSeason(id: raw.string("id"))
 
         case EventType.addPlayer:
             self = .addPlayer(
@@ -164,11 +170,20 @@ extension Event.Kind {
         case EventType.substitute:
             self = .substitute(outPlayerId: raw.string("outPlayerId"), inPlayerId: raw.string("inPlayerId"))
 
+        case EventType.swapLineupPositions:
+            self = .swapLineupPositions(
+                firstIndex: raw.int("firstIndex") ?? -1,
+                secondIndex: raw.int("secondIndex") ?? -1
+            )
+
         case EventType.selectServer:
             self = .selectServer(playerId: raw.string("playerId"))
 
         case EventType.recordServe:
             self = .recordServe(outcome: raw["outcome"]?.stringValue.flatMap(Outcome.init(rawValue:)))
+
+        case EventType.recordRallyPoint:
+            self = .recordRallyPoint(toUs: raw["toUs"]?.boolValue ?? false)
 
         case EventType.endMatch:
             self = .endMatch(result: raw.result("result"))

@@ -51,7 +51,21 @@ private struct Header: View {
             Text(snapshot.scopeLabel)
                 .font(.system(size: 11, weight: .heavy))
                 .foregroundStyle(.secondary)
-            Spacer()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+            Spacer(minLength: 2)
+
+            // In the gap this row already had, so the court loses no height for it. Nothing
+            // at all when nobody is keeping the score: half a scoreline would say the
+            // opposition had scored nothing.
+            if let score = snapshot.score {
+                Text("\(score.us)\u{2013}\(score.them)")
+                    .font(.system(size: 13, weight: .heavy, design: .rounded).monospacedDigit())
+                    .lineLimit(1)
+                    .layoutPriority(1)
+                    .accessibilityIdentifier("court-score")
+                Spacer(minLength: 2)
+            }
             if let label = pending.label {
                 Text(label).font(.system(size: 10)).foregroundStyle(.orange)
             } else if let freshness {
@@ -62,6 +76,7 @@ private struct Header: View {
                     .foregroundStyle(freshness.isCurrent ? Color.secondary : Color.orange)
             }
         }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("court-header")
     }
 }

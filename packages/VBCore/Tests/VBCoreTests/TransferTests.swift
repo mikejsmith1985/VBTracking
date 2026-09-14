@@ -172,6 +172,11 @@ struct BuildBackupTests {
         #expect(backupFilename(on: "2026-08-29") == "vbtracking-backup-2026-08-29.json")
     }
 
+    @Test("A season being handed over carries its own extension")
+    func namesTheHandover() {
+        #expect(seasonFilename(on: "2026-08-29") == "vbtracking-season-2026-08-29.vbseason")
+    }
+
     @Test("A whole season survives a round trip with every figure intact")
     func roundTripsARealSeason() throws {
         // The proof that FR-038 is real: what this app writes, the web app can still read,
