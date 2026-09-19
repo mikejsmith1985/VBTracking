@@ -83,3 +83,49 @@ struct MatchScoreTests {
         #expect(after.rallyScore == Scoreboard(us: 2, them: 1), "the point changed hands, not vanished")
     }
 }
+
+@Suite("The score after the whistle")
+struct ScoreLabelTests {
+    private func turn(_ outcomes: [Outcome]) -> Turn {
+        Turn(playerId: "p1", ordinal: 1, colorIndex: 0, serves: outcomes.map { Serve(outcome: $0) }, isOpen: false)
+    }
+
+    private func match(_ index: Int, _ outcomes: [Outcome], rallies: [Bool]) -> Match {
+        Match(index: index, turns: [turn(outcomes)], opponentServeRallies: rallies)
+    }
+
+    @Test("A finished match says the score, not a count of points on serve")
+    func labelsTheScore() {
+        // The bug this exists for: the score was on screen while a match was being played
+        // and nowhere at all afterwards, because every heading printed points on serve.
+        let played = match(0, [.inPoint, .inPoint, .out], rallies: [false, true])
+        #expect(played.scoreLabel == "3\u{2013}2")
+    }
+
+    @Test("A match nobody scored still says something")
+    func fallsBackToPointsOnServe() {
+        // Old games, and games tracked only for serve figures, have no rally score. Saying
+        // nothing would be worse than saying what is known.
+        let unscored = match(0, [.inPoint, .inPoint, .out], rallies: [])
+        #expect(unscored.scoreLabel == "2 pts")
+    }
+
+    @Test("A game gives every match's score, in order")
+    func linesUpTheMatches() {
+        var game = Game(id: "g1", seasonId: "s1", kind: .tracked)
+        game.matches = [
+            match(0, [.inPoint, .inPoint, .out], rallies: [false]),
+            match(1, [.inPoint, .out], rallies: [true, false, false]),
+        ]
+        // Match by match, never added together: a game is decided set by set, and one
+        // number would describe a game nobody played.
+        #expect(game.scoreLine == "2\u{2013}2 \u{00B7} 2\u{2013}3")
+    }
+
+    @Test("A game nobody scored has no score line at all")
+    func staysSilentWithoutAScore() {
+        var game = Game(id: "g1", seasonId: "s1", kind: .tracked)
+        game.matches = [match(0, [.inPoint, .out], rallies: [])]
+        #expect(game.scoreLine == nil)
+    }
+}

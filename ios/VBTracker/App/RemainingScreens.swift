@@ -93,7 +93,7 @@ struct GameScreen: View {
                             }
                         } else {
                             ForEach(game.matches, id: \.index) { match in
-                                Section("Match \(match.index + 1) · \(match.score) pts") {
+                                Section("Match \(match.index + 1) · \(match.scoreLabel)") {
                                     TeamTotals(figures: match.teamFigures, scope: "Match \(match.index + 1)")
                                     MatchFigures(figures: match.statistics, roster: store.state.roster)
                                     Substitutions(match: match, store: store)
