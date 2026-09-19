@@ -45,7 +45,7 @@ struct ServeRecordScreen: View {
         let figures = match.statistics.values
         let serves = figures.reduce(0) { $0 + $1.serves }
         let servesIn = figures.reduce(0) { $0 + $1.servesIn }
-        return "Match \(match.index + 1) · \(servesIn)/\(serves) in · \(match.score) pts"
+        return "Match \(match.index + 1) · \(servesIn)/\(serves) in · \(match.scoreLabel)"
     }
 
     @ViewBuilder

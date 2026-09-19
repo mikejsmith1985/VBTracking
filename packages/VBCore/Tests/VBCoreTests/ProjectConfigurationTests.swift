@@ -12,10 +12,18 @@ import Testing
 
 @Suite("What the build declares about itself")
 struct ProjectConfigurationTests {
+    /// The project file, with its line endings normalised.
+    ///
+    /// Normalised because git hands this file out with whatever endings the platform
+    /// prefers, and a test that scans for a line beginning then passes or fails on how
+    /// the file was checked out. One did: a fresh checkout on Windows turned every
+    /// newline into a carriage return pair, a search for the next target matched
+    /// nothing, and a rule about one target read the whole rest of the file.
     private static var projectFile: String {
         get throws {
             let path = ShippedSources.repository.appendingPathComponent("ios/project.yml")
-            return try String(contentsOf: path, encoding: .utf8)
+            let text = try String(contentsOf: path, encoding: .utf8)
+            return text.replacingOccurrences(of: "\r\n", with: "\n")
         }
     }
 

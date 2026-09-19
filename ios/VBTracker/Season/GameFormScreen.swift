@@ -76,7 +76,7 @@ struct GameFormScreen: View {
                         }
                     } else {
                         ForEach(game.matches, id: \.index) { match in
-                            Section("Match \(match.index + 1) · \(match.score) pts") {
+                            Section("Match \(match.index + 1) · \(match.scoreLabel)") {
                                 MatchFigures(figures: match.statistics, roster: seasonRoster(of: game))
                             }
                         }

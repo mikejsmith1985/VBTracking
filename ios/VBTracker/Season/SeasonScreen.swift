@@ -180,6 +180,13 @@ private struct GameRow: View {
             }
             HStack(spacing: 8) {
                 Text(subtitle(of: game)).font(.caption).foregroundStyle(.secondary)
+                // The score first, because it is the thing anybody scanning a season
+                // is looking for -- and until now it existed only while the match was
+                // still being played.
+                if let scoreLine = game.scoreLine {
+                    Text(scoreLine)
+                        .font(.caption.bold().monospacedDigit())
+                }
                 Text("\(game.summary.servesIn)/\(game.summary.serves) in")
                     .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                 if game.kind == .historical {

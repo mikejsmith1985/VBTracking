@@ -43,3 +43,28 @@ extension Match {
         turns.reduce(0) { $0 + $1.serves.filter { $0.outcome != .inPoint }.count }
     }
 }
+
+extension Match {
+    /// The score in the words a heading uses: the rally score when somebody kept it, and
+    /// the old points-on-serve count when nobody did.
+    ///
+    /// One phrasing in one place, because four screens print this -- and a match that reads
+    /// 25 to 21 on one of them and "12 pts" on another looks like two different matches.
+    public var scoreLabel: String {
+        guard let rallyScore else { return "\(score) pts" }
+        return "\(rallyScore.us)\u{2013}\(rallyScore.them)"
+    }
+}
+
+extension Game {
+    /// Every match's score, in order, for a row that has space for one line.
+    ///
+    /// Nil when nobody kept the score in any match of it. A game is decided match by match,
+    /// so there is no single number to give -- adding them into one would describe a game
+    /// nobody played.
+    public var scoreLine: String? {
+        let played = matches.filter { $0.rallyScore != nil }
+        guard !played.isEmpty else { return nil }
+        return played.map(\.scoreLabel).joined(separator: " \u{00B7} ")
+    }
+}
