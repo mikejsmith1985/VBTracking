@@ -217,6 +217,7 @@ struct RosterScreen: View {
     /// successful Add both close.
     @FocusState private var focus: Field?
     private enum Field { case name, number }
+    @State private var isBringingBack = false
 
     var body: some View {
         NavigationStack {
@@ -247,6 +248,16 @@ struct RosterScreen: View {
                     }
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
                     .accessibilityIdentifier("add-player")
+
+                    // Typing a returning player's name here would make a second
+                    // person with the same name and an empty career. This is the way
+                    // back to the one the app already has.
+                    if !playersWhoCouldReturn(to: store.state).isEmpty {
+                        Button("Bring back a player who has played before") {
+                            isBringingBack = true
+                        }
+                        .accessibilityIdentifier("bring-back")
+                    }
                 }
 
                 Section("\(store.state.roster.count) of \(maxRoster)") {
@@ -294,6 +305,9 @@ struct RosterScreen: View {
             .keyboardDismissable()
             .sheet(item: $editing) { edit in
                 PlayerEditor(store: store, playerId: edit.id, editing: $editing)
+            }
+            .sheet(isPresented: $isBringingBack) {
+                ReturningPlayerSheet(store: store, isPresented: $isBringingBack)
             }
         }
     }
